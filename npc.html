@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fiche PNJ / Monstre D&D</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #58180D;
+      --paper: #fdf1dc;
+      --border: #d2b38c;
+    }
+    body {
+      font-family: 'Crimson Pro', serif;
+      background: #eee;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      display: flex;
+      gap: 20px;
+      width: 1100px;
+      max-width: 100%;
+      align-items: flex-start;
+    }
+    .icon-btn {
+      border: 1px solid #c0b7aa;
+      background: #fff7ec;
+      color: var(--ink);
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .icon-btn:hover { background: #f3e2c8; }
+    .add-btn { width: 100%; margin-top: 6px; }
+
+    .stat-block {
+      flex: 1;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      box-shadow: 0 0 15px #aaa;
+      padding: 20px;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/5f/Old_paper_texture_27.jpg');
+      background-size: cover;
+      position: relative;
+      max-width: 750px;
+    }
+    .header-with-image {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .creature-heading { flex: 1; }
+    .creature-heading h1 {
+      font-family: 'Cinzel', serif;
+      color: var(--ink);
+      font-size: 28px;
+      margin: 5px 0 0 0;
+      text-transform: uppercase;
+    }
+    .creature-heading h2 {
+      font-style: italic;
+      font-size: 14px;
+      margin: 0 0 6px 0;
+    }
+    .creature-heading p { margin: 0 0 10px 0; white-space: pre-line; }
+    .npc-image {
+      width: 160px;
+      height: 220px;
+      background: linear-gradient(135deg, #d2b48c 0%, #fdf1dc 50%, #c9ad8f 100%);
+      border: 2px dashed var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink);
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      text-transform: uppercase;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+    }
+    .npc-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transform-origin: center;
+      transition: transform 0.05s linear;
+    }
+    .npc-image.dragging { cursor: grabbing; }
+    .tapered-rule {
+      display: block;
+      width: 100%;
+      height: 5px;
+      border: none;
+      color: var(--ink);
+      background-color: var(--ink);
+      clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+      margin: 12px 0;
+    }
+    .property-line h4 { display: inline; color: var(--ink); margin: 0; }
+    .property-line p { display: inline; margin: 0; }
+    .property-line { margin-bottom: 5px; }
+    .section-title {
+      color: var(--ink);
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      margin: 12px 0 6px;
+      border-bottom: 2px solid var(--ink);
+      display: inline-block;
+      padding-bottom: 2px;
+    }
+    .abilities {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      color: var(--ink);
+      font-weight: bold;
+      text-align: center;
+    }
+    .box {
+      border: 1px solid #c9b89c;
+      padding: 6px;
+      background: rgba(255,255,255,0.35);
+    }
+    .box .abbr { font-size: 12px; letter-spacing: 0.5px; }
+    .box .score { margin-top: 4px; font-size: 15px; }
+    .list-block { margin-top: 6px; }
+    .list-block div { margin-bottom: 4px; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="stat-block" id="sheet">
+    <div class="header-with-image">
+      <div class="creature-heading">
+        <h1 contenteditable="true">Nom du Monstre</h1>
+        <h2 contenteditable="true">Humanoïde (Humain), Neutre Mauvais</h2>
+        <p contenteditable="true">Une courte description ou accroche.</p>
+      </div>
+      <div class="npc-image" id="portraitDisplay">Portrait</div>
+    </div>
+
+    <hr class="tapered-rule">
+
+    <div class="property-line"><h4>Classe d'Armure</h4> <p contenteditable="true">14 (Cotte de mailles)</p></div>
+    <div class="property-line"><h4>Points de Vie</h4> <p contenteditable="true">32 (5d8 + 10)</p></div>
+    <div class="property-line"><h4>Vitesse</h4> <p contenteditable="true">9 m</p></div>
+
+    <hr class="tapered-rule">
+
+    <div class="section-title">Attributs</div>
+    <div class="abilities">
+      <div class="box"><div class="abbr">FOR</div><div class="score" data-ability="str" contenteditable="true">16 (+3)</div></div>
+      <div class="box"><div class="abbr">DEX</div><div class="score" data-ability="dex" contenteditable="true">10 (+0)</div></div>
+      <div class="box"><div class="abbr">CON</div><div class="score" data-ability="con" contenteditable="true">14 (+2)</div></div>
+      <div class="box"><div class="abbr">INT</div><div class="score" data-ability="int" contenteditable="true">10 (+0)</div></div>
+      <div class="box"><div class="abbr">SAG</div><div class="score" data-ability="wis" contenteditable="true">11 (+0)</div></div>
+      <div class="box"><div class="abbr">CHA</div><div class="score" data-ability="cha" contenteditable="true">12 (+1)</div></div>
+    </div>
+
+    <div class="section-title">Compétences / JS / Résistances</div>
+    <div id="skillsPreview"></div>
+    <button id="addSkillInline" class="icon-btn add-btn">+ Ajouter une ligne</button>
+
+    <div class="section-title">Aptitudes spéciales / Comportement</div>
+    <div id="abilitiesPreview"></div>
+    <button id="addAbilityInline" class="icon-btn add-btn" style="margin-top:6px;">+ Ajouter une aptitude</button>
+
+    <div class="section-title">Actions</div>
+    <div id="actionsPreview"></div>
+    <button id="addActionInline" class="icon-btn add-btn" style="margin-top:6px;">+ Ajouter une action</button>
+  </div>
+
+  <div class="toolbar">
+    <div>
+      <button id="downloadPng" class="icon-btn">Télécharger en PNG</button>
+      <button id="uploadBtn" class="icon-btn">Choisir un portrait</button>
+      <button id="deletePortrait" class="icon-btn" disabled>Supprimer le portrait</button>
+    </div>
+    <div>
+      <button id="exportNpc" class="icon-btn">Exporter la fiche (JSON)</button>
+      <button id="importNpcBtn" class="icon-btn">Importer une fiche</button>
+      <input id="importNpcInput" type="file" accept="application/json" style="display:none">
+    </div>
+  </div>
+</div>
+
+<input id="portraitUpload" type="file" accept="image/*" title="Choisir une image" style="display:none">
+
+<script>
+  // dom-to-image loader for PNG export
+  (function loadDomToImage(){
+    if (window.domtoimage) return;
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/dom-to-image@2.6.0/dist/dom-to-image.min.js';
+    document.head.appendChild(s);
+  })();
+
+  const sheet = document.getElementById('sheet');
+  const portraitDisplay = document.getElementById('portraitDisplay');
+  const uploadInput = document.getElementById('portraitUpload');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const deletePortraitBtn = document.getElementById('deletePortrait');
+  const downloadBtn = document.getElementById('downloadPng');
+
+  const portraitFit = 'contain';
+  let zoom = 1;
+  let offsetX = 0;
+  let offsetY = 0;
+  let dragState = null;
+
+  function applyPortraitSizing() {
+    const w = 160;
+    const h = 220;
+    portraitDisplay.style.width = w + 'px';
+    portraitDisplay.style.height = h + 'px';
+    const img = portraitDisplay.querySelector('img');
+    if (!img) return;
+    img.style.objectFit = portraitFit;
+    img.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+  }
+
+  uploadBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    uploadInput.click();
+  });
+
+  portraitDisplay.addEventListener('click', () => {
+    if (dragState) return;
+    if (portraitDisplay.querySelector('img')) return;
+    uploadInput.click();
+  });
+
+  uploadInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      portraitDisplay.innerHTML = '';
+      portraitDisplay.appendChild(img);
+      zoom = 1; offsetX = 0; offsetY = 0;
+      applyPortraitSizing();
+      attachImageInteractions(img);
+      deletePortraitBtn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function attachImageInteractions(img) {
+    img.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      dragState = { startX: e.clientX, startY: e.clientY, startDx: offsetX, startDy: offsetY };
+      portraitDisplay.classList.add('dragging');
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragState) return;
+      offsetX = dragState.startDx + (e.clientX - dragState.startX);
+      offsetY = dragState.startDy + (e.clientY - dragState.startY);
+      applyPortraitSizing();
+    });
+    window.addEventListener('mouseup', () => {
+      dragState = null;
+      portraitDisplay.classList.remove('dragging');
+    });
+    img.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.05 : 0.05;
+      zoom = Math.min(3, Math.max(0.5, zoom + delta));
+      applyPortraitSizing();
+    }, { passive: false });
+  }
+
+  deletePortraitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    portraitDisplay.innerHTML = 'Portrait';
+    zoom = 1; offsetX = 0; offsetY = 0;
+    dragState = null;
+    deletePortraitBtn.disabled = true;
+  });
+
+  // Skills / abilities / actions lists (inline)
+  function setupInlineList(containerId, addBtnId, initial, placeholder) {
+    const container = document.getElementById(containerId);
+    const addBtn = document.getElementById(addBtnId);
+    let items = [...initial];
+
+    function render() {
+      container.innerHTML = '';
+      items.forEach((text, idx) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'flex-start';
+        row.style.gap = '6px';
+        row.style.marginBottom = '6px';
+
+        const box = document.createElement('div');
+        box.className = 'box';
+        box.style.flex = '1';
+        box.contentEditable = 'true';
+        box.textContent = text;
+        box.addEventListener('input', (e) => {
+          items[idx] = e.target.textContent;
+        });
+
+        const del = document.createElement('button');
+        del.className = 'icon-btn';
+        del.textContent = '×';
+        del.title = 'Supprimer';
+        del.addEventListener('click', (e) => {
+          e.preventDefault();
+          items.splice(idx, 1);
+          render();
+        });
+
+        row.appendChild(box);
+        row.appendChild(del);
+        container.appendChild(row);
+      });
+    }
+
+    addBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      items.push(placeholder);
+      render();
+    });
+
+    render();
+
+    return {
+      getItems: () => items,
+      setItems: (arr) => { items = [...arr]; render(); }
+    };
+  }
+
+  const skillsList = setupInlineList('skillsPreview', 'addSkillInline', ['Perception passive 10'], 'Nouvelle compétence / JS');
+  const abilitiesList = setupInlineList('abilitiesPreview', 'addAbilityInline', ['Vision dans le noir 18 m'], 'Nouvelle aptitude');
+  const actionsList = setupInlineList('actionsPreview', 'addActionInline', [
+    'Épée longue. Attaque au corps à corps : +5 au toucher, allonge 1,5 m, une cible. Dégâts : 7 (1d8 + 3) tranchants.'
+  ], 'Nouvelle action');
+
+  // Ability auto-formatting
+  const abilityEls = sheet.querySelectorAll('[data-ability]');
+  function abilityMod(score) {
+    const n = parseInt(score, 10);
+    if (Number.isNaN(n)) return 0;
+    return Math.floor((n - 10) / 2);
+  }
+  function normalizeAbility(el) {
+    const raw = el.textContent || '';
+    const num = parseInt(raw, 10);
+    if (Number.isNaN(num)) return;
+    const mod = abilityMod(num);
+    const modTxt = `${mod >= 0 ? '+' : ''}${mod}`;
+    el.textContent = `${num} (${modTxt})`;
+  }
+  abilityEls.forEach((el) => {
+    el.addEventListener('blur', () => normalizeAbility(el));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+    normalizeAbility(el);
+  });
+
+  // PNG export
+  downloadBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!window.domtoimage) {
+      alert('Chargement de dom-to-image... réessayez dans une seconde.');
+      return;
+    }
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'Génération...';
+    try {
+      const dataUrl = await window.domtoimage.toPng(sheet, { bgcolor: null, scale: 4 });
+      const link = document.createElement('a');
+      link.download = 'fiche-pnj.png';
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la génération du PNG');
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = 'Télécharger en PNG';
+    }
+  });
+
+  // JSON export/import
+  const exportBtn = document.getElementById('exportNpc');
+  const importBtn = document.getElementById('importNpcBtn');
+  const importInput = document.getElementById('importNpcInput');
+
+  function collectNpcData() {
+    const data = {
+      name: sheet.querySelector('h1').textContent,
+      type: sheet.querySelector('h2').textContent,
+      description: sheet.querySelector('.creature-heading p').textContent,
+      ca: sheet.querySelector('.property-line:nth-of-type(1) p').textContent,
+      pv: sheet.querySelector('.property-line:nth-of-type(2) p').textContent,
+      speed: sheet.querySelector('.property-line:nth-of-type(3) p').textContent,
+      abilities: {},
+      skills: skillsList.getItems(),
+      special: abilitiesList.getItems(),
+      actions: actionsList.getItems(),
+      portrait: null,
+      portraitState: { zoom, offsetX, offsetY }
+    };
+    abilityEls.forEach((el) => {
+      const key = el.getAttribute('data-ability');
+      data.abilities[key] = el.textContent;
+    });
+    const img = portraitDisplay.querySelector('img');
+    if (img && img.src.startsWith('data:')) {
+      data.portrait = img.src;
+    }
+    return data;
+  }
+
+  function applyNpcData(data) {
+    if (!data) return;
+    sheet.querySelector('h1').textContent = data.name || '';
+    sheet.querySelector('h2').textContent = data.type || '';
+    sheet.querySelector('.creature-heading p').textContent = data.description || '';
+    const props = sheet.querySelectorAll('.property-line p');
+    if (props[0]) props[0].textContent = data.ca || '';
+    if (props[1]) props[1].textContent = data.pv || '';
+    if (props[2]) props[2].textContent = data.speed || '';
+    if (data.abilities) {
+      abilityEls.forEach((el) => {
+        const key = el.getAttribute('data-ability');
+        if (data.abilities[key]) el.textContent = data.abilities[key];
+        normalizeAbility(el);
+      });
+    }
+    if (data.skills) skillsList.setItems(data.skills);
+    if (data.special) abilitiesList.setItems(data.special);
+    if (data.actions) actionsList.setItems(data.actions);
+    zoom = data.portraitState?.zoom ?? 1;
+    offsetX = data.portraitState?.offsetX ?? 0;
+    offsetY = data.portraitState?.offsetY ?? 0;
+    if (data.portrait) {
+      const img = document.createElement('img');
+      img.src = data.portrait;
+      portraitDisplay.innerHTML = '';
+      portraitDisplay.appendChild(img);
+      attachImageInteractions(img);
+      deletePortraitBtn.disabled = false;
+      applyPortraitSizing();
+    } else {
+      portraitDisplay.innerHTML = 'Portrait';
+      deletePortraitBtn.disabled = true;
+    }
+  }
+
+  exportBtn.addEventListener('click', () => {
+    try {
+      const data = collectNpcData();
+      const json = JSON.stringify(data, null, 2);
+      const a = document.createElement('a');
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+      a.download = 'fiche-pnj.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Erreur lors de l\'export JSON: ' + err.message);
+    }
+  });
+
+  importBtn.addEventListener('click', () => {
+    importInput.click();
+  });
+
+  importInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        applyNpcData(data);
+      } catch (err) {
+        console.error(err);
+        alert('Fichier JSON invalide');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  });
+</script>
+
+</body>
+</html>
+
+

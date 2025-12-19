@@ -38,7 +38,7 @@ export function exportNpcToJson(npc: Npc, filename = 'fiche-pnj.json'): void {
 export async function importCharacterFromJson(file: File): Promise<Character> {
   try {
     const text = await file.text()
-    const data = JSON.parse(text) as unknown
+    const data = JSON.parse(text) as Record<string, unknown>
     
     // Migrate old string format abilities to new number format
     if (data && typeof data === 'object' && 'abilities' in data) {
@@ -58,8 +58,8 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
       data.abilities = migratedAbilities
     }
     
-    // Validate with Zod
-    const validated = CharacterSchema.parse(data)
+    // Validate with Zod - this ensures the data matches the Character interface
+    const validated = CharacterSchema.parse(data) as Character
     return validated
   } catch (error) {
     if (error instanceof SyntaxError) {

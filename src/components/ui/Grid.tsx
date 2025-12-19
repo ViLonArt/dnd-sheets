@@ -1,4 +1,4 @@
-import { HTMLAttributes, ReactNode } from 'react'
+import { HTMLAttributes } from 'react'
 import { cn } from '@/utils/cn'
 
 export interface GridProps extends HTMLAttributes<HTMLDivElement> {

@@ -48,7 +48,6 @@ export function flattenInputs(clonedDoc: Document): void {
     replacementDiv.style.marginTop = '-3px' // Pull the element up to fix vertical offset
     
     // Adjust padding to shift visual center upwards
-    const paddingTop = parseFloat(computedStyle.paddingTop) || 0
     replacementDiv.style.paddingTop = '0px' // Remove top padding to shift up
     replacementDiv.style.paddingBottom = `${(parseFloat(computedStyle.paddingBottom) || 0) + 4}px` // Add extra bottom padding
     replacementDiv.style.paddingLeft = computedStyle.paddingLeft

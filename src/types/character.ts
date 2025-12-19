@@ -44,11 +44,17 @@ export interface SpellSlot {
 export type SpellSlots = Record<number, SpellSlot>
 
 /**
+ * Spellcasting attribute type
+ */
+export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
+
+/**
  * Character sheet data model
  */
 export interface Character {
   name: string
-  classLevel: string
+  class: string
+  level: number
   background: string
   race: string
   alignment: string
@@ -67,7 +73,7 @@ export interface Character {
   equipment: string
   backstory: string
   // Spellcasting
-  spellAbility: string
+  spellcastingAttribute: SpellcastingAttribute
   spellDC: string
   spellAtk: string
   spells: Spell[]
@@ -154,11 +160,17 @@ export const SkillProficienciesSchema = z.record(
 )
 
 /**
+ * Zod schema for SpellcastingAttribute
+ */
+export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
+
+/**
  * Zod schema for Character (full validation)
  */
 export const CharacterSchema = z.object({
   name: z.string(),
-  classLevel: z.string(),
+  class: z.string(),
+  level: z.number().int().min(1).max(20),
   background: z.string(),
   race: z.string(),
   alignment: z.string(),
@@ -176,7 +188,7 @@ export const CharacterSchema = z.object({
   traits: z.array(TraitSchema),
   equipment: z.string(),
   backstory: z.string(),
-  spellAbility: z.string(),
+  spellcastingAttribute: SpellcastingAttributeSchema,
   spellDC: z.string(),
   spellAtk: z.string(),
   spells: z.array(SpellSchema),
@@ -196,7 +208,8 @@ export function isValidCharacter(data: unknown): data is Character {
 export function createEmptyCharacter(): Character {
   return {
     name: '',
-    classLevel: '',
+    class: '',
+    level: 1,
     background: '',
     race: '',
     alignment: '',
@@ -247,7 +260,7 @@ export function createEmptyCharacter(): Character {
     traits: [],
     equipment: '',
     backstory: '',
-    spellAbility: '',
+    spellcastingAttribute: 'None',
     spellDC: '',
     spellAtk: '',
     spells: [],

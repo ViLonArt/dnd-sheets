@@ -10,6 +10,7 @@ export type {
   Spell,
   SpellSlot,
   SpellSlots,
+  SpellcastingAttribute,
 } from './character'
 export {
   CharacterSchema,
@@ -18,6 +19,7 @@ export {
   SpellSchema,
   SpellSlotSchema,
   SpellSlotsSchema,
+  SpellcastingAttributeSchema,
   isValidCharacter,
   createEmptyCharacter,
 } from './character'

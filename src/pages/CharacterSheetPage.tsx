@@ -12,6 +12,7 @@ import {
   Toolbar,
   Row,
   Col,
+  Select,
 } from '@/components/ui'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS, SKILL_DATA } from '@/features/character-sheet/constants'
@@ -24,63 +25,41 @@ export default function CharacterSheetPage() {
   const { exportToPdf, isExporting } = useExportToImage()
   const [error, setError] = useState<string | null>(null)
 
-  // Parse proficiency bonus
+  // Calculate proficiency bonus from level
   const proficiencyBonus = useMemo(() => {
-    const raw = character.classLevel.replace(/[^0-9]/g, '')
-    const level = parseInt(raw, 10) || 1
+    const level = character.level || 1
     return Math.ceil(level / 4) + 1
-  }, [character.classLevel])
+  }, [character.level])
 
-  // Calculate Spell Save DC automatically
+  // Calculate Spell Save DC automatically based on spellcastingAttribute
   const spellDC = useMemo(() => {
-    if (!character.spellAbility) return ''
-    const abilityKey = character.spellAbility.toLowerCase().trim()
-    // Map common spellcasting ability names to keys
+    if (character.spellcastingAttribute === 'None') return ''
     const abilityMap: Record<string, keyof typeof character.abilities> = {
-      'int': 'int',
-      'intelligence': 'int',
-      'intelligence (int)': 'int',
-      'wis': 'wis',
-      'wisdom': 'wis',
-      'sag': 'wis',
-      'sagesse': 'wis',
-      'wisdom (wis)': 'wis',
-      'cha': 'cha',
-      'charisma': 'cha',
-      'charisme': 'cha',
-      'charisma (cha)': 'cha',
+      'INT': 'int',
+      'WIS': 'wis',
+      'CHA': 'cha',
     }
-    const mappedKey = abilityMap[abilityKey]
+    const mappedKey = abilityMap[character.spellcastingAttribute]
     if (!mappedKey) return ''
     const abilityScore = character.abilities[mappedKey]
     const abilityModifier = calculateAbilityModifier(abilityScore)
     return 8 + proficiencyBonus + abilityModifier
-  }, [character.spellAbility, character.abilities, proficiencyBonus])
+  }, [character.spellcastingAttribute, character.abilities, proficiencyBonus])
 
-  // Calculate Spell Attack Bonus automatically
+  // Calculate Spell Attack Bonus automatically based on spellcastingAttribute
   const spellAttackBonus = useMemo(() => {
-    if (!character.spellAbility) return ''
-    const abilityKey = character.spellAbility.toLowerCase().trim()
+    if (character.spellcastingAttribute === 'None') return ''
     const abilityMap: Record<string, keyof typeof character.abilities> = {
-      'int': 'int',
-      'intelligence': 'int',
-      'intelligence (int)': 'int',
-      'wis': 'wis',
-      'wisdom': 'wis',
-      'sag': 'wis',
-      'sagesse': 'wis',
-      'wisdom (wis)': 'wis',
-      'cha': 'cha',
-      'charisma': 'cha',
-      'charisme': 'cha',
-      'charisma (cha)': 'cha',
+      'INT': 'int',
+      'WIS': 'wis',
+      'CHA': 'cha',
     }
-    const mappedKey = abilityMap[abilityKey]
+    const mappedKey = abilityMap[character.spellcastingAttribute]
     if (!mappedKey) return ''
     const abilityScore = character.abilities[mappedKey]
     const abilityModifier = calculateAbilityModifier(abilityScore)
     return proficiencyBonus + abilityModifier
-  }, [character.spellAbility, character.abilities, proficiencyBonus])
+  }, [character.spellcastingAttribute, character.abilities, proficiencyBonus])
 
   // Handle ability score changes
   const handleAbilityChange = (ability: string, value: number) => {
@@ -283,11 +262,28 @@ export default function CharacterSheetPage() {
             />
             <div className="grid grid-cols-3 gap-x-2.5 gap-y-1.5 text-xs">
               <TextInput
-                label="Classe & niveau"
-                value={character.classLevel}
-                onChange={(e) => updateField('classLevel', e.target.value)}
+                label="Classe"
+                value={character.class}
+                onChange={(e) => updateField('class', e.target.value)}
                 className="text-xs"
               />
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] uppercase tracking-wider text-[#7a4b36]">
+                  Niveau
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={character.level}
+                  onChange={(e) => {
+                    const level = parseInt(e.target.value) || 1
+                    updateField('level', Math.max(1, Math.min(20, level)))
+                  }}
+                  className="w-12 text-center font-semibold bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs focus:border-ink focus:outline-none"
+                  placeholder="1"
+                />
+              </div>
               <TextInput
                 label="Passif/Profession"
                 value={character.background}
@@ -550,11 +546,16 @@ export default function CharacterSheetPage() {
           <SectionHeader>Lancer de sorts</SectionHeader>
           <Row gap="md" className="mt-1.5 flex-wrap">
             <div className="min-w-[160px]">
-              <TextInput
+              <Select
                 label="Caractéristique de lancer"
-                value={character.spellAbility}
-                onChange={(e) => updateField('spellAbility', e.target.value)}
-                placeholder="Ex: CHA"
+                value={character.spellcastingAttribute}
+                onChange={(e) => updateField('spellcastingAttribute', e.target.value as 'INT' | 'WIS' | 'CHA' | 'None')}
+                options={[
+                  { value: 'None', label: 'Aucune' },
+                  { value: 'INT', label: 'Intelligence' },
+                  { value: 'WIS', label: 'Sagesse' },
+                  { value: 'CHA', label: 'Charisme' },
+                ]}
               />
             </div>
             <div className="min-w-[140px]">

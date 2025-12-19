@@ -58,6 +58,49 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
       data.abilities = migratedAbilities
     }
     
+    // Migrate old classLevel to new class/level fields
+    if (data && typeof data === 'object' && 'classLevel' in data && !('class' in data)) {
+      const classLevel = data.classLevel as string
+      // Try to parse "Class Name 5" or "Class 5" format
+      const match = classLevel.match(/^(.+?)\s*(\d+)$/)
+      if (match) {
+        data.class = match[1].trim()
+        data.level = parseInt(match[2], 10) || 1
+      } else {
+        data.class = classLevel
+        data.level = 1
+      }
+      delete data.classLevel
+    }
+    
+    // Migrate old spellAbility to new spellcastingAttribute
+    if (data && typeof data === 'object' && 'spellAbility' in data && !('spellcastingAttribute' in data)) {
+      const spellAbility = (data.spellAbility as string).toUpperCase().trim()
+      if (spellAbility.includes('INT') || spellAbility.includes('INTELLIGENCE')) {
+        data.spellcastingAttribute = 'INT'
+      } else if (spellAbility.includes('WIS') || spellAbility.includes('WISDOM') || spellAbility.includes('SAG')) {
+        data.spellcastingAttribute = 'WIS'
+      } else if (spellAbility.includes('CHA') || spellAbility.includes('CHARISMA')) {
+        data.spellcastingAttribute = 'CHA'
+      } else {
+        data.spellcastingAttribute = 'None'
+      }
+      delete data.spellAbility
+    }
+    
+    // Ensure level exists and is valid
+    if (!('level' in data) || typeof data.level !== 'number') {
+      data.level = 1
+    }
+    if (typeof data.level === 'number') {
+      data.level = Math.max(1, Math.min(20, data.level))
+    }
+    
+    // Ensure spellcastingAttribute exists
+    if (!('spellcastingAttribute' in data)) {
+      data.spellcastingAttribute = 'None'
+    }
+    
     // Validate with Zod - this ensures the data matches the Character interface
     const validated = CharacterSchema.parse(data) as Character
     return validated

@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-200 font-body;
+  }
+  
+  /* Ensure contenteditable elements don't show default outline */
+  [contenteditable="true"]:focus {
+    outline: none;
+  }
+}
+
+/* react-easy-crop styles */
+.reactEasyCrop_Container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  cursor: move;
+}
+
+.reactEasyCrop_Image {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.reactEasyCrop_CropArea {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(88, 24, 13, 0.8);
+  box-sizing: border-box;
+  box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+

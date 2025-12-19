@@ -27,9 +27,9 @@ export function loadCharacterFromStorage(): Character | null {
     
     // Migrate old classLevel to new class/level fields
     if ('classLevel' in parsed && !('class' in parsed)) {
-      const classLevel = parsed.classLevel as string
+      const classLevel = (parsed.classLevel as string) ?? ''
       const match = classLevel.match(/^(.+?)\s*(\d+)$/)
-      if (match) {
+      if (match && match[1] && match[2]) {
         parsed.class = match[1].trim()
         parsed.level = parseInt(match[2], 10) || 1
       } else {
@@ -41,7 +41,7 @@ export function loadCharacterFromStorage(): Character | null {
     
     // Migrate old spellAbility to new spellcastingAttribute
     if ('spellAbility' in parsed && !('spellcastingAttribute' in parsed)) {
-      const spellAbility = (parsed.spellAbility as string).toUpperCase().trim()
+      const spellAbility = ((parsed.spellAbility as string) ?? '').toUpperCase().trim()
       if (spellAbility.includes('INT') || spellAbility.includes('INTELLIGENCE')) {
         parsed.spellcastingAttribute = 'INT'
       } else if (spellAbility.includes('WIS') || spellAbility.includes('WISDOM') || spellAbility.includes('SAG')) {
@@ -67,7 +67,7 @@ export function loadCharacterFromStorage(): Character | null {
       parsed.spellcastingAttribute = 'None'
     }
     
-    return parsed as Character
+    return (parsed as unknown) as Character
   } catch (error) {
     console.error('Failed to load character from localStorage:', error)
     return null

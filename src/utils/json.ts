@@ -58,12 +58,17 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
       data.abilities = migratedAbilities
     }
     
+    // Guard clause: ensure data is an object
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid character data: expected an object')
+    }
+    
     // Migrate old classLevel to new class/level fields
-    if (data && typeof data === 'object' && 'classLevel' in data && !('class' in data)) {
-      const classLevel = data.classLevel as string
+    if ('classLevel' in data && !('class' in data)) {
+      const classLevel = (data.classLevel as string) ?? ''
       // Try to parse "Class Name 5" or "Class 5" format
       const match = classLevel.match(/^(.+?)\s*(\d+)$/)
-      if (match) {
+      if (match && match[1] && match[2]) {
         data.class = match[1].trim()
         data.level = parseInt(match[2], 10) || 1
       } else {
@@ -74,8 +79,8 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
     
     // Migrate old spellAbility to new spellcastingAttribute
-    if (data && typeof data === 'object' && 'spellAbility' in data && !('spellcastingAttribute' in data)) {
-      const spellAbility = (data.spellAbility as string).toUpperCase().trim()
+    if ('spellAbility' in data && !('spellcastingAttribute' in data)) {
+      const spellAbility = ((data.spellAbility as string) ?? '').toUpperCase().trim()
       if (spellAbility.includes('INT') || spellAbility.includes('INTELLIGENCE')) {
         data.spellcastingAttribute = 'INT'
       } else if (spellAbility.includes('WIS') || spellAbility.includes('WISDOM') || spellAbility.includes('SAG')) {
@@ -102,8 +107,8 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
     
     // Validate with Zod - this ensures the data matches the Character interface
-    const validated = CharacterSchema.parse(data) as Character
-    return validated
+    const validated = CharacterSchema.parse(data)
+    return (validated as unknown) as Character
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON file')
@@ -124,9 +129,14 @@ export async function importNpcFromJson(file: File): Promise<Npc> {
     const text = await file.text()
     const data = JSON.parse(text) as unknown
     
+    // Guard clause: ensure data is an object
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid NPC data: expected an object')
+    }
+    
     // Migrate old string format abilities to new number format
-    if (data && typeof data === 'object' && 'abilities' in data) {
-      const abilities = data.abilities as Record<string, unknown>
+    if ('abilities' in data) {
+      const abilities = (data.abilities as Record<string, unknown>) ?? {}
       const migratedAbilities: Record<string, number> = {}
       for (const [key, value] of Object.entries(abilities)) {
         if (typeof value === 'string') {
@@ -144,7 +154,7 @@ export async function importNpcFromJson(file: File): Promise<Npc> {
     
     // Validate with Zod
     const validated = NpcSchema.parse(data)
-    return validated
+    return (validated as unknown) as Npc
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error('Invalid JSON file')

@@ -22,7 +22,7 @@ export default function CharacterSheetPage() {
   const sheetRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { character, updateField, handleExport, handleImport, reset } = useCharacterForm()
-  const { exportToPdf, isExporting } = useExportToImage()
+  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
   const [error, setError] = useState<string | null>(null)
 
   // Calculate proficiency bonus from level
@@ -197,6 +197,15 @@ export default function CharacterSheetPage() {
     }
   }
 
+  const handleDownloadPng = async () => {
+    try {
+      await exportToPng(sheetRef, 'fiche-pj.png')
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PNG export failed')
+    }
+  }
+
   const handleReset = () => {
     if (window.confirm('Are you sure? Unsaved changes will be lost.')) {
       reset()
@@ -238,6 +247,12 @@ export default function CharacterSheetPage() {
               </Button>
               <Button onClick={handleDownloadPdf} disabled={isExporting}>
                 {isExporting ? 'Génération...' : 'Télécharger en PDF'}
+              </Button>
+              <Button onClick={handleDownloadPng} disabled={isExporting} variant="small">
+                {isExporting ? 'Génération...' : 'Télécharger en PNG'}
+              </Button>
+              <Button onClick={handleDownloadPng} disabled={isExporting} variant="small">
+                {isExporting ? 'Génération...' : 'Télécharger en PNG'}
               </Button>
             </>
           }

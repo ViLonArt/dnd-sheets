@@ -19,5 +19,5 @@ export {
 } from './storage'
 
 export { exportToPdf } from './pdf'
-export { exportToPng, flattenInputs } from './imageExport'
+export { exportToPng, prepareDomForExport } from './imageExport'
 

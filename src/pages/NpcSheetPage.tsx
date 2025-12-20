@@ -19,7 +19,7 @@ export default function NpcSheetPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const { npc, updateField, handleExport, handleImport, reset } = useNpcForm()
-  const { exportToPdf, isExporting } = useExportToImage()
+  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
   const [error, setError] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
@@ -120,6 +120,15 @@ export default function NpcSheetPage() {
     }
   }
 
+  const handleDownloadPng = async () => {
+    try {
+      await exportToPng(sheetRef, 'fiche-pnj.png')
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PNG export failed')
+    }
+  }
+
   const handleReset = () => {
     if (window.confirm('Are you sure? Unsaved changes will be lost.')) {
       reset()
@@ -135,6 +144,9 @@ export default function NpcSheetPage() {
             <>
               <Button onClick={handleDownloadPdf} disabled={isExporting}>
                 {isExporting ? 'Génération...' : 'Télécharger en PDF'}
+              </Button>
+              <Button onClick={handleDownloadPng} disabled={isExporting} variant="small">
+                {isExporting ? 'Génération...' : 'Télécharger en PNG'}
               </Button>
               <Button onClick={() => portraitInputRef.current?.click()}>
                 Choisir un portrait

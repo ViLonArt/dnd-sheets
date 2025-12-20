@@ -1,6 +1,6 @@
 import html2canvas from 'html2canvas'
 import type { RefObject } from 'react'
-import { flattenInputs } from './imageExport'
+import { prepareDomForExport } from './imageExport'
 
 // Dynamic import for jspdf to handle cases where it's not installed
 let jsPDF: typeof import('jspdf').jsPDF | null = null
@@ -39,8 +39,8 @@ export async function exportToPdf(
     useCORS: true,
     logging: false,
     onclone: (clonedDoc) => {
-      // Flatten all input elements to spans for accurate rendering
-      flattenInputs(clonedDoc)
+      // Prepare DOM for export: flatten all input elements to divs for accurate rendering
+      prepareDomForExport(clonedDoc)
     },
   })
 

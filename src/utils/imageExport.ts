@@ -2,11 +2,13 @@ import html2canvas from 'html2canvas'
 import type { RefObject } from 'react'
 
 /**
- * Flatten input elements to divs for accurate image rendering
+ * Prepare DOM for export by flattening input elements to divs for accurate rendering
  * This fixes vertical alignment issues with html2canvas using aggressive flexbox centering
  * Shared between PDF and PNG exports
+ * 
+ * @param clonedDoc - The cloned document from html2canvas's onclone callback
  */
-export function flattenInputs(clonedDoc: Document): void {
+export function prepareDomForExport(clonedDoc: Document): void {
   // Get all input and textarea elements
   const inputs = clonedDoc.querySelectorAll('input, textarea, select')
   
@@ -105,12 +107,12 @@ export async function exportToPng(
   // Capture the element as canvas with high DPI for crisp text
   const canvas = await html2canvas(elementRef.current, {
     backgroundColor: null,
-    scale: 4,
+    scale: 2, // High quality scale for crisp text
     useCORS: true,
     logging: false,
     onclone: (clonedDoc) => {
-      // Flatten all input elements to divs for accurate rendering
-      flattenInputs(clonedDoc)
+      // Prepare DOM for export: flatten all input elements to divs for accurate rendering
+      prepareDomForExport(clonedDoc)
     },
   })
 

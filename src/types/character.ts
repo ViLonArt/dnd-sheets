@@ -72,6 +72,10 @@ export interface Character {
   traits: Trait[]
   equipment: string
   backstory: string
+  // Description & Features
+  biography: string
+  otherProficiencies: string
+  featuresTraits: string
   // Spellcasting
   spellcastingAttribute: SpellcastingAttribute
   spellDC: string
@@ -188,6 +192,9 @@ export const CharacterSchema = z.object({
   traits: z.array(TraitSchema),
   equipment: z.string(),
   backstory: z.string(),
+  biography: z.string(),
+  otherProficiencies: z.string(),
+  featuresTraits: z.string(),
   spellcastingAttribute: SpellcastingAttributeSchema,
   spellDC: z.string(),
   spellAtk: z.string(),
@@ -260,6 +267,9 @@ export function createEmptyCharacter(): Character {
     traits: [],
     equipment: '',
     backstory: '',
+    biography: '',
+    otherProficiencies: '',
+    featuresTraits: '',
     spellcastingAttribute: 'None',
     spellDC: '',
     spellAtk: '',

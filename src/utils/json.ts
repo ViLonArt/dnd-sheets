@@ -9,6 +9,8 @@ export function exportCharacterToJson(character: Character, filename = 'fiche-pj
   try {
     // Validate before export
     const validated = CharacterSchema.parse(character)
+    // JSON.stringify automatically escapes newlines (\n) as \\n in the JSON string
+    // This preserves multi-line text from textarea fields (e.g., attack notes, trait descriptions)
     const json = JSON.stringify(validated, null, 2)
     downloadJson(json, filename)
   } catch (error) {
@@ -24,6 +26,8 @@ export function exportNpcToJson(npc: Npc, filename = 'fiche-pnj.json'): void {
   try {
     // Validate before export
     const validated = NpcSchema.parse(npc)
+    // JSON.stringify automatically escapes newlines (\n) as \\n in the JSON string
+    // This preserves multi-line text from textarea fields (e.g., actions, special abilities)
     const json = JSON.stringify(validated, null, 2)
     downloadJson(json, filename)
   } catch (error) {
@@ -38,6 +42,8 @@ export function exportNpcToJson(npc: Npc, filename = 'fiche-pnj.json'): void {
 export async function importCharacterFromJson(file: File): Promise<Character> {
   try {
     const text = await file.text()
+    // JSON.parse automatically unescapes \\n back to \n in string values
+    // This preserves multi-line text from textarea fields when importing
     const data = JSON.parse(text) as Record<string, unknown>
     
     // Migrate old string format abilities to new number format
@@ -106,6 +112,17 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
       data.spellcastingAttribute = 'None'
     }
     
+    // Ensure new fields exist for backward compatibility
+    if (!('biography' in data)) {
+      data.biography = ''
+    }
+    if (!('otherProficiencies' in data)) {
+      data.otherProficiencies = ''
+    }
+    if (!('featuresTraits' in data)) {
+      data.featuresTraits = ''
+    }
+    
     // Validate with Zod - this ensures the data matches the Character interface
     const validated = CharacterSchema.parse(data)
     return (validated as unknown) as Character
@@ -127,6 +144,8 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
 export async function importNpcFromJson(file: File): Promise<Npc> {
   try {
     const text = await file.text()
+    // JSON.parse automatically unescapes \\n back to \n in string values
+    // This preserves multi-line text from textarea fields when importing
     const data = JSON.parse(text) as unknown
     
     // Guard clause: ensure data is an object

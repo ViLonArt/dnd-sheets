@@ -5,6 +5,7 @@ import {
   PaperContainer,
   TextInput,
   Textarea,
+  AutoResizeTextarea,
   Button,
   SectionHeader,
   FieldLabel,
@@ -483,8 +484,7 @@ export default function CharacterSheetPage() {
                       />
                     </Box>
                     <Box>
-                      <input
-                        type="text"
+                      <AutoResizeTextarea
                         value={attack.notes}
                         onChange={(e) => updateAttack(idx, { notes: e.target.value })}
                         className="w-full bg-transparent border-none outline-none text-xs"
@@ -519,8 +519,7 @@ export default function CharacterSheetPage() {
                       />
                     </Box>
                     <Box>
-                      <input
-                        type="text"
+                      <AutoResizeTextarea
                         value={trait.notes}
                         onChange={(e) => updateTrait(idx, { notes: e.target.value })}
                         className="w-full bg-transparent border-none outline-none text-xs"
@@ -552,6 +551,27 @@ export default function CharacterSheetPage() {
                 onChange={(e) => updateField('backstory', e.target.value)}
                 className="mt-1"
               />
+
+              {/* Description & Features Section */}
+              <SectionHeader className="mt-2.5">Description & caractéristiques</SectionHeader>
+              <div className="mt-1 space-y-2">
+                <Textarea
+                  label="Biographie / Description physique"
+                  value={character.biography}
+                  onChange={(e) => updateField('biography', e.target.value)}
+                />
+                <Textarea
+                  label="Autres maîtrises & langues"
+                  value={character.otherProficiencies}
+                  onChange={(e) => updateField('otherProficiencies', e.target.value)}
+                />
+                <Textarea
+                  label="Aptitudes de classe & traits raciaux"
+                  value={character.featuresTraits}
+                  onChange={(e) => updateField('featuresTraits', e.target.value)}
+                  className="min-h-[150px]"
+                />
+              </div>
             </Col>
           </Row>
           </PaperContainer>
@@ -686,8 +706,7 @@ export default function CharacterSheetPage() {
                           </Box>
                           <Box className="text-center">{spell.level}</Box>
                           <Box>
-                            <input
-                              type="text"
+                            <AutoResizeTextarea
                               value={spell.notes}
                               onChange={(e) => updateSpell(globalIdx, { notes: e.target.value })}
                               className="w-full bg-transparent border-none outline-none text-xs"

@@ -9,6 +9,7 @@ import {
   Box,
   Toolbar,
   Divider,
+  AutoResizeTextarea,
 } from '@/components/ui'
 import { ImageCropperModal } from '@/components/ImageCropperModal'
 import { calculateAbilityModifier } from '@/types/abilities'
@@ -319,8 +320,7 @@ export default function NpcSheetPage() {
             {npc.special.map((ability, idx) => (
               <div key={idx} className="flex items-start gap-1.5 mb-1.5">
                 <Box className="flex-1">
-                  <input
-                    type="text"
+                  <AutoResizeTextarea
                     value={ability}
                     onChange={(e) => updateListItem('special', idx, e.target.value)}
                     className="w-full bg-transparent border-none outline-none text-xs"
@@ -343,8 +343,7 @@ export default function NpcSheetPage() {
             {npc.actions.map((action, idx) => (
               <div key={idx} className="flex items-start gap-1.5 mb-1.5">
                 <Box className="flex-1">
-                  <input
-                    type="text"
+                  <AutoResizeTextarea
                     value={action}
                     onChange={(e) => updateListItem('actions', idx, e.target.value)}
                     className="w-full bg-transparent border-none outline-none text-xs"

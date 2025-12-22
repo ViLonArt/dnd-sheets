@@ -67,6 +67,17 @@ export function loadCharacterFromStorage(): Character | null {
       parsed.spellcastingAttribute = 'None'
     }
     
+    // Ensure new fields exist for backward compatibility
+    if (!('biography' in parsed)) {
+      parsed.biography = ''
+    }
+    if (!('otherProficiencies' in parsed)) {
+      parsed.otherProficiencies = ''
+    }
+    if (!('featuresTraits' in parsed)) {
+      parsed.featuresTraits = ''
+    }
+    
     return (parsed as unknown) as Character
   } catch (error) {
     console.error('Failed to load character from localStorage:', error)

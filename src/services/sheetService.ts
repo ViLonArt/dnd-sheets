@@ -21,118 +21,144 @@ export interface SheetResponse {
 
 /**
  * Create a new sheet
+ * The Supabase client automatically includes the Authorization header if logged in
  */
 export async function createSheet(
   data: SheetData
 ): Promise<SheetResponse> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !sessionData?.session) {
-    throw new Error('You must be logged in to create a sheet')
+  try {
+    const { data: result, error } = await supabase.functions.invoke('sheet-api', {
+      method: 'POST',
+      body: { data },
+    })
+
+    if (error) {
+      console.error('Error creating sheet:', error)
+      throw new Error(error.message || 'Failed to create sheet')
+    }
+
+    if (!result || !result.id) {
+      console.error('Invalid response from sheet-api:', result)
+      throw new Error('Invalid response: missing sheet ID')
+    }
+
+    return result as SheetResponse
+  } catch (err) {
+    console.error('Failed to create sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to create sheet')
   }
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-    },
-    body: JSON.stringify({ data }),
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to create sheet' }))
-    throw new Error(error.error || `Failed to create sheet: ${response.statusText}`)
-  }
-
-  return response.json() as Promise<SheetResponse>
 }
 
 /**
+ * Alias for createSheet (saveSheet)
+ */
+export const saveSheet = createSheet
+
+/**
  * Get a sheet by ID (public access)
+ * Note: supabase.functions.invoke doesn't support path parameters,
+ * so we use fetch with the ID in the URL path
+ * The Supabase client automatically includes Authorization header if logged in
  */
 export async function getSheet(id: string): Promise<SheetResponse> {
-  // For GET requests, we need to pass the ID in the URL path
-  // Supabase functions.invoke doesn't support path parameters directly,
-  // so we'll use a direct fetch instead
-  const { data: sessionData } = await supabase.auth.getSession()
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(sessionData?.session?.access_token && {
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-      }),
-    },
-  })
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: sessionData } = await supabase.auth.getSession()
+    
+    const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Supabase client automatically adds Authorization header via fetch interceptor
+        // But we need to manually add it for direct fetch calls
+        ...(sessionData?.session?.access_token && {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        }),
+      },
+    })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch sheet' }))
-    throw new Error(error.error || `Failed to fetch sheet: ${response.statusText}`)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to fetch sheet' }))
+      console.error('Error fetching sheet:', errorData, 'Status:', response.status)
+      throw new Error(errorData.error || `Failed to fetch sheet: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    return result as SheetResponse
+  } catch (err) {
+    console.error('Failed to get sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to get sheet')
   }
-
-  return response.json() as Promise<SheetResponse>
 }
 
 /**
  * Update an existing sheet (requires ownership)
+ * The Supabase client automatically includes the Authorization header if logged in
  */
 export async function updateSheet(
   id: string,
   data: SheetData
 ): Promise<SheetResponse> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !sessionData?.session) {
-    throw new Error('You must be logged in to update a sheet')
+  try {
+    // For PUT with path parameter, we use fetch since invoke doesn't support path params
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: sessionData } = await supabase.auth.getSession()
+    
+    if (!sessionData?.session) {
+      throw new Error('You must be logged in to update a sheet')
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({ data }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to update sheet' }))
+      console.error('Error updating sheet:', errorData, 'Status:', response.status)
+      throw new Error(errorData.error || `Failed to update sheet: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    return result as SheetResponse
+  } catch (err) {
+    console.error('Failed to update sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to update sheet')
   }
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-    },
-    body: JSON.stringify({ data }),
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update sheet' }))
-    throw new Error(error.error || `Failed to update sheet: ${response.statusText}`)
-  }
-
-  return response.json() as Promise<SheetResponse>
 }
 
 /**
  * Delete a sheet (requires ownership)
  */
 export async function deleteSheet(id: string): Promise<void> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !sessionData?.session) {
-    throw new Error('You must be logged in to delete a sheet')
-  }
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: sessionData } = await supabase.auth.getSession()
+    
+    if (!sessionData?.session) {
+      throw new Error('You must be logged in to delete a sheet')
+    }
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  
-  const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-    },
-  })
+    const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+    })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to delete sheet' }))
-    throw new Error(error.error || `Failed to delete sheet: ${response.statusText}`)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to delete sheet' }))
+      console.error('Error deleting sheet:', errorData, 'Status:', response.status)
+      throw new Error(errorData.error || `Failed to delete sheet: ${response.statusText}`)
+    }
+  } catch (err) {
+    console.error('Failed to delete sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to delete sheet')
   }
 }
 

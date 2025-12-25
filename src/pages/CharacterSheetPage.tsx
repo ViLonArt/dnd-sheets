@@ -1,6 +1,7 @@
 import { useRef, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useCharacterForm, useExportToImage } from '@/hooks'
+import { AuthButton } from '@/components/auth/AuthButton'
 import {
   PaperContainer,
   TextInput,
@@ -234,6 +235,7 @@ export default function CharacterSheetPage() {
           }
           right={
             <>
+              <AuthButton />
               <Button onClick={handleExportClick}>Exporter la fiche (JSON)</Button>
               <Button onClick={handleImportClick}>Importer une fiche</Button>
               <input

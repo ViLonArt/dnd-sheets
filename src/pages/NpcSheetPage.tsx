@@ -19,14 +19,13 @@ import { ImageCropperModal } from '@/components/ImageCropperModal'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'
 import { cn } from '@/utils/cn'
+import type { Npc } from '@/types/npc'
 
 export default function NpcSheetPage() {
   const { id } = useParams<{ id: string }>()
   const sheetRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
-  const { npc, updateNpc, updateField, handleExport, handleImport, reset } = useNpcForm()
-  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
   const { user } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
@@ -34,6 +33,10 @@ export default function NpcSheetPage() {
   const [isReadOnly, setIsReadOnly] = useState(false)
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [initialNpcData, setInitialNpcData] = useState<Npc | undefined>(undefined)
+  
+  const { npc, updateField, handleExport, handleImport, reset } = useNpcForm(initialNpcData)
+  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
 
   // Portrait frame aspect ratio: 160x220 = ~0.727
   const PORTRAIT_ASPECT_RATIO = 160 / 220
@@ -44,6 +47,7 @@ export default function NpcSheetPage() {
       if (!id) {
         setIsReadOnly(false)
         setSheetId(null)
+        setInitialNpcData(undefined) // Reset to blank sheet
         return
       }
 
@@ -60,20 +64,22 @@ export default function NpcSheetPage() {
           setIsReadOnly(false)
         }
 
-        // Populate form with sheet data
+        // Set initial data to populate form
         if (sheet.data) {
-          updateNpc(sheet.data as typeof npc)
+          setInitialNpcData(sheet.data as Npc)
+        } else {
+          setInitialNpcData(undefined)
         }
       } catch (err) {
         console.error('Failed to load sheet:', err)
         setError(err instanceof Error ? err.message : 'Failed to load sheet')
+        setInitialNpcData(undefined)
       } finally {
         setIsLoading(false)
       }
     }
 
     loadSheet()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id])
 
   // Save sheet to Supabase

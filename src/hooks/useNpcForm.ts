@@ -1,23 +1,33 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Npc } from '@/types/npc'
 import { createEmptyNpc } from '@/types/npc'
 import {
-  saveNpcToStorage,
-  loadNpcFromStorage,
   exportNpcToJson,
   importNpcFromJson,
 } from '@/utils'
 
-export function useNpcForm() {
+export function useNpcForm(initialData?: Npc) {
   const [npc, setNpc] = useState<Npc>(() => {
-    const saved = loadNpcFromStorage()
-    return saved || createEmptyNpc()
+    return initialData || createEmptyNpc()
   })
+  const isInitialMount = useRef(true)
 
-  // Auto-save to localStorage whenever NPC changes
+  // Update form state when initialData changes (e.g., after API fetch)
   useEffect(() => {
-    saveNpcToStorage(npc)
-  }, [npc])
+    // Skip on initial mount since useState already handles it
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    // When initialData changes, update form state
+    if (initialData) {
+      setNpc(initialData)
+    } else {
+      // Reset to empty when navigating to blank sheet
+      setNpc(createEmptyNpc())
+    }
+  }, [initialData])
 
   const updateNpc = useCallback((updates: Partial<Npc>) => {
     setNpc((prev) => ({ ...prev, ...updates }))

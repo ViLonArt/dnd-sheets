@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, closeDb } from "./db/index.ts";
 import { sheets } from "./db/schema.ts";
 
@@ -11,6 +11,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
+
+/**
+ * Generate a URL-friendly slug from a name
+ * Format: lowercase-name-with-dashes-randomid
+ * Example: "Gandalf the Gray" -> "gandalf-the-gray-k9s2"
+ */
+function generateSlug(name: string): string {
+  const baseName = name && name.trim() ? name.trim() : 'unnamed';
+  const slugified = baseName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing dashes
+  const randomId = Math.random().toString(36).substring(2, 6); // 4 character random ID
+  return `${slugified}-${randomId}`;
+}
 
 /**
  * Get user ID from Authorization header
@@ -85,16 +100,52 @@ async function getUserId(req: Request): Promise<string | null> {
 }
 
 /**
- * Handle GET /:id - Fetch a sheet by ID
+ * Handle GET /:id or GET ?id=... or GET ?slug=... - Fetch a sheet by ID or slug
  * Note: No authentication required (public read access)
  */
-async function handleGet(id: string): Promise<Response> {
-  console.log(`[GET] Fetching sheet with ID: ${id}`);
+async function handleGet(req: Request, pathId?: string): Promise<Response> {
+  const url = new URL(req.url);
+  
+  // Extract lookup value from query parameters (id or slug) or path parameter
+  const lookup = url.searchParams.get("id") || url.searchParams.get("slug") || pathId;
+  
+  if (!lookup) {
+    console.error("[GET] No lookup parameter provided");
+    return new Response(
+      JSON.stringify({ error: "Sheet ID or slug is required" }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  // Validate if lookup is a UUID (to avoid type mismatch errors)
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lookup);
+  
+  console.log(`[GET] Fetching sheet with lookup: ${lookup} (type: ${isUuid ? 'UUID' : 'slug'})`);
   try {
-    const [sheet] = await db.select().from(sheets).where(eq(sheets.id, id)).limit(1);
+    // Conditionally query based on whether lookup is a UUID or slug
+    // This avoids type mismatch errors when comparing text to UUID column
+    let sheet;
+    if (isUuid) {
+      // Search by ID column (UUID type)
+      [sheet] = await db
+        .select()
+        .from(sheets)
+        .where(eq(sheets.id, lookup))
+        .limit(1);
+    } else {
+      // Search by slug column (text/varchar type)
+      [sheet] = await db
+        .select()
+        .from(sheets)
+        .where(eq(sheets.slug, lookup))
+        .limit(1);
+    }
 
     if (!sheet) {
-      console.log(`[GET] Sheet not found: ${id}`);
+      console.log(`[GET] Sheet not found: ${lookup}`);
       return new Response(
         JSON.stringify({ error: "Sheet not found" }),
         {
@@ -104,7 +155,7 @@ async function handleGet(id: string): Promise<Response> {
       );
     }
 
-    console.log(`[GET] Sheet found: ${id}, owner: ${sheet.ownerId}`);
+    console.log(`[GET] Sheet found: ${sheet.id}, owner: ${sheet.ownerId}`);
     return new Response(
       JSON.stringify(sheet),
       {
@@ -189,7 +240,7 @@ async function handlePost(req: Request): Promise<Response> {
     console.log(`[POST] User authenticated: ${userId}`);
     const body = await req.json();
     console.log(`[POST] Request body received, data field exists: ${!!body.data}`);
-    const { data } = body;
+    const { data, slug } = body;
 
     if (!data || typeof data !== "object") {
       console.error("[POST] Invalid data: 'data' field is required");
@@ -202,11 +253,23 @@ async function handlePost(req: Request): Promise<Response> {
       );
     }
 
+    // Generate slug if not provided
+    let finalSlug = slug;
+    if (!finalSlug || typeof finalSlug !== "string" || !finalSlug.trim()) {
+      const name = (data as Record<string, unknown>)?.name;
+      const nameStr = typeof name === "string" ? name : "";
+      finalSlug = generateSlug(nameStr);
+      console.log(`[POST] Generated slug: ${finalSlug} from name: ${nameStr || 'unnamed'}`);
+    } else {
+      console.log(`[POST] Using provided slug: ${finalSlug}`);
+    }
+
     console.log(`[POST] Inserting sheet into database for user: ${userId}`);
     const [newSheet] = await db
       .insert(sheets)
       .values({
         ownerId: userId,
+        slug: finalSlug,
         data: data as Record<string, unknown>,
       })
       .returning();
@@ -520,18 +583,8 @@ serve(async (req) => {
 
     switch (req.method) {
       case "GET":
-        if (!id) {
-          console.error("[GET] Sheet ID is required");
-          response = new Response(
-            JSON.stringify({ error: "Sheet ID is required" }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        } else {
-          response = await handleGet(id);
-        }
+        // handleGet now accepts both query params and path params
+        response = await handleGet(req, id || undefined);
         break;
 
       case "POST":

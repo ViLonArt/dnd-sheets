@@ -55,17 +55,20 @@ export async function createSheet(
 export const saveSheet = createSheet
 
 /**
- * Get a sheet by ID (public access)
- * Note: supabase.functions.invoke doesn't support path parameters,
- * so we use fetch with the ID in the URL path
- * The Supabase client automatically includes Authorization header if logged in
+ * Get a sheet by ID or slug (public access)
+ * Accepts either a UUID or a slug identifier
+ * The backend will search both the 'id' and 'slug' columns using an OR filter
  */
-export async function getSheet(id: string): Promise<SheetResponse> {
+export async function getSheet(identifier: string): Promise<SheetResponse> {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
     const { data: sessionData } = await supabase.auth.getSession()
     
-    const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
+    // Use query parameter - backend treats 'id' as a generic lookup that searches both id and slug columns
+    const url = new URL(`${supabaseUrl}/functions/v1/sheet-api`)
+    url.searchParams.set('id', identifier)
+    
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

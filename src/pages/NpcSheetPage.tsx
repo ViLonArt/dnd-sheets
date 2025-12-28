@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useNpcForm, useExportToImage } from '@/hooks'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthButton } from '@/components/auth/AuthButton'
-import { getSheet, createSheet, updateSheet } from '@/services/sheetService'
+import { getSheet, createSheet, updateSheet, uploadImage, dataURLtoFile } from '@/services/sheetService'
 import {
   PaperContainer,
   Heading,
@@ -31,10 +31,14 @@ export default function NpcSheetPage() {
   const [error, setError] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
-  const [isReadOnly, setIsReadOnly] = useState(false)
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [initialNpcData, setInitialNpcData] = useState<Npc | undefined>(undefined)
+  
+  // Determine if this is a new sheet
+  const isNew = !id || id === 'new'
+  const [isEditing, setIsEditing] = useState(isNew)
   
   const { npc, updateField, handleExport, handleImport, reset } = useNpcForm(initialNpcData)
   const { exportToPdf, exportToPng, isExporting } = useExportToImage()
@@ -46,9 +50,9 @@ export default function NpcSheetPage() {
   useEffect(() => {
     const loadSheet = async () => {
       if (!id) {
-        setIsReadOnly(false)
         setSheetId(null)
         setInitialNpcData(undefined) // Reset to blank sheet
+        setIsEditing(true) // New sheet starts in edit mode
         return
       }
 
@@ -56,14 +60,6 @@ export default function NpcSheetPage() {
       try {
         const sheet = await getSheet(id)
         setSheetId(sheet.id)
-        
-        // Check ownership
-        const currentUserId = user?.id
-        if (sheet.owner_id !== currentUserId || !currentUserId) {
-          setIsReadOnly(true)
-        } else {
-          setIsReadOnly(false)
-        }
 
         // Set initial data to populate form
         if (sheet.data) {
@@ -71,6 +67,9 @@ export default function NpcSheetPage() {
         } else {
           setInitialNpcData(undefined)
         }
+        
+        // Existing sheet starts in view mode
+        setIsEditing(false)
       } catch (err) {
         console.error('Failed to load sheet:', err)
         setError(err instanceof Error ? err.message : 'Failed to load sheet')
@@ -81,7 +80,7 @@ export default function NpcSheetPage() {
     }
 
     loadSheet()
-  }, [id, user?.id])
+  }, [id])
 
   // Save sheet to Supabase
   const handleSave = async () => {
@@ -104,6 +103,8 @@ export default function NpcSheetPage() {
         window.history.replaceState({}, '', `/npc/${result.id}`)
         alert('Sheet saved successfully!')
       }
+      // Return to view mode after successful save
+      setIsEditing(false)
     } catch (err) {
       console.error('Failed to save sheet:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to save sheet'
@@ -120,7 +121,6 @@ export default function NpcSheetPage() {
 
   // Portrait handling with cropper
   const handlePortraitClick = () => {
-    if (isReadOnly) return
     portraitInputRef.current?.click()
   }
 
@@ -139,11 +139,40 @@ export default function NpcSheetPage() {
     e.target.value = ''
   }
 
-  const handleCropperSave = (croppedImageUrl: string) => {
-    updateField('portrait', croppedImageUrl)
-    // Clean up old portraitState since we no longer need it
-    updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
-    setSelectedImageSrc(null)
+  const handleCropperSave = async (croppedImageUrl: string) => {
+    if (!user) {
+      setError('You must be logged in to upload images')
+      return
+    }
+
+    setIsUploadingImage(true)
+    setError(null)
+
+    try {
+      // Convert data URL to File
+      const file = dataURLtoFile(croppedImageUrl, 'portrait.png')
+      
+      // Generate a slug for the filename (use NPC name or default)
+      const slug = npc.name 
+        ? npc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
+        : 'npc'
+      
+      // Upload to Supabase Storage
+      const publicUrl = await uploadImage(file, slug)
+      
+      // Update form with the public URL
+      updateField('portrait', publicUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+      
+      setSelectedImageSrc(null)
+    } catch (err) {
+      console.error('Failed to upload image:', err)
+      setError(err instanceof Error ? err.message : 'Failed to upload image')
+      // Optionally, fall back to data URL if upload fails
+      updateField('portrait', croppedImageUrl)
+    } finally {
+      setIsUploadingImage(false)
+    }
   }
 
   const handleCropperClose = () => {
@@ -158,43 +187,17 @@ export default function NpcSheetPage() {
 
   // Inline list management
   const addListItem = (field: 'skills' | 'special' | 'actions') => {
-    if (isReadOnly) return
     updateField(field, [...npc[field], ''])
   }
 
   const updateListItem = (field: 'skills' | 'special' | 'actions', index: number, value: string) => {
-    if (isReadOnly) return
     const newList = [...npc[field]]
     newList[index] = value
     updateField(field, newList)
   }
 
   const removeListItem = (field: 'skills' | 'special' | 'actions', index: number) => {
-    if (isReadOnly) return
     updateField(field, npc[field].filter((_, i) => i !== index))
-  }
-
-  // Copy sheet to user's library
-  const handleCopyToLibrary = async () => {
-    if (!user) {
-      alert('You must be logged in to copy sheets')
-      return
-    }
-
-    try {
-      setError(null)
-      const result = await createSheet(npc)
-      setSheetId(result.id)
-      setIsReadOnly(false)
-      // Update URL without page reload
-      window.history.replaceState({}, '', `/npc/${result.id}`)
-      alert('Sheet copied to your library!')
-    } catch (err) {
-      console.error('Failed to copy sheet:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to copy sheet'
-      setError(errorMessage)
-      alert(errorMessage)
-    }
   }
 
   // Export handlers
@@ -260,10 +263,13 @@ export default function NpcSheetPage() {
               <Button onClick={handleDownloadPng} disabled={isExporting} variant="small">
                 {isExporting ? 'Génération...' : 'Télécharger en PNG'}
               </Button>
-              {!isReadOnly && (
+              {isEditing && (
                 <>
-                  <Button onClick={() => portraitInputRef.current?.click()}>
-                    Choisir un portrait
+                  <Button 
+                    onClick={() => portraitInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                  >
+                    {isUploadingImage ? 'Téléchargement...' : 'Choisir un portrait'}
                   </Button>
                   <input
                     ref={portraitInputRef}
@@ -283,7 +289,7 @@ export default function NpcSheetPage() {
             <>
               <AuthButton />
               <Button onClick={handleExportClick}>Exporter la fiche (JSON)</Button>
-              {!isReadOnly && (
+              {isEditing ? (
                 <>
                   <Button onClick={handleImportClick}>Importer une fiche</Button>
                   <input
@@ -293,11 +299,20 @@ export default function NpcSheetPage() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
+                  <Button onClick={() => setIsEditing(false)} variant="small">
+                    Cancel
+                  </Button>
                   <Button onClick={handleSave} variant="small">
                     Save
                   </Button>
                   <Button onClick={handleReset} variant="small">
                     Reset
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => setIsEditing(true)} variant="small">
+                    Edit
                   </Button>
                 </>
               )}
@@ -317,49 +332,41 @@ export default function NpcSheetPage() {
           </div>
         )}
 
-        {isReadOnly && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-            <strong>Read-Only Mode:</strong> This sheet belongs to another user. You can view it but cannot edit it.
-            {user && (
-              <Button onClick={handleCopyToLibrary} variant="small" className="ml-2">
-                Copy to My Library
-              </Button>
-            )}
+        {isUploadingImage && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+            Uploading image...
           </div>
         )}
 
         <div ref={sheetRef}>
-          {isReadOnly ? (
-            <NpcStatBlock npc={npc} />
-          ) : (
+          {isEditing ? (
             <PaperContainer>
           <div className="flex justify-between items-start gap-3">
             {/* Header with Name, Type, Description */}
             <div className="flex-1">
               <Heading
                 as="h1"
-                contentEditable={!isReadOnly}
+                contentEditable
                 suppressContentEditableWarning
-                onBlur={(e) => !isReadOnly && updateField('name', e.currentTarget.textContent || '')}
-                className={cn('mb-1', isReadOnly && 'pointer-events-none')}
+                onBlur={(e) => updateField('name', e.currentTarget.textContent || '')}
+                className="mb-1"
               >
                 {npc.name || 'Nom du Monstre'}
               </Heading>
               <Heading
                 as="h2"
                 size="sm"
-                className={cn('italic text-sm mb-1.5 font-normal', isReadOnly && 'pointer-events-none')}
-                contentEditable={!isReadOnly}
+                className="italic text-sm mb-1.5 font-normal"
+                contentEditable
                 suppressContentEditableWarning
-                onBlur={(e) => !isReadOnly && updateField('type', e.currentTarget.textContent || '')}
+                onBlur={(e) => updateField('type', e.currentTarget.textContent || '')}
               >
                 {npc.type || 'Humanoïde (Humain), Neutre Mauvais'}
               </Heading>
               <textarea
                 value={npc.description}
-                onChange={(e) => !isReadOnly && updateField('description', e.target.value)}
-                disabled={isReadOnly}
-                className="w-full bg-transparent border-none outline-none font-body text-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                onChange={(e) => updateField('description', e.target.value)}
+                className="w-full bg-transparent border-none outline-none font-body text-sm resize-none"
                 placeholder="Une courte description ou accroche."
                 rows={3}
               />
@@ -368,12 +375,14 @@ export default function NpcSheetPage() {
             {/* Portrait */}
             <div
               className={cn(
-                "w-[160px] h-[220px] bg-gradient-to-br from-[#d2b48c] via-paper to-[#c9ad8f] border-2 border-dashed border-ink flex items-center justify-center text-ink font-display text-sm uppercase overflow-hidden relative",
-                isReadOnly ? "cursor-default" : "cursor-pointer"
+                "w-[160px] h-[220px] bg-gradient-to-br from-[#d2b48c] via-paper to-[#c9ad8f] border-2 border-dashed border-ink flex items-center justify-center text-ink font-display text-sm uppercase overflow-hidden relative cursor-pointer",
+                isUploadingImage && "opacity-50 cursor-wait"
               )}
               onClick={handlePortraitClick}
             >
-              {npc.portrait ? (
+              {isUploadingImage ? (
+                <span className="text-xs">Uploading...</span>
+              ) : npc.portrait ? (
                 <img
                   src={npc.portrait}
                   alt="Portrait"
@@ -392,22 +401,19 @@ export default function NpcSheetPage() {
           <PropertyLine
             label="Classe d'Armure"
             value={npc.ca}
-            editable={!isReadOnly}
-            disabled={isReadOnly}
+            editable
             onValueChange={(value) => updateField('ca', value)}
           />
           <PropertyLine
             label="Points de Vie"
             value={npc.pv}
-            editable={!isReadOnly}
-            disabled={isReadOnly}
+            editable
             onValueChange={(value) => updateField('pv', value)}
           />
           <PropertyLine
             label="Vitesse"
             value={npc.speed}
-            editable={!isReadOnly}
-            disabled={isReadOnly}
+            editable
             onValueChange={(value) => updateField('speed', value)}
           />
 
@@ -428,8 +434,7 @@ export default function NpcSheetPage() {
                       max="30"
                       value={npc.abilities[ability]}
                       onChange={(e) => handleAbilityChange(ability, parseInt(e.target.value) || 10)}
-                      disabled={isReadOnly}
-                      className="text-[15px] w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-center focus:border-ink focus:outline-none font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-[15px] w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-center focus:border-ink focus:outline-none font-bold"
                       placeholder="10"
                     />
                     <div className="text-[13px] font-semibold">
@@ -451,23 +456,18 @@ export default function NpcSheetPage() {
                     type="text"
                     value={skill}
                     onChange={(e) => updateListItem('skills', idx, e.target.value)}
-                    disabled={isReadOnly}
-                    className="w-full bg-transparent border-none outline-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-transparent border-none outline-none text-xs"
                     placeholder="Nouvelle compétence / JS"
                   />
                 </Box>
-                {!isReadOnly && (
-                  <Button variant="small" onClick={() => removeListItem('skills', idx)}>
-                    ×
-                  </Button>
-                )}
+                <Button variant="small" onClick={() => removeListItem('skills', idx)}>
+                  ×
+                </Button>
               </div>
             ))}
-            {!isReadOnly && (
-              <Button variant="small" onClick={() => addListItem('skills')} className="w-full mt-1.5">
-                + Ajouter une ligne
-              </Button>
-            )}
+            <Button variant="small" onClick={() => addListItem('skills')} className="w-full mt-1.5">
+              + Ajouter une ligne
+            </Button>
           </div>
 
           {/* Special Abilities */}
@@ -479,23 +479,18 @@ export default function NpcSheetPage() {
                   <AutoResizeTextarea
                     value={ability}
                     onChange={(e) => updateListItem('special', idx, e.target.value)}
-                    disabled={isReadOnly}
-                    className="w-full bg-transparent border-none outline-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-transparent border-none outline-none text-xs"
                     placeholder="Nouvelle aptitude"
                   />
                 </Box>
-                {!isReadOnly && (
-                  <Button variant="small" onClick={() => removeListItem('special', idx)}>
-                    ×
-                  </Button>
-                )}
+                <Button variant="small" onClick={() => removeListItem('special', idx)}>
+                  ×
+                </Button>
               </div>
             ))}
-            {!isReadOnly && (
-              <Button variant="small" onClick={() => addListItem('special')} className="w-full mt-1.5">
-                + Ajouter une aptitude
-              </Button>
-            )}
+            <Button variant="small" onClick={() => addListItem('special')} className="w-full mt-1.5">
+              + Ajouter une aptitude
+            </Button>
           </div>
 
           {/* Actions */}
@@ -507,25 +502,22 @@ export default function NpcSheetPage() {
                   <AutoResizeTextarea
                     value={action}
                     onChange={(e) => updateListItem('actions', idx, e.target.value)}
-                    disabled={isReadOnly}
-                    className="w-full bg-transparent border-none outline-none text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-transparent border-none outline-none text-xs"
                     placeholder="Nouvelle action"
                   />
                 </Box>
-                {!isReadOnly && (
-                  <Button variant="small" onClick={() => removeListItem('actions', idx)}>
-                    ×
-                  </Button>
-                )}
+                <Button variant="small" onClick={() => removeListItem('actions', idx)}>
+                  ×
+                </Button>
               </div>
             ))}
-            {!isReadOnly && (
-              <Button variant="small" onClick={() => addListItem('actions')} className="w-full mt-1.5">
-                + Ajouter une action
-              </Button>
-            )}
+            <Button variant="small" onClick={() => addListItem('actions')} className="w-full mt-1.5">
+              + Ajouter une action
+            </Button>
           </div>
         </PaperContainer>
+          ) : (
+            <NpcStatBlock npc={npc} onEdit={() => setIsEditing(true)} />
           )}
         </div>
 

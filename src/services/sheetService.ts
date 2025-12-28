@@ -221,3 +221,64 @@ export async function deleteAvatar(filePath: string): Promise<void> {
   }
 }
 
+/**
+ * Upload an image to Supabase Storage
+ * Returns the public URL of the uploaded image
+ * @param file - The image file to upload
+ * @param slug - Optional slug to include in the filename (for sheet images)
+ */
+export async function uploadImage(file: File, slug?: string): Promise<string> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  
+  if (sessionError || !sessionData?.session?.user) {
+    throw new Error('You must be logged in to upload images')
+  }
+
+  const userId = sessionData.session.user.id
+  const timestamp = Date.now()
+  const extension = file.name.split('.').pop() || 'png'
+  const filename = slug 
+    ? `${slug}-${timestamp}.${extension}`
+    : `${timestamp}.${extension}`
+  const path = `users/${userId}/${filename}`
+
+  // Upload the file
+  const { data, error } = await supabase.storage
+    .from('character-images')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true, // Replace if exists
+    })
+
+  if (error) {
+    throw new Error(`Failed to upload image: ${error.message}`)
+  }
+
+  if (!data) {
+    throw new Error('Upload succeeded but no data returned')
+  }
+
+  // Get the public URL
+  const { data: urlData } = supabase.storage
+    .from('character-images')
+    .getPublicUrl(data.path)
+
+  return urlData.publicUrl
+}
+
+/**
+ * Convert a data URL to a File object
+ * Useful for uploading cropped images from canvas
+ */
+export function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',')
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png'
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+  return new File([u8arr], filename, { type: mime })
+}
+

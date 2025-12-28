@@ -2,16 +2,25 @@ import React from 'react'
 import type { Npc } from '@/types/npc'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'
+import { Button } from '@/components/ui'
 
 interface NpcStatBlockProps {
   npc: Npc
+  onEdit?: () => void
 }
 
-export function NpcStatBlock({ npc }: NpcStatBlockProps) {
+export function NpcStatBlock({ npc, onEdit }: NpcStatBlockProps) {
   return (
     <div className="max-w-6xl mx-auto bg-paper border border-border shadow-lg bg-[url('paper-texture.jpg')] bg-cover relative overflow-hidden">
       {/* Inner border effect */}
       <div className="absolute inset-[10px] border border-ink/25 pointer-events-none z-10" />
+      {onEdit && (
+        <div className="absolute top-4 right-4 z-30">
+          <Button onClick={onEdit} variant="small">
+            Edit
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row relative z-20">
         {/* Left Column: Text Content (60%) */}
         <div className="md:w-3/5 p-8">

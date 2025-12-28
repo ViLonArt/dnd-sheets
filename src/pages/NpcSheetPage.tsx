@@ -16,6 +16,7 @@ import {
   AutoResizeTextarea,
 } from '@/components/ui'
 import { ImageCropperModal } from '@/components/ImageCropperModal'
+import { NpcStatBlock } from '@/components/NpcStatBlock'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'
 import { cn } from '@/utils/cn'
@@ -328,7 +329,10 @@ export default function NpcSheetPage() {
         )}
 
         <div ref={sheetRef}>
-          <PaperContainer>
+          {isReadOnly ? (
+            <NpcStatBlock npc={npc} />
+          ) : (
+            <PaperContainer>
           <div className="flex justify-between items-start gap-3">
             {/* Header with Name, Type, Description */}
             <div className="flex-1">
@@ -522,6 +526,7 @@ export default function NpcSheetPage() {
             )}
           </div>
         </PaperContainer>
+          )}
         </div>
 
         {/* Image Cropper Modal */}

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Abilities, SavingThrowProficiencies, SkillProficiencies } from './abilities'
+import type { Abilities, SavingThrowProficiencies, SkillProficiencies, AbilityKey } from './abilities'
 import { AbilitiesSchema } from './abilities'
 
 /**
@@ -7,9 +7,12 @@ import { AbilitiesSchema } from './abilities'
  */
 export interface Attack {
   name: string
-  bonus: string
   damage: string
+  ability: AbilityKey
+  magicMod: string
+  proficiencyLevel: 0 | 1 | 2
   notes: string
+  special: string
 }
 
 /**
@@ -21,6 +24,40 @@ export interface Trait {
 }
 
 /**
+ * Proficiency entry
+ */
+export interface ProficiencyItem {
+  name: string
+  description: string
+  category: 'armor' | 'weapon' | 'tool' | 'other'
+}
+
+/**
+ * Class feature entry
+ */
+export interface ClassFeature {
+  name: string
+  description: string
+  level: string
+}
+
+/**
+ * Species trait entry
+ */
+export interface SpeciesTrait {
+  name: string
+  description: string
+}
+
+/**
+ * Feat entry
+ */
+export interface Feat {
+  name: string
+  description: string
+}
+
+/**
  * Spell entry
  */
 export interface Spell {
@@ -28,6 +65,9 @@ export interface Spell {
   level: string | number
   notes: string
   prepared: boolean
+  concentration: boolean
+  ritual: boolean
+  verbal: boolean
 }
 
 /**
@@ -49,6 +89,21 @@ export type SpellSlots = Record<number, SpellSlot>
 export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
 
 /**
+ * Inventory item categories
+ */
+export type ItemCategory = 'weapons' | 'consumables' | 'currency' | 'other'
+
+/**
+ * Inventory item entry
+ */
+export interface InventoryItem {
+  name: string
+  quantity: string
+  notes: string
+  category: ItemCategory
+}
+
+/**
  * Character sheet data model
  */
 export interface Character {
@@ -63,14 +118,24 @@ export interface Character {
   saves: SavingThrowProficiencies
   skills: SkillProficiencies
   ac: string // Armor Class
-  init: string // Initiative
+  init: string // Initiative (computed)
+  initMisc: number
   speed: string
   hpMax: string
+  hpMaxOverride: string
   hpCurrent: string
-  hitDice: string
+  tempHp: string
+  hitDiceType: number
   attacks: Attack[]
   traits: Trait[]
-  equipment: string
+  proficiencies: ProficiencyItem[]
+  classFeatures: ClassFeature[]
+  speciesTraits: SpeciesTrait[]
+  feats: Feat[]
+  savingThrowAdvantages: string
+  savingThrowDisadvantages: string
+  conditions: string
+  inventory: InventoryItem[]
   backstory: string
   // Description & Features
   biography: string
@@ -89,9 +154,12 @@ export interface Character {
  */
 export const AttackSchema = z.object({
   name: z.string(),
-  bonus: z.string(),
   damage: z.string(),
+  ability: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
+  magicMod: z.string(),
+  proficiencyLevel: z.number().int().min(0).max(2),
   notes: z.string(),
+  special: z.string(),
 })
 
 /**
@@ -103,6 +171,40 @@ export const TraitSchema = z.object({
 })
 
 /**
+ * Zod schema for ProficiencyItem
+ */
+export const ProficiencyItemSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  category: z.enum(['armor', 'weapon', 'tool', 'other']),
+})
+
+/**
+ * Zod schema for ClassFeature
+ */
+export const ClassFeatureSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  level: z.string(),
+})
+
+/**
+ * Zod schema for SpeciesTrait
+ */
+export const SpeciesTraitSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+})
+
+/**
+ * Zod schema for Feat
+ */
+export const FeatSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+})
+
+/**
  * Zod schema for Spell
  */
 export const SpellSchema = z.object({
@@ -110,6 +212,9 @@ export const SpellSchema = z.object({
   level: z.union([z.string(), z.number()]),
   notes: z.string(),
   prepared: z.boolean(),
+  concentration: z.boolean(),
+  ritual: z.boolean(),
+  verbal: z.boolean(),
 })
 
 /**
@@ -160,13 +265,25 @@ export const SkillProficienciesSchema = z.record(
     'stealth',
     'survival',
   ]),
-  z.boolean()
+  z.number().int().min(0).max(2)
 )
 
 /**
  * Zod schema for SpellcastingAttribute
  */
 export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
+
+/**
+ * Zod schema for InventoryItem
+ */
+export const ItemCategorySchema = z.enum(['weapons', 'consumables', 'currency', 'other'])
+
+export const InventoryItemSchema = z.object({
+  name: z.string(),
+  quantity: z.string(),
+  notes: z.string(),
+  category: ItemCategorySchema,
+})
 
 /**
  * Zod schema for Character (full validation)
@@ -184,13 +301,23 @@ export const CharacterSchema = z.object({
   skills: SkillProficienciesSchema,
   ac: z.string(),
   init: z.string(),
+  initMisc: z.number().int(),
   speed: z.string(),
   hpMax: z.string(),
+  hpMaxOverride: z.string(),
   hpCurrent: z.string(),
-  hitDice: z.string(),
+  tempHp: z.string(),
+  hitDiceType: z.number().int().min(4).max(12),
   attacks: z.array(AttackSchema),
   traits: z.array(TraitSchema),
-  equipment: z.string(),
+  proficiencies: z.array(ProficiencyItemSchema),
+  classFeatures: z.array(ClassFeatureSchema),
+  speciesTraits: z.array(SpeciesTraitSchema),
+  feats: z.array(FeatSchema),
+  savingThrowAdvantages: z.string(),
+  savingThrowDisadvantages: z.string(),
+  conditions: z.string(),
+  inventory: z.array(InventoryItemSchema),
   backstory: z.string(),
   biography: z.string(),
   otherProficiencies: z.string(),
@@ -238,34 +365,44 @@ export function createEmptyCharacter(): Character {
       cha: false,
     },
     skills: {
-      acrobatics: false,
-      animalHandling: false,
-      arcana: false,
-      athletics: false,
-      deception: false,
-      history: false,
-      insight: false,
-      intimidation: false,
-      investigation: false,
-      medicine: false,
-      nature: false,
-      perception: false,
-      performance: false,
-      persuasion: false,
-      religion: false,
-      sleight: false,
-      stealth: false,
-      survival: false,
+      acrobatics: 0,
+      animalHandling: 0,
+      arcana: 0,
+      athletics: 0,
+      deception: 0,
+      history: 0,
+      insight: 0,
+      intimidation: 0,
+      investigation: 0,
+      medicine: 0,
+      nature: 0,
+      perception: 0,
+      performance: 0,
+      persuasion: 0,
+      religion: 0,
+      sleight: 0,
+      stealth: 0,
+      survival: 0,
     },
     ac: '',
     init: '',
+    initMisc: 0,
     speed: '',
     hpMax: '',
+    hpMaxOverride: '',
     hpCurrent: '',
-    hitDice: '',
+    tempHp: '',
+    hitDiceType: 8,
     attacks: [],
     traits: [],
-    equipment: '',
+    proficiencies: [],
+    classFeatures: [],
+    speciesTraits: [],
+    feats: [],
+    savingThrowAdvantages: '',
+    savingThrowDisadvantages: '',
+    conditions: '',
+    inventory: [],
     backstory: '',
     biography: '',
     otherProficiencies: '',

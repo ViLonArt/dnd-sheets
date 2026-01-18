@@ -122,6 +122,145 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     if (!('featuresTraits' in data)) {
       data.featuresTraits = ''
     }
+    if (!('proficiencies' in data)) {
+      data.proficiencies = []
+    }
+    if ('proficiencies' in data && Array.isArray(data.proficiencies)) {
+      const validCategories = new Set(['armor', 'weapon', 'tool', 'other'])
+      data.proficiencies = data.proficiencies.map((item) => {
+        if (!item || typeof item !== 'object') {
+          return { name: '', description: '', category: 'other' }
+        }
+        const entry = item as Record<string, unknown>
+        const category =
+          typeof entry.category === 'string' && validCategories.has(entry.category)
+            ? entry.category
+            : 'other'
+        return {
+          name: typeof entry.name === 'string' ? entry.name : '',
+          description: typeof entry.description === 'string'
+            ? entry.description
+            : typeof entry.type === 'string'
+            ? entry.type
+            : '',
+          category,
+        }
+      })
+    }
+    if (!('classFeatures' in data)) {
+      data.classFeatures = []
+    }
+    if (!('speciesTraits' in data)) {
+      data.speciesTraits = []
+    }
+    if (!('feats' in data)) {
+      data.feats = []
+    }
+    if (!('savingThrowAdvantages' in data)) {
+      data.savingThrowAdvantages = ''
+    }
+    if (!('savingThrowDisadvantages' in data)) {
+      data.savingThrowDisadvantages = ''
+    }
+    if (!('conditions' in data)) {
+      data.conditions = ''
+    }
+    if (!('initMisc' in data)) {
+      data.initMisc = 0
+    }
+    if (!('hitDiceType' in data)) {
+      data.hitDiceType = 8
+    }
+    if (!('hpMaxOverride' in data)) {
+      data.hpMaxOverride = ''
+    }
+    if (!('tempHp' in data)) {
+      data.tempHp = ''
+    }
+    if (!('inventory' in data)) {
+      data.inventory = []
+    }
+    if ('inventory' in data && Array.isArray(data.inventory)) {
+      const validCategories = new Set(['weapons', 'consumables', 'currency', 'other'])
+      data.inventory = data.inventory.map((item) => {
+        if (!item || typeof item !== 'object') {
+          return { name: '', quantity: '', notes: '', category: 'other' }
+        }
+        const itemData = item as Record<string, unknown>
+        const category = typeof itemData.category === 'string' && validCategories.has(itemData.category)
+          ? itemData.category
+          : 'other'
+        return {
+          name: typeof itemData.name === 'string' ? itemData.name : '',
+          quantity: typeof itemData.quantity === 'string' ? itemData.quantity : '',
+          notes: typeof itemData.notes === 'string' ? itemData.notes : '',
+          category,
+        }
+      })
+    }
+
+    if ('equipment' in data && Array.isArray(data.inventory) && data.inventory.length === 0) {
+      const equipment = typeof data.equipment === 'string' ? data.equipment : ''
+      if (equipment.trim()) {
+        data.inventory = [
+          { name: '', quantity: '', notes: equipment, category: 'other' },
+        ]
+      }
+      delete data.equipment
+    }
+
+    if ('skills' in data && data.skills && typeof data.skills === 'object') {
+      const skills = data.skills as Record<string, unknown>
+      for (const [key, value] of Object.entries(skills)) {
+        if (typeof value === 'boolean') {
+          skills[key] = value ? 1 : 0
+        } else if (typeof value === 'number') {
+          skills[key] = Math.max(0, Math.min(2, Math.round(value)))
+        } else {
+          skills[key] = 0
+        }
+      }
+      data.skills = skills
+    }
+
+    if ('attacks' in data && Array.isArray(data.attacks)) {
+      const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha', 'none'])
+      data.attacks = data.attacks.map((attack) => {
+        if (!attack || typeof attack !== 'object') return attack
+        const attackData = attack as Record<string, unknown>
+        const bonus = typeof attackData.bonus === 'string' ? attackData.bonus : ''
+        const ability = typeof attackData.ability === 'string' && validAbilities.has(attackData.ability)
+          ? attackData.ability
+          : 'none'
+        return {
+          name: typeof attackData.name === 'string' ? attackData.name : '',
+          bonus,
+          damage: typeof attackData.damage === 'string' ? attackData.damage : '',
+          notes: typeof attackData.notes === 'string' ? attackData.notes : '',
+          ability,
+          proficient: Boolean(attackData.proficient),
+          bonusMod: typeof attackData.bonusMod === 'string' ? attackData.bonusMod : '',
+          useManualBonus:
+            typeof attackData.useManualBonus === 'boolean' ? attackData.useManualBonus : Boolean(bonus),
+        }
+      })
+    }
+
+    if ('spells' in data && Array.isArray(data.spells)) {
+      data.spells = data.spells.map((spell) => {
+        if (!spell || typeof spell !== 'object') return spell
+        const spellData = spell as Record<string, unknown>
+        return {
+          name: typeof spellData.name === 'string' ? spellData.name : '',
+          level: typeof spellData.level === 'number' || typeof spellData.level === 'string' ? spellData.level : 0,
+          notes: typeof spellData.notes === 'string' ? spellData.notes : '',
+          prepared: Boolean(spellData.prepared),
+          concentration: Boolean(spellData.concentration),
+          ritual: Boolean(spellData.ritual),
+          verbal: Boolean(spellData.verbal),
+        }
+      })
+    }
     
     // Validate with Zod - this ensures the data matches the Character interface
     const validated = CharacterSchema.parse(data)

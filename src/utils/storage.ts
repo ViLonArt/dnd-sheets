@@ -80,6 +80,9 @@ export function loadCharacterFromStorage(): Character | null {
     if (!('proficiencies' in parsed)) {
       parsed.proficiencies = []
     }
+    if (!('proficienciesText' in parsed)) {
+      parsed.proficienciesText = ''
+    }
     if ('proficiencies' in parsed && Array.isArray(parsed.proficiencies)) {
       const validCategories = new Set(['armor', 'weapon', 'tool', 'other'])
       parsed.proficiencies = parsed.proficiencies.map((item) => {

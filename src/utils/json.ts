@@ -125,6 +125,9 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     if (!('proficiencies' in data)) {
       data.proficiencies = []
     }
+    if (!('proficienciesText' in data)) {
+      data.proficienciesText = ''
+    }
     if ('proficiencies' in data && Array.isArray(data.proficiencies)) {
       const validCategories = new Set(['armor', 'weapon', 'tool', 'other'])
       data.proficiencies = data.proficiencies.map((item) => {

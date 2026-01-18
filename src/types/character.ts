@@ -129,6 +129,7 @@ export interface Character {
   attacks: Attack[]
   traits: Trait[]
   proficiencies: ProficiencyItem[]
+  proficienciesText: string
   classFeatures: ClassFeature[]
   speciesTraits: SpeciesTrait[]
   feats: Feat[]
@@ -311,6 +312,7 @@ export const CharacterSchema = z.object({
   attacks: z.array(AttackSchema),
   traits: z.array(TraitSchema),
   proficiencies: z.array(ProficiencyItemSchema),
+  proficienciesText: z.string(),
   classFeatures: z.array(ClassFeatureSchema),
   speciesTraits: z.array(SpeciesTraitSchema),
   feats: z.array(FeatSchema),
@@ -396,6 +398,7 @@ export function createEmptyCharacter(): Character {
     attacks: [],
     traits: [],
     proficiencies: [],
+    proficienciesText: '',
     classFeatures: [],
     speciesTraits: [],
     feats: [],

@@ -20,7 +20,6 @@ import type {
   Attack,
   Spell,
   ItemCategory,
-  ProficiencyItem,
   ClassFeature,
   SpeciesTrait,
   Feat,
@@ -55,15 +54,13 @@ export default function CharacterSheetPage() {
     [character.abilities.con]
   )
 
-  const hitDiceAverage = useMemo(() => (character.hitDiceType / 2 + 0.5) * character.level, [
-    character.hitDiceType,
-    character.level,
-  ])
+  const avgPerLevel = useMemo(() => character.hitDiceType / 2 + 1, [character.hitDiceType])
 
   const calculatedHpMax = useMemo(() => {
-    const base = Math.floor(hitDiceAverage + character.level * constitutionMod)
-    return base
-  }, [hitDiceAverage, character.level, constitutionMod])
+    const hpLevel1 = character.hitDiceType + constitutionMod
+    const hpSubsequent = Math.max(0, character.level - 1) * (avgPerLevel + constitutionMod)
+    return Math.floor(hpLevel1 + hpSubsequent)
+  }, [character.hitDiceType, character.level, constitutionMod, avgPerLevel])
 
   const effectiveHpMax = useMemo(() => {
     const override = parseInt(character.hpMaxOverride, 10)
@@ -124,10 +121,20 @@ export default function CharacterSheetPage() {
     })
   }
 
-  const getSkillIndicator = (value: number) => {
-    if (value === 1) return '●'
-    if (value === 2) return '★'
-    return '○'
+  const getProficiencyLabel = (value: number) => {
+    if (value === 1) return 'M'
+    if (value === 2) return 'E'
+    return ''
+  }
+
+  const getProficiencyBadgeClasses = (value: number) => {
+    if (value === 1) {
+      return 'border-black bg-gray-200 text-black font-bold'
+    }
+    if (value === 2) {
+      return 'border-black bg-black text-white font-bold'
+    }
+    return 'border-gray-300 text-transparent'
   }
 
   // Calculate skill bonus
@@ -177,7 +184,7 @@ export default function CharacterSheetPage() {
     const newAttacks = [...character.attacks]
     const current = newAttacks[index]
     if (!current) return
-    newAttacks[index] = {
+    newAttacks[index] = { 
       name: updates.name ?? current.name,
       damage: updates.damage ?? current.damage,
       ability: updates.ability ?? current.ability,
@@ -194,29 +201,6 @@ export default function CharacterSheetPage() {
   }
 
   // Proficiencies management
-  const addProficiency = (category: ProficiencyItem['category']) => {
-    updateField('proficiencies', [
-      ...character.proficiencies,
-      { name: '', description: '', category },
-    ])
-  }
-
-  const updateProficiency = (index: number, updates: Partial<ProficiencyItem>) => {
-    const newItems = [...character.proficiencies]
-    const current = newItems[index]
-    if (!current) return
-    newItems[index] = {
-      name: updates.name ?? current.name,
-      description: updates.description ?? current.description,
-      category: updates.category ?? current.category,
-    }
-    updateField('proficiencies', newItems)
-  }
-
-  const removeProficiency = (index: number) => {
-    updateField('proficiencies', character.proficiencies.filter((_, i) => i !== index))
-  }
-
   // Class features management
   const addClassFeature = () => {
     updateField('classFeatures', [
@@ -552,55 +536,57 @@ export default function CharacterSheetPage() {
           {activeTab === 'core' && (
             <div className="mt-3 grid grid-cols-12 gap-6">
               <div className="col-span-2 min-w-[180px]">
-                <SectionHeader>Caractéristiques</SectionHeader>
+              <SectionHeader>Caractéristiques</SectionHeader>
                 <div className="mt-1 flex items-center gap-2">
                   <FieldLabel>Bonus de Maîtrise</FieldLabel>
                   <Box className="bg-white/60 text-center font-semibold">+{proficiencyBonus}</Box>
                 </div>
-                <div className="flex flex-col gap-2 mt-1.5">
-                  {ABILITIES_ORDER.map((ability) => {
+              <div className="flex flex-col gap-2 mt-1.5">
+                {ABILITIES_ORDER.map((ability) => {
                     const skills = SKILL_DATA.filter((skill) => skill.ability === ability)
-                    return (
+                  return (
                       <div key={ability} className="border border-[#c9b89c] bg-white/35 p-0.5">
                         <div className="border border-[#c9b89c] bg-white/60 px-1 py-0.5 flex items-center gap-1 text-[12px] overflow-hidden">
                           <div className="font-display text-ink text-[11px] uppercase flex-1 truncate">
                             {ABILITY_NAMES_FR[ability]}
-                          </div>
-                          <input
-                            type="number"
-                            min="1"
-                            max="30"
-                            value={character.abilities[ability]}
-                            onChange={(e) => handleAbilityChange(ability, parseInt(e.target.value) || 10)}
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={character.abilities[ability]}
+                          onChange={(e) => handleAbilityChange(ability, parseInt(e.target.value) || 10)}
                             className="w-10 text-center font-semibold bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[11px] focus:border-ink focus:outline-none shrink-0"
-                            placeholder="10"
-                          />
+                          placeholder="10"
+                        />
                           <div className="text-right font-semibold text-[11px] min-w-[28px] shrink-0">
                             {formatSigned(calculateAbilityModifier(character.abilities[ability]))}
-                          </div>
                         </div>
+                      </div>
                         <div className="mt-1 flex items-center gap-1 text-[10px]">
-                          <input
-                            type="checkbox"
-                            checked={character.saves[ability]}
-                            onChange={(e) =>
-                              updateField('saves', { ...character.saves, [ability]: e.target.checked })
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateField('saves', { ...character.saves, [ability]: !character.saves[ability] })
                             }
-                            className="w-3 h-3"
-                          />
+                            className={`w-6 h-6 rounded-full border flex items-center justify-center ${getProficiencyBadgeClasses(character.saves[ability] ? 1 : 0)}`}
+                            title={character.saves[ability] ? 'Maîtrise' : 'Non maîtrisé'}
+                          >
+                            {getProficiencyLabel(character.saves[ability] ? 1 : 0)}
+                          </button>
                           <span>Jet {formatSigned(getSavingThrowBonus(ability))}</span>
-                        </div>
-                        {skills.length > 0 && (
+                      </div>
+                      {skills.length > 0 && (
                           <div className="mt-1 text-[10px]">
-                            {skills.map((skill) => {
+                          {skills.map((skill) => {
                               const proficiencyLevel = character.skills[skill.key] || 0
-                              const bonus = getSkillBonus(skill.key)
-                              return (
-                                <div key={skill.key} className="flex items-center gap-1 mb-0.5">
+                            const bonus = getSkillBonus(skill.key)
+                            return (
+                              <div key={skill.key} className="flex items-center gap-1 mb-0.5">
                                   <button
                                     type="button"
                                     onClick={() => cycleSkillProficiency(skill.key)}
-                                    className="w-4 h-4 border border-[#bda68a] rounded text-[9px] font-semibold bg-white/60"
+                                    className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] ${getProficiencyBadgeClasses(proficiencyLevel)}`}
                                     title={
                                       proficiencyLevel === 2
                                         ? 'Expertise'
@@ -609,21 +595,21 @@ export default function CharacterSheetPage() {
                                         : 'Non maîtrisé'
                                     }
                                   >
-                                    {getSkillIndicator(proficiencyLevel)}
+                                    {getProficiencyLabel(proficiencyLevel)}
                                   </button>
                                   <span className="flex-1 truncate">{skill.label}</span>
                                   <span className="min-w-[24px] text-right font-semibold">
                                     {formatSigned(bonus)}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
               </div>
 
               <div className="col-span-10">
@@ -670,7 +656,7 @@ export default function CharacterSheetPage() {
                       </div>
                       <input
                         type="number"
-                        value={character.hpCurrent}
+                    value={character.hpCurrent}
                         onChange={(e) => {
                           const next = Math.min(parseInt(e.target.value) || 0, effectiveHpMax)
                           updateField('hpCurrent', String(next))
@@ -762,30 +748,30 @@ export default function CharacterSheetPage() {
                 <div className="mt-2.5 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <SectionHeader>Attaques</SectionHeader>
                   <div className="grid grid-cols-[1fr_0.6fr_0.4fr_0.6fr_0.7fr_0.8fr_2fr_2fr_auto] gap-1 text-[11px] mt-1">
-                    <FieldLabel>Nom</FieldLabel>
+                <FieldLabel>Nom</FieldLabel>
                     <FieldLabel>Carac.</FieldLabel>
                     <FieldLabel>Mod</FieldLabel>
                     <FieldLabel>Maîtrise</FieldLabel>
                     <FieldLabel>Bonus Attaque</FieldLabel>
                     <FieldLabel>Damage</FieldLabel>
-                    <FieldLabel>Notes</FieldLabel>
+                <FieldLabel>Notes</FieldLabel>
                     <FieldLabel>Spécial</FieldLabel>
-                    <FieldLabel className="text-center">Suppr.</FieldLabel>
-                  </div>
-                  <div className="mt-1">
-                    {character.attacks.map((attack, idx) => (
-                      <div
-                        key={idx}
+                <FieldLabel className="text-center">Suppr.</FieldLabel>
+              </div>
+              <div className="mt-1">
+                {character.attacks.map((attack, idx) => (
+                  <div
+                    key={idx}
                         className="grid grid-cols-[1fr_0.6fr_0.4fr_0.6fr_0.7fr_0.8fr_2fr_2fr_auto] gap-1 items-center mb-1"
-                      >
-                      <Box>
+                  >
+                    <Box>
                         <AutoResizeTextarea
-                          value={attack.name}
-                          onChange={(e) => updateAttack(idx, { name: e.target.value })}
+                        value={attack.name}
+                        onChange={(e) => updateAttack(idx, { name: e.target.value })}
                           className="w-full bg-transparent border-none outline-none font-bold leading-tight"
-                          placeholder="Nom"
-                        />
-                      </Box>
+                        placeholder="Nom"
+                      />
+                    </Box>
                       <Select
                         value={attack.ability}
                         onChange={(e) => updateAttack(idx, { ability: e.target.value as Attack['ability'] })}
@@ -799,15 +785,15 @@ export default function CharacterSheetPage() {
                         ]}
                         className="text-[11px] min-h-[22px]"
                       />
-                      <Box>
-                        <input
+                    <Box>
+                      <input
                           type="number"
                           value={attack.magicMod}
                           onChange={(e) => updateAttack(idx, { magicMod: e.target.value })}
                           className="w-full bg-transparent border-none outline-none text-xs text-center"
                           placeholder="0"
-                        />
-                      </Box>
+                      />
+                    </Box>
                       <Box className="text-center">
                         <button
                           type="button"
@@ -817,7 +803,7 @@ export default function CharacterSheetPage() {
                               : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
                             updateAttack(idx, { proficiencyLevel: nextLevel })
                           }}
-                          className="w-5 h-5 border border-[#bda68a] rounded text-[10px] font-semibold bg-white/60"
+                          className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
                           title={
                             attack.proficiencyLevel === 2
                               ? 'Expertise'
@@ -826,29 +812,29 @@ export default function CharacterSheetPage() {
                               : 'Aucune'
                           }
                         >
-                          {getSkillIndicator(attack.proficiencyLevel)}
+                          {getProficiencyLabel(attack.proficiencyLevel)}
                         </button>
                       </Box>
                       <Box className="text-xs font-semibold text-center">
                         {formatSigned(getAttackAutoBonus(attack))}
-                      </Box>
-                      <Box>
-                        <input
-                          type="text"
-                          value={attack.damage}
-                          onChange={(e) => updateAttack(idx, { damage: e.target.value })}
-                          className="w-full bg-transparent border-none outline-none text-xs"
+                    </Box>
+                    <Box>
+                      <input
+                        type="text"
+                        value={attack.damage}
+                        onChange={(e) => updateAttack(idx, { damage: e.target.value })}
+                        className="w-full bg-transparent border-none outline-none text-xs"
                           placeholder="1d8+X"
-                        />
-                      </Box>
-                      <Box>
-                        <AutoResizeTextarea
-                          value={attack.notes}
-                          onChange={(e) => updateAttack(idx, { notes: e.target.value })}
-                          className="w-full bg-transparent border-none outline-none text-xs"
+                      />
+                    </Box>
+                    <Box>
+                      <AutoResizeTextarea
+                        value={attack.notes}
+                        onChange={(e) => updateAttack(idx, { notes: e.target.value })}
+                        className="w-full bg-transparent border-none outline-none text-xs"
                           placeholder="Magie / Notes"
-                        />
-                      </Box>
+                      />
+                    </Box>
                       <Box>
                         <AutoResizeTextarea
                           value={attack.special}
@@ -869,48 +855,48 @@ export default function CharacterSheetPage() {
                       >
                         ×
                       </button>
-                      </div>
-                    ))}
-                    <Button variant="small" onClick={addAttack} className="mt-1">
-                      + Ajouter une attaque
-                    </Button>
                   </div>
-                </div>
+                ))}
+                <Button variant="small" onClick={addAttack} className="mt-1">
+                      + Ajouter une attaque
+                </Button>
+                  </div>
+              </div>
 
                 <div className="mt-3 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <SectionHeader>Aptitudes de Classe</SectionHeader>
-                  <div className="mt-1">
+              <div className="mt-1">
                     {character.classFeatures.map((feature, idx) => (
-                      <div
+                  <div
                         key={`feature-${idx}`}
                         className="grid grid-cols-[1fr_1.6fr_auto] gap-1 items-start mb-1"
-                      >
-                        <Box>
+                  >
+                    <Box>
                           <AutoResizeTextarea
                             value={feature.name}
                             onChange={(e) => updateClassFeature(idx, { name: e.target.value })}
                             className="w-full bg-transparent border-none outline-none font-bold leading-tight"
                             placeholder="Aptitude"
-                          />
-                        </Box>
-                        <Box>
-                          <AutoResizeTextarea
+                      />
+                    </Box>
+                    <Box>
+                      <AutoResizeTextarea
                             value={feature.description}
                             onChange={(e) => updateClassFeature(idx, { description: e.target.value })}
-                            className="w-full bg-transparent border-none outline-none text-xs"
+                        className="w-full bg-transparent border-none outline-none text-xs"
                             placeholder="Description"
-                          />
-                        </Box>
+                      />
+                    </Box>
                         <Button variant="small" onClick={() => removeClassFeature(idx)}>
-                          ×
-                        </Button>
-                      </div>
-                    ))}
-                    <Button variant="small" onClick={addClassFeature} className="mt-1">
-                      + Ajouter une aptitude
+                      ×
                     </Button>
                   </div>
-                </div>
+                ))}
+                    <Button variant="small" onClick={addClassFeature} className="mt-1">
+                      + Ajouter une aptitude
+                </Button>
+                  </div>
+              </div>
 
                 <div className="mt-3 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <div className="grid grid-cols-2 gap-2">
@@ -987,186 +973,142 @@ export default function CharacterSheetPage() {
 
                 <div className="mt-3 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <SectionHeader>Maîtrises Additionnelles</SectionHeader>
-                  <div className="mt-1">
-                    {[
-                      { key: 'armor', label: 'Armures' },
-                      { key: 'weapon', label: 'Armes' },
-                      { key: 'tool', label: 'Outils' },
-                      { key: 'other', label: 'Autre' },
-                    ].map((section) => (
-                      <div key={section.key} className="mb-2">
-                        <FieldLabel>{section.label}</FieldLabel>
-                        <div className="mt-1">
-                          {character.proficiencies.map((item, idx) => {
-                            if (item.category !== section.key) return null
-                            return (
-                              <div
-                                key={`${section.key}-${idx}`}
-                                className="grid grid-cols-[1fr_1.4fr_auto] gap-1 items-center mb-1"
-                              >
-                                <Box>
-                                  <AutoResizeTextarea
-                                    value={item.name}
-                                    onChange={(e) => updateProficiency(idx, { name: e.target.value })}
-                                    className="w-full bg-transparent border-none outline-none font-bold leading-tight"
-                                    placeholder="Nom"
-                                  />
-                                </Box>
-                                <Box>
-                                  <AutoResizeTextarea
-                                    value={item.description}
-                                    onChange={(e) => updateProficiency(idx, { description: e.target.value })}
-                                    className="w-full bg-transparent border-none outline-none text-xs"
-                                    placeholder="Description"
-                                  />
-                                </Box>
-                                <Button variant="small" onClick={() => removeProficiency(idx)}>
-                                  ×
-                                </Button>
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <Button
-                          variant="small"
-                          onClick={() => addProficiency(section.key as ProficiencyItem['category'])}
-                          className="mt-1"
-                        >
-                          + Ajouter
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  <AutoResizeTextarea
+                    value={character.proficienciesText}
+                    onChange={(e) => updateField('proficienciesText', e.target.value)}
+                    className="mt-1"
+                    placeholder="Armures, armes, outils..."
+                />
+              </div>
               </div>
             </div>
           )}
           </PaperContainer>
 
           {activeTab === 'spells' && (
-            <PaperContainer variant="spell-block">
+          <PaperContainer variant="spell-block">
               <SectionHeader>Sorts</SectionHeader>
-              <Row gap="md" className="mt-1.5 flex-wrap">
-                <div className="min-w-[160px]">
-                  <Select
-                    label="Caractéristique de lancer"
-                    value={character.spellcastingAttribute}
+          <Row gap="md" className="mt-1.5 flex-wrap">
+            <div className="min-w-[160px]">
+              <Select
+                label="Caractéristique de lancer"
+                value={character.spellcastingAttribute}
                     onChange={(e) =>
                       updateField('spellcastingAttribute', e.target.value as 'INT' | 'WIS' | 'CHA' | 'None')
                     }
-                    options={[
-                      { value: 'None', label: 'Aucune' },
-                      { value: 'INT', label: 'Intelligence' },
-                      { value: 'WIS', label: 'Sagesse' },
-                      { value: 'CHA', label: 'Charisme' },
-                    ]}
-                  />
-                </div>
-                <div className="min-w-[140px]">
-                  <div className="flex flex-col gap-1">
-                    <FieldLabel>DD du sort</FieldLabel>
-                    <Box className="bg-white/60">
-                      {spellDC ? spellDC : '—'}
-                    </Box>
-                  </div>
-                </div>
-                <div className="min-w-[160px]">
-                  <div className="flex flex-col gap-1">
-                    <FieldLabel>Bonus d'attaque</FieldLabel>
-                    <Box className="bg-white/60">
-                      {spellAttackBonus ? (spellAttackBonus >= 0 ? `+${spellAttackBonus}` : `${spellAttackBonus}`) : '—'}
-                    </Box>
-                  </div>
-                </div>
-              </Row>
+                options={[
+                  { value: 'None', label: 'Aucune' },
+                  { value: 'INT', label: 'Intelligence' },
+                  { value: 'WIS', label: 'Sagesse' },
+                  { value: 'CHA', label: 'Charisme' },
+                ]}
+              />
+            </div>
+            <div className="min-w-[140px]">
+              <div className="flex flex-col gap-1">
+                <FieldLabel>DD du sort</FieldLabel>
+                <Box className="bg-white/60">
+                  {spellDC ? spellDC : '—'}
+                </Box>
+              </div>
+            </div>
+            <div className="min-w-[160px]">
+              <div className="flex flex-col gap-1">
+                <FieldLabel>Bonus d'attaque</FieldLabel>
+                <Box className="bg-white/60">
+                  {spellAttackBonus ? (spellAttackBonus >= 0 ? `+${spellAttackBonus}` : `${spellAttackBonus}`) : '—'}
+                </Box>
+              </div>
+            </div>
+          </Row>
 
-              <div className="mt-2.5">
-                <FieldLabel>Sorts et emplacements par niveau</FieldLabel>
-                <div className="mt-2">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => (
-                    <div
-                      key={level}
-                      className="mb-3 border border-[#c9b89c] p-2 bg-white/40"
-                    >
-                      <SectionHeader as="h4" className="text-sm mb-1.5">
-                        {level === 0 ? 'Niveau 0 (Tour de magie / Cantrips)' : `Niveau ${level}`}
-                      </SectionHeader>
+          <div className="mt-2.5">
+            <FieldLabel>Sorts et emplacements par niveau</FieldLabel>
+            <div className="mt-2">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => (
+                <div
+                  key={level}
+                  className="mb-3 border border-[#c9b89c] p-2 bg-white/40"
+                >
+                  <SectionHeader as="h4" className="text-sm mb-1.5">
+                    {level === 0 ? 'Niveau 0 (Tour de magie / Cantrips)' : `Niveau ${level}`}
+                  </SectionHeader>
 
-                      {level >= 1 && (
-                        <div className="flex gap-1 items-center mb-1.5 text-xs">
-                          <span>Nombre d'utilisation: </span>
-                          <Button
-                            variant="small"
-                            onClick={() =>
-                              updateSpellSlot(
-                                level,
-                                'used',
-                                Math.max(0, (character.spellSlots[level]?.used || 0) - 1)
-                              )
-                            }
-                          >
-                            -
-                          </Button>
-                          <span className="min-w-[20px] text-center">
-                            {character.spellSlots[level]?.used || 0}
-                          </span>
-                          <Button
-                            variant="small"
-                            onClick={() =>
-                              updateSpellSlot(
-                                level,
-                                'used',
-                                Math.min(
-                                  character.spellSlots[level]?.total || 0,
-                                  (character.spellSlots[level]?.used || 0) + 1
-                                )
-                              )
-                            }
-                          >
-                            +
-                          </Button>
-                          <span> / </span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={character.spellSlots[level]?.total || 0}
-                            onChange={(e) =>
-                              updateSpellSlot(level, 'total', parseInt(e.target.value) || 0)
-                            }
-                            className="w-[50px] px-1 py-1 border border-[#bda68a] bg-transparent text-xs"
-                          />
-                        </div>
-                      )}
+                  {level >= 1 && (
+                    <div className="flex gap-1 items-center mb-1.5 text-xs">
+                      <span>Nombre d'utilisation: </span>
+                      <Button
+                        variant="small"
+                        onClick={() =>
+                          updateSpellSlot(
+                            level,
+                            'used',
+                            Math.max(0, (character.spellSlots[level]?.used || 0) - 1)
+                          )
+                        }
+                      >
+                        -
+                      </Button>
+                      <span className="min-w-[20px] text-center">
+                        {character.spellSlots[level]?.used || 0}
+                      </span>
+                      <Button
+                        variant="small"
+                        onClick={() =>
+                          updateSpellSlot(
+                            level,
+                            'used',
+                            Math.min(
+                              character.spellSlots[level]?.total || 0,
+                              (character.spellSlots[level]?.used || 0) + 1
+                            )
+                          )
+                        }
+                      >
+                        +
+                      </Button>
+                      <span> / </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={character.spellSlots[level]?.total || 0}
+                        onChange={(e) =>
+                          updateSpellSlot(level, 'total', parseInt(e.target.value) || 0)
+                        }
+                        className="w-[50px] px-1 py-1 border border-[#bda68a] bg-transparent text-xs"
+                      />
+                    </div>
+                  )}
 
                       <div className="grid grid-cols-[40px_22px_22px_22px_1fr_60px_1fr_auto] gap-1.5 text-[11px] mb-1.5">
                         <FieldLabel>Prep</FieldLabel>
                         <FieldLabel className="text-center">C</FieldLabel>
                         <FieldLabel className="text-center">R</FieldLabel>
                         <FieldLabel className="text-center">V</FieldLabel>
-                        <FieldLabel>Nom</FieldLabel>
-                        <FieldLabel>Niv.</FieldLabel>
-                        <FieldLabel>Notes</FieldLabel>
+                    <FieldLabel>Nom</FieldLabel>
+                    <FieldLabel>Niv.</FieldLabel>
+                    <FieldLabel>Notes</FieldLabel>
                         <FieldLabel className="text-center">Del</FieldLabel>
-                      </div>
+                  </div>
 
-                      <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px] max-h-[200px] overflow-y-auto">
-                        {(spellsByLevel[level] || []).map((spell) => {
-                          const globalIdx = character.spells.findIndex(
-                            (s) => s === spell
-                          )
-                          return (
-                            <div
-                              key={globalIdx}
+                  <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px] max-h-[200px] overflow-y-auto">
+                    {(spellsByLevel[level] || []).map((spell) => {
+                      const globalIdx = character.spells.findIndex(
+                        (s) => s === spell
+                      )
+                      return (
+                        <div
+                          key={globalIdx}
                               className="grid grid-cols-[40px_22px_22px_22px_1fr_60px_1fr_auto] gap-1.5 items-center mb-1"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={spell.prepared}
-                                onChange={(e) =>
-                                  updateSpell(globalIdx, { prepared: e.target.checked })
-                                }
-                                className="w-2.5 h-2.5"
-                              />
+                        >
+                          <input
+                            type="checkbox"
+                            checked={spell.prepared}
+                            onChange={(e) =>
+                              updateSpell(globalIdx, { prepared: e.target.checked })
+                            }
+                            className="w-2.5 h-2.5"
+                          />
                               <input
                                 type="checkbox"
                                 checked={spell.concentration}
@@ -1190,48 +1132,48 @@ export default function CharacterSheetPage() {
                                   updateSpell(globalIdx, { verbal: e.target.checked })
                                 }
                                 className="w-2.5 h-2.5 mx-auto"
-                              />
-                              <Box>
-                                <input
-                                  type="text"
-                                  value={spell.name}
-                                  onChange={(e) => updateSpell(globalIdx, { name: e.target.value })}
+                          />
+                          <Box>
+                            <input
+                              type="text"
+                              value={spell.name}
+                              onChange={(e) => updateSpell(globalIdx, { name: e.target.value })}
                                   className="w-full bg-transparent border-none outline-none font-bold text-lg leading-tight"
-                                  placeholder="Nom du sort"
-                                />
-                              </Box>
-                              <Box className="text-center">{spell.level}</Box>
-                              <Box>
-                                <AutoResizeTextarea
-                                  value={spell.notes}
-                                  onChange={(e) => updateSpell(globalIdx, { notes: e.target.value })}
-                                  className="w-full bg-transparent border-none outline-none text-xs"
-                                  placeholder="Notes"
-                                />
-                              </Box>
-                              <Button
-                                variant="small"
-                                onClick={() => removeSpell(globalIdx)}
-                              >
-                                ×
-                              </Button>
-                            </div>
-                          )
-                        })}
-                      </div>
+                              placeholder="Nom du sort"
+                            />
+                          </Box>
+                          <Box className="text-center">{spell.level}</Box>
+                          <Box>
+                            <AutoResizeTextarea
+                              value={spell.notes}
+                              onChange={(e) => updateSpell(globalIdx, { notes: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none text-xs"
+                              placeholder="Notes"
+                            />
+                          </Box>
+                          <Button
+                            variant="small"
+                            onClick={() => removeSpell(globalIdx)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      )
+                    })}
+                  </div>
 
-                      <Button
-                        variant="small"
-                        onClick={() => addSpell(level)}
-                        className="mt-1"
-                      >
-                        + Ajouter sort
-                      </Button>
-                    </div>
-                  ))}
+                  <Button
+                    variant="small"
+                    onClick={() => addSpell(level)}
+                    className="mt-1"
+                  >
+                    + Ajouter sort
+                  </Button>
                 </div>
-              </div>
-            </PaperContainer>
+              ))}
+            </div>
+          </div>
+          </PaperContainer>
           )}
 
           {activeTab === 'inventory' && (
@@ -1245,7 +1187,7 @@ export default function CharacterSheetPage() {
                       <Button variant="small" onClick={() => addInventoryItem(section.key)}>
                         + Add
                       </Button>
-                    </div>
+        </div>
                     <div className="mt-1">
                       {character.inventory.map((item, idx) => {
                         if (item.category !== section.key) return null

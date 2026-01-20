@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { SlotOverrides } from './pc'
 import type { Abilities, SavingThrowProficiencies, SkillProficiencies, AbilityKey } from './abilities'
 import { AbilitiesSchema } from './abilities'
 
@@ -36,9 +37,33 @@ export interface ProficiencyItem {
  * Class feature entry
  */
 export interface ClassFeature {
+  id: string
   name: string
   description: string
-  level: string
+  activeFields: {
+    type: boolean
+    range: boolean
+    value: boolean
+    duration: boolean
+    notes: boolean
+    concentration: boolean
+    ritual: boolean
+  }
+  data: {
+    actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
+    range?: string
+    value?: string
+    duration?: string
+    notes?: string
+    isConcentration?: boolean
+    isRitual?: boolean
+  }
+  hasResource: boolean
+  resource?: {
+    current: number
+    max: number
+    reset: 'short' | 'long'
+  }
 }
 
 /**
@@ -63,11 +88,17 @@ export interface Feat {
 export interface Spell {
   name: string
   level: string | number
-  notes: string
-  prepared: boolean
-  concentration: boolean
-  ritual: boolean
-  verbal: boolean
+  school: string
+  type: string
+  range: string
+  duration: string
+  components: string
+  dice?: string
+  concentration?: boolean
+  ritual?: boolean
+  saveThrow?: boolean
+  saveThrowAbility?: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
+  description?: string
 }
 
 /**
@@ -82,6 +113,11 @@ export interface SpellSlot {
  * Spell slots by level (1-9)
  */
 export type SpellSlots = Record<number, SpellSlot>
+
+/**
+ * Spell slot overrides by level (1-9)
+ */
+export type SpellSlotOverrides = SlotOverrides
 
 /**
  * Spellcasting attribute type
@@ -109,6 +145,8 @@ export interface InventoryItem {
 export interface Character {
   name: string
   class: string
+  subclass: string
+  subclassNotes: string
   level: number
   background: string
   race: string
@@ -148,6 +186,7 @@ export interface Character {
   spellAtk: string
   spells: Spell[]
   spellSlots: SpellSlots
+  slotOverrides: SpellSlotOverrides
 }
 
 /**
@@ -184,9 +223,35 @@ export const ProficiencyItemSchema = z.object({
  * Zod schema for ClassFeature
  */
 export const ClassFeatureSchema = z.object({
+  id: z.string(),
   name: z.string(),
   description: z.string(),
-  level: z.string(),
+  activeFields: z.object({
+    type: z.boolean(),
+    range: z.boolean(),
+    value: z.boolean(),
+    duration: z.boolean(),
+    notes: z.boolean(),
+    concentration: z.boolean(),
+    ritual: z.boolean(),
+  }),
+  data: z.object({
+    actionType: z.enum(['action', 'bonus', 'reaction', 'passive', 'free']).optional(),
+    range: z.string().optional(),
+    value: z.string().optional(),
+    duration: z.string().optional(),
+    notes: z.string().optional(),
+    isConcentration: z.boolean().optional(),
+    isRitual: z.boolean().optional(),
+  }),
+  hasResource: z.boolean(),
+  resource: z
+    .object({
+      current: z.number().int().min(0),
+      max: z.number().int().min(0),
+      reset: z.enum(['short', 'long']),
+    })
+    .optional(),
 })
 
 /**
@@ -211,11 +276,17 @@ export const FeatSchema = z.object({
 export const SpellSchema = z.object({
   name: z.string(),
   level: z.union([z.string(), z.number()]),
-  notes: z.string(),
-  prepared: z.boolean(),
-  concentration: z.boolean(),
-  ritual: z.boolean(),
-  verbal: z.boolean(),
+  school: z.string(),
+  type: z.string(),
+  range: z.string(),
+  duration: z.string(),
+  components: z.string(),
+  dice: z.string().optional(),
+  concentration: z.boolean().optional(),
+  ritual: z.boolean().optional(),
+  saveThrow: z.boolean().optional(),
+  saveThrowAbility: z.enum(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']).optional(),
+  description: z.string().optional(),
 })
 
 /**
@@ -232,6 +303,14 @@ export const SpellSlotSchema = z.object({
 export const SpellSlotsSchema = z.record(
   z.string().regex(/^\d+$/).transform(Number),
   SpellSlotSchema
+)
+
+/**
+ * Zod schema for SpellSlotOverrides (record of level -> override)
+ */
+export const SpellSlotOverridesSchema = z.record(
+  z.string().regex(/^\d+$/).transform(Number),
+  z.number().int()
 )
 
 /**
@@ -292,6 +371,8 @@ export const InventoryItemSchema = z.object({
 export const CharacterSchema = z.object({
   name: z.string(),
   class: z.string(),
+  subclass: z.string(),
+  subclassNotes: z.string(),
   level: z.number().int().min(1).max(20),
   background: z.string(),
   race: z.string(),
@@ -329,6 +410,7 @@ export const CharacterSchema = z.object({
   spellAtk: z.string(),
   spells: z.array(SpellSchema),
   spellSlots: SpellSlotsSchema,
+  slotOverrides: SpellSlotOverridesSchema,
 })
 
 /**
@@ -345,6 +427,8 @@ export function createEmptyCharacter(): Character {
   return {
     name: '',
     class: '',
+    subclass: '',
+    subclassNotes: '',
     level: 1,
     background: '',
     race: '',
@@ -415,6 +499,7 @@ export function createEmptyCharacter(): Character {
     spellAtk: '',
     spells: [],
     spellSlots: {},
+    slotOverrides: {},
   }
 }
 

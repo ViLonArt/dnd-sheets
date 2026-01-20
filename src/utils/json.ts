@@ -1,6 +1,18 @@
 import { CharacterSchema, type Character } from '@/types/character'
 import { NpcSchema, type Npc } from '@/types/npc'
 import { parseAbilityScore } from '@/types/abilities'
+import { CLASSES_2024 } from '@/data/classTables2024'
+
+const getBaseSlotsFrom2024 = (className: string, level: number) => {
+  const classData = CLASSES_2024[className]
+  const levelIndex = Math.max(1, Math.min(20, level)) - 1
+  const slots = classData?.levels[levelIndex]?.slots ?? []
+  const totals: Record<number, number> = {}
+  for (let slotLevel = 1; slotLevel <= 9; slotLevel += 1) {
+    totals[slotLevel] = slots[slotLevel] ?? 0
+  }
+  return totals
+}
 
 /**
  * Export character data to JSON file
@@ -111,6 +123,14 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     if (!('spellcastingAttribute' in data)) {
       data.spellcastingAttribute = 'None'
     }
+
+    // Ensure subclass exists
+    if (!('subclass' in data)) {
+      data.subclass = ''
+    }
+    if (!('subclassNotes' in data)) {
+      data.subclassNotes = ''
+    }
     
     // Ensure new fields exist for backward compatibility
     if (!('biography' in data)) {
@@ -152,6 +172,98 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
     if (!('classFeatures' in data)) {
       data.classFeatures = []
+    }
+    if ('classFeatures' in data && Array.isArray(data.classFeatures)) {
+      data.classFeatures = data.classFeatures.map((feature, index) => {
+        if (!feature || typeof feature !== 'object') {
+          return {
+            id: `feature-${index}`,
+            name: '',
+            description: '',
+            activeFields: {
+              type: false,
+              range: false,
+              value: false,
+              duration: false,
+              notes: false,
+              concentration: false,
+              ritual: false,
+            },
+            data: {},
+            hasResource: false,
+          }
+        }
+        const entry = feature as Record<string, unknown>
+        const activeFieldsSource =
+          entry.activeFields && typeof entry.activeFields === 'object'
+            ? (entry.activeFields as Record<string, unknown>)
+            : {}
+        const dataSource =
+          entry.data && typeof entry.data === 'object' ? (entry.data as Record<string, unknown>) : {}
+        const legacyNotes = typeof entry.level === 'string' ? entry.level : ''
+        const legacyUsesCurrent = typeof entry.usesCurrent === 'number' ? entry.usesCurrent : undefined
+        const legacyUsesMax = typeof entry.usesMax === 'number' ? entry.usesMax : undefined
+        const hasLegacyResource = legacyUsesCurrent !== undefined || legacyUsesMax !== undefined
+        const resourceSource =
+          entry.resource && typeof entry.resource === 'object'
+            ? (entry.resource as Record<string, unknown>)
+            : {}
+        const hasResource =
+          typeof entry.hasResource === 'boolean' ? entry.hasResource : hasLegacyResource
+        return {
+          id: typeof entry.id === 'string' ? entry.id : `feature-${index}`,
+          name: typeof entry.name === 'string' ? entry.name : '',
+          description: typeof entry.description === 'string' ? entry.description : '',
+          activeFields: {
+            type: typeof activeFieldsSource.type === 'boolean' ? activeFieldsSource.type : false,
+            range: typeof activeFieldsSource.range === 'boolean' ? activeFieldsSource.range : false,
+            value: typeof activeFieldsSource.value === 'boolean' ? activeFieldsSource.value : false,
+            duration:
+              typeof activeFieldsSource.duration === 'boolean' ? activeFieldsSource.duration : false,
+            notes: typeof activeFieldsSource.notes === 'boolean' ? activeFieldsSource.notes : false,
+            concentration:
+              typeof activeFieldsSource.concentration === 'boolean'
+                ? activeFieldsSource.concentration
+                : false,
+            ritual: typeof activeFieldsSource.ritual === 'boolean' ? activeFieldsSource.ritual : false,
+          },
+          data: {
+            actionType:
+              typeof dataSource.actionType === 'string'
+                ? (dataSource.actionType as 'action' | 'bonus' | 'reaction' | 'passive' | 'free')
+                : undefined,
+            range: typeof dataSource.range === 'string' ? dataSource.range : undefined,
+            value: typeof dataSource.value === 'string' ? dataSource.value : undefined,
+            duration: typeof dataSource.duration === 'string' ? dataSource.duration : undefined,
+            notes:
+              typeof dataSource.notes === 'string'
+                ? dataSource.notes
+                : legacyNotes || undefined,
+            isConcentration:
+              typeof dataSource.isConcentration === 'boolean'
+                ? dataSource.isConcentration
+                : undefined,
+            isRitual: typeof dataSource.isRitual === 'boolean' ? dataSource.isRitual : undefined,
+          },
+          hasResource,
+          resource: hasResource
+            ? {
+                current:
+                  typeof resourceSource.current === 'number'
+                    ? Math.max(0, resourceSource.current)
+                    : Math.max(0, legacyUsesCurrent ?? 0),
+                max:
+                  typeof resourceSource.max === 'number'
+                    ? Math.max(0, resourceSource.max)
+                    : Math.max(0, legacyUsesMax ?? 0),
+                reset:
+                  typeof resourceSource.reset === 'string' && resourceSource.reset === 'short'
+                    ? 'short'
+                    : 'long',
+              }
+            : undefined,
+        }
+      })
     }
     if (!('speciesTraits' in data)) {
       data.speciesTraits = []
@@ -253,16 +365,68 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
       data.spells = data.spells.map((spell) => {
         if (!spell || typeof spell !== 'object') return spell
         const spellData = spell as Record<string, unknown>
+        const legacyNotes = typeof spellData.notes === 'string' ? spellData.notes : ''
+        const legacyVerbal = Boolean(spellData.verbal)
+        const components =
+          typeof spellData.components === 'string'
+            ? spellData.components
+            : legacyVerbal
+            ? 'V'
+            : ''
         return {
           name: typeof spellData.name === 'string' ? spellData.name : '',
-          level: typeof spellData.level === 'number' || typeof spellData.level === 'string' ? spellData.level : 0,
-          notes: typeof spellData.notes === 'string' ? spellData.notes : '',
-          prepared: Boolean(spellData.prepared),
+          level:
+            typeof spellData.level === 'number' || typeof spellData.level === 'string'
+              ? spellData.level
+              : 0,
+          school: typeof spellData.school === 'string' ? spellData.school : '',
+          type: typeof spellData.type === 'string' ? spellData.type : '',
+          range: typeof spellData.range === 'string' ? spellData.range : '',
+          duration: typeof spellData.duration === 'string' ? spellData.duration : '',
+          components,
+          dice: typeof spellData.dice === 'string' ? spellData.dice : '',
           concentration: Boolean(spellData.concentration),
           ritual: Boolean(spellData.ritual),
-          verbal: Boolean(spellData.verbal),
+          saveThrow: Boolean(spellData.saveThrow),
+          saveThrowAbility:
+            typeof spellData.saveThrowAbility === 'string'
+              ? (spellData.saveThrowAbility as 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA')
+              : 'STR',
+          description:
+            typeof spellData.description === 'string'
+              ? spellData.description
+              : legacyNotes,
         }
       })
+    }
+
+    // Ensure slotOverrides exists (migrate from old totals if possible)
+    if (!('slotOverrides' in data) || !data.slotOverrides || typeof data.slotOverrides !== 'object') {
+      const overrides: Record<number, number> = {}
+      const className =
+        typeof data.class === 'string'
+          ? data.class
+          : typeof (data as Record<string, unknown>).className === 'string'
+          ? ((data as Record<string, unknown>).className as string)
+          : ''
+      const baseSlots = getBaseSlotsFrom2024(className, data.level as number)
+      const spellSlots = data.spellSlots as Record<number, { total?: unknown }> | undefined
+      for (let level = 1; level <= 9; level += 1) {
+        const total = spellSlots?.[level]?.total
+        if (typeof total === 'number' && Number.isFinite(total)) {
+          overrides[level] = total - (baseSlots[level] ?? 0)
+        }
+      }
+      data.slotOverrides = overrides
+    } else {
+      const overrides = data.slotOverrides as Record<string, unknown>
+      const cleaned: Record<number, number> = {}
+      for (const [key, value] of Object.entries(overrides)) {
+        const level = Number(key)
+        if (!Number.isFinite(level) || typeof value !== 'number' || !Number.isFinite(value)) continue
+        cleaned[level] = value
+      }
+      data.slotOverrides = cleaned
     }
     
     // Validate with Zod - this ensures the data matches the Character interface

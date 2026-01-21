@@ -80,6 +80,8 @@ export default function CharacterSheetPage() {
   const [expandedFeatureDescriptionId, setExpandedFeatureDescriptionId] = useState<string | null>(
     null
   )
+  const [featureEditSnapshots, setFeatureEditSnapshots] = useState<Record<string, ClassFeature>>({})
+  const [newFeatureId, setNewFeatureId] = useState<string | null>(null)
 
   // Calculate proficiency bonus from level
   const proficiencyBonus = useMemo(() => {
@@ -471,7 +473,11 @@ export default function CharacterSheetPage() {
   // Proficiencies management
   // Class features management
   const addClassFeature = () => {
-    updateField('classFeatures', [...character.classFeatures, createEmptyClassFeature()])
+    if (editingFeatureId) return
+    const newFeature = createEmptyClassFeature()
+    updateField('classFeatures', [...character.classFeatures, newFeature])
+    setEditingFeatureId(newFeature.id)
+    setNewFeatureId(newFeature.id)
   }
 
   const updateClassFeature = (index: number, updates: Partial<ClassFeature>) => {
@@ -541,8 +547,68 @@ export default function CharacterSheetPage() {
     updateField('classFeatures', nextFeatures)
   }
 
+  const getFeatureResourceMode = (feature: ClassFeature) => {
+    if (feature.resourceMode) return feature.resourceMode
+    return feature.hasResource ? 'independent' : 'none'
+  }
+
+  const getLinkedClassResource = (feature: ClassFeature) => {
+    const defaultId = classResourceDefinitions[0]?.id
+    const linkId = feature.resourceLinkId ?? defaultId
+    if (!linkId) return null
+    const definition = classResourceDefinitions.find((resource) => resource.id === linkId)
+    if (!definition) return null
+    const stored = character.classFeatures.find((entry) => entry.id === linkId)
+    const max = Math.max(0, definition.max)
+    const current = Math.min(stored?.resource?.current ?? 0, max)
+    return {
+      id: linkId,
+      current,
+      max,
+    }
+  }
+
   const removeClassFeature = (index: number) => {
+    const removedId = character.classFeatures[index]?.id
     updateField('classFeatures', character.classFeatures.filter((_, i) => i !== index))
+    if (removedId && editingFeatureId === removedId) {
+      setEditingFeatureId(null)
+    }
+    if (removedId && newFeatureId === removedId) {
+      setNewFeatureId(null)
+    }
+    if (removedId && featureEditSnapshots[removedId]) {
+      setFeatureEditSnapshots((prev) => {
+        const next = { ...prev }
+        delete next[removedId]
+        return next
+      })
+    }
+  }
+
+  const cancelClassFeatureEdit = (featureId: string) => {
+    if (newFeatureId === featureId) {
+      const index = character.classFeatures.findIndex((feature) => feature.id === featureId)
+      if (index >= 0) {
+        updateField('classFeatures', character.classFeatures.filter((_, i) => i !== index))
+      }
+      setNewFeatureId(null)
+      setEditingFeatureId(null)
+      return
+    }
+    const snapshot = featureEditSnapshots[featureId]
+    if (snapshot) {
+      updateField(
+        'classFeatures',
+        character.classFeatures.map((feature) => (feature.id === featureId ? snapshot : feature))
+      )
+      setFeatureEditSnapshots((prev) => {
+        const next = { ...prev }
+        delete next[featureId]
+        return next
+      })
+    }
+    setEditingFeatureId(null)
   }
 
   // Species traits management
@@ -1090,7 +1156,7 @@ export default function CharacterSheetPage() {
 
                 <div className="mt-2.5 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <SectionHeader>Attaques</SectionHeader>
-                  <div className="grid grid-cols-[1fr_0.6fr_0.4fr_0.6fr_0.7fr_0.8fr_2fr_2fr_auto] gap-1 text-[11px] mt-1">
+                  <div className="grid grid-cols-[1fr_0.6fr_0.4fr_0.4fr_0.5fr_1.2fr_2fr_2fr_auto] gap-1 text-[11px] mt-1">
                 <FieldLabel>Nom</FieldLabel>
                     <FieldLabel>Carac.</FieldLabel>
                     <FieldLabel>Mod</FieldLabel>
@@ -1105,7 +1171,7 @@ export default function CharacterSheetPage() {
                 {character.attacks.map((attack, idx) => (
                   <div
                     key={idx}
-                        className="grid grid-cols-[1fr_0.6fr_0.4fr_0.6fr_0.7fr_0.8fr_2fr_2fr_auto] gap-1 items-center mb-1"
+                    className="grid grid-cols-[1fr_0.6fr_0.4fr_0.4fr_0.5fr_1.2fr_2fr_2fr_auto] gap-1 items-center mb-1"
                   >
                     <Box>
                         <AutoResizeTextarea
@@ -1137,28 +1203,28 @@ export default function CharacterSheetPage() {
                           placeholder="0"
                       />
                     </Box>
-                      <Box className="text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextLevel = attack.proficiencyLevel === 2
-                              ? 0
-                              : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
-                            updateAttack(idx, { proficiencyLevel: nextLevel })
-                          }}
-                          className={`w-6 h-6 rounded-full border flex items-center justify-center text-[10px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
-                          title={
-                            attack.proficiencyLevel === 2
-                              ? 'Expertise'
-                              : attack.proficiencyLevel === 1
-                              ? 'Maîtrise'
-                              : 'Aucune'
-                          }
-                        >
-                          {getProficiencyLabel(attack.proficiencyLevel)}
-                        </button>
-                      </Box>
-                      <Box className="text-xs font-semibold text-center">
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextLevel = attack.proficiencyLevel === 2
+                            ? 0
+                            : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
+                          updateAttack(idx, { proficiencyLevel: nextLevel })
+                        }}
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
+                        title={
+                          attack.proficiencyLevel === 2
+                            ? 'Expertise'
+                            : attack.proficiencyLevel === 1
+                            ? 'Maîtrise'
+                            : 'Aucune'
+                        }
+                      >
+                        {getProficiencyLabel(attack.proficiencyLevel)}
+                      </button>
+                    </div>
+                      <Box className="text-[10px] font-semibold text-center">
                         {formatSigned(getAttackAutoBonus(attack))}
                     </Box>
                     <Box>
@@ -1312,9 +1378,6 @@ export default function CharacterSheetPage() {
                                   placeholder="Description"
                                 />
                               </Box>
-                              <Button variant="small" onClick={() => setEditingFeatureId(null)}>
-                                OK
-                              </Button>
                               <Button variant="small" onClick={() => removeClassFeature(index)}>
                                 ×
                               </Button>
@@ -1444,26 +1507,45 @@ export default function CharacterSheetPage() {
                             </div>
 
                             <div className="mt-1 flex flex-wrap items-center gap-3 text-[10px]">
-                              <label className="flex items-center gap-1">
-                                <input
-                                  type="checkbox"
-                                  checked={feature.hasResource}
-                                  onChange={(e) =>
-                                    updateClassFeatureAt(index, (current) => ({
+                              <Select
+                                label="Ressource"
+                                value={getFeatureResourceMode(feature)}
+                                onChange={(e) =>
+                                  updateClassFeatureAt(index, (current) => {
+                                    const mode = e.target.value as
+                                      | 'none'
+                                      | 'independent'
+                                      | 'class'
+                                    const hasResource = mode !== 'none'
+                                    return {
                                       ...current,
-                                      hasResource: e.target.checked,
-                                      resource: e.target.checked
-                                        ? current.resource ?? { current: 0, max: 0, reset: 'long' }
-                                        : undefined,
-                                    }))
-                                  }
-                                  className="w-3 h-3"
-                                />
-                                <span>Ressource</span>
-                              </label>
+                                      hasResource,
+                                      resourceMode: mode,
+                                      resourceLinkId:
+                                        mode === 'class'
+                                          ? current.resourceLinkId ??
+                                            classResourceDefinitions[0]?.id
+                                          : undefined,
+                                      resource:
+                                        mode === 'independent'
+                                          ? current.resource ?? {
+                                              current: 0,
+                                              max: 0,
+                                              reset: 'long',
+                                            }
+                                          : undefined,
+                                    }
+                                  })
+                                }
+                                options={[
+                                  { value: 'none', label: 'Aucun' },
+                                  { value: 'independent', label: 'Indépendant' },
+                                  { value: 'class', label: 'Ressource de classe' },
+                                ]}
+                              />
                             </div>
 
-                            {feature.hasResource && (
+                            {getFeatureResourceMode(feature) === 'independent' && (
                               <div className="mt-1 flex items-center gap-1 text-[10px]">
                                 <input
                                   type="number"
@@ -1521,12 +1603,58 @@ export default function CharacterSheetPage() {
                                 />
                               </div>
                             )}
+
+                            {getFeatureResourceMode(feature) === 'class' && (
+                              <div className="mt-1 flex items-center gap-2 text-[10px]">
+                                {classResourceDefinitions.length > 1 && (
+                                  <Select
+                                    label="Ressource de classe"
+                                    value={feature.resourceLinkId ?? classResourceDefinitions[0]?.id ?? ''}
+                                    onChange={(e) =>
+                                      updateClassFeatureAt(index, (current) => ({
+                                        ...current,
+                                        resourceLinkId: e.target.value,
+                                      }))
+                                    }
+                                    options={classResourceDefinitions.map((resource) => ({
+                                      value: resource.id,
+                                      label: resource.name,
+                                    }))}
+                                  />
+                                )}
+                                {(() => {
+                                  const linked = getLinkedClassResource(feature)
+                                  if (!linked) return <span>—</span>
+                                  return (
+                                    <>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={linked.current}
+                                        onChange={(e) =>
+                                          updateCoreResource(
+                                            linked.id,
+                                            Math.min(
+                                              linked.max,
+                                              Math.max(0, parseInt(e.target.value) || 0)
+                                            )
+                                          )
+                                        }
+                                        className="w-10 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                                      />
+                                      <span>/</span>
+                                      <span className="min-w-[18px] text-center">{linked.max}</span>
+                                    </>
+                                  )
+                                })()}
+                              </div>
+                            )}
                           </>
                         ) : (
                           <>
                             <div className="flex items-center gap-2">
                               <div className="font-bold text-sm truncate">{feature.name || '—'}</div>
-                              {feature.hasResource && (
+                              {getFeatureResourceMode(feature) === 'independent' && (
                                 <div className="flex items-center gap-1 text-[10px]">
                                   <input
                                     type="number"
@@ -1553,10 +1681,40 @@ export default function CharacterSheetPage() {
                                   </span>
                                 </div>
                               )}
+                              {getFeatureResourceMode(feature) === 'class' && (() => {
+                                const linked = getLinkedClassResource(feature)
+                                if (!linked) return null
+                                return (
+                                  <div className="flex items-center gap-1 text-[10px]">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={linked.current}
+                                      onChange={(e) =>
+                                        updateCoreResource(
+                                          linked.id,
+                                          Math.min(linked.max, Math.max(0, parseInt(e.target.value) || 0))
+                                        )
+                                      }
+                                      className="w-10 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                                    />
+                                    <span>/</span>
+                                    <span className="min-w-[18px] text-center">{linked.max}</span>
+                                  </div>
+                                )
+                              })()}
                               <div className="ml-auto">
                                 <Button
                                   variant="small"
-                                  onClick={() => setEditingFeatureId(feature.id)}
+                                  onClick={() => {
+                                    if (!featureEditSnapshots[feature.id]) {
+                                      setFeatureEditSnapshots((prev) => ({
+                                        ...prev,
+                                        [feature.id]: feature,
+                                      }))
+                                    }
+                                    setEditingFeatureId(feature.id)
+                                  }}
                                 >
                                   Edit
                                 </Button>
@@ -1631,9 +1789,39 @@ export default function CharacterSheetPage() {
                       </div>
                     ))}
 
-                    <Button variant="small" onClick={addClassFeature} className="mt-1">
-                      + Ajouter une aptitude
-                    </Button>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Button
+                        variant="small"
+                        onClick={() => {
+                          if (editingFeatureId) {
+                            const featureId = editingFeatureId
+                            setEditingFeatureId(null)
+                            if (newFeatureId === featureId) {
+                              setNewFeatureId(null)
+                            }
+                            if (featureEditSnapshots[featureId]) {
+                              setFeatureEditSnapshots((prev) => {
+                                const next = { ...prev }
+                                delete next[featureId]
+                                return next
+                              })
+                            }
+                          } else {
+                            addClassFeature()
+                          }
+                        }}
+                      >
+                        {editingFeatureId ? 'Confirmer aptitude' : '+ Ajouter une aptitude'}
+                      </Button>
+                      {editingFeatureId && (
+                        <Button
+                          variant="small"
+                          onClick={() => cancelClassFeatureEdit(editingFeatureId)}
+                        >
+                          Annuler
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
 

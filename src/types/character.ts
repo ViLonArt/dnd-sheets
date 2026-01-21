@@ -59,6 +59,8 @@ export interface ClassFeature {
     isRitual?: boolean
   }
   hasResource: boolean
+  resourceMode?: 'none' | 'independent' | 'class'
+  resourceLinkId?: string
   resource?: {
     current: number
     max: number
@@ -245,6 +247,8 @@ export const ClassFeatureSchema = z.object({
     isRitual: z.boolean().optional(),
   }),
   hasResource: z.boolean(),
+  resourceMode: z.enum(['none', 'independent', 'class']).optional(),
+  resourceLinkId: z.string().optional(),
   resource: z
     .object({
       current: z.number().int().min(0),

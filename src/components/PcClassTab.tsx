@@ -55,6 +55,10 @@ export function PcClassTab({
 }: PcClassTabProps) {
   const [allowSlotOverrides, setAllowSlotOverrides] = useState(false)
   const [editingSpellIndex, setEditingSpellIndex] = useState<number | null>(null)
+  const [spellEditSnapshot, setSpellEditSnapshot] = useState<{ index: number; spell: Spell } | null>(
+    null
+  )
+  const [newSpellIndex, setNewSpellIndex] = useState<number | null>(null)
   const [expandedSpellDescriptionIndex, setExpandedSpellDescriptionIndex] = useState<number | null>(
     null
   )
@@ -161,9 +165,6 @@ export function PcClassTab({
                   ]}
                 />
               </Box>
-              <Button variant="small" onClick={() => setEditingSpellIndex(null)}>
-                OK
-              </Button>
               <Button variant="small" onClick={() => onRemoveSpell(globalIdx)}>
                 ×
               </Button>
@@ -312,7 +313,16 @@ export function PcClassTab({
               {renderSpellValue(saveThrowValue)}
               {renderSpellValue(crTokens.join(', '))}
               <span className="flex justify-end items-center gap-2">
-                <Button variant="small" onClick={() => setEditingSpellIndex(globalIdx)}>
+                <Button
+                  variant="small"
+                  onClick={() => {
+                    if (editingSpellIndex === null) {
+                      setSpellEditSnapshot({ index: globalIdx, spell })
+                      setEditingSpellIndex(globalIdx)
+                    }
+                  }}
+                  disabled={editingSpellIndex !== null}
+                >
                   Edit
                 </Button>
                 <Button variant="small" onClick={() => onRemoveSpell(globalIdx)}>
@@ -544,17 +554,45 @@ export function PcClassTab({
                   })}
                 </div>
 
-                <Button
-                  variant="small"
-                  onClick={() => {
-                    const nextIndex = spells.length
-                    onAddSpell(slotLevel)
-                    setEditingSpellIndex(nextIndex)
-                  }}
-                  className="mt-1"
-                >
-                  + Ajouter sort
-                </Button>
+                <div className="mt-1 flex items-center gap-2">
+                  <Button
+                    variant="small"
+                    onClick={() => {
+                      if (editingSpellIndex !== null) {
+                        setEditingSpellIndex(null)
+                        setNewSpellIndex(null)
+                        setSpellEditSnapshot(null)
+                        return
+                      }
+                      const nextIndex = spells.length
+                      onAddSpell(slotLevel)
+                      setEditingSpellIndex(nextIndex)
+                      setNewSpellIndex(nextIndex)
+                    }}
+                  >
+                    {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                  </Button>
+                  {editingSpellIndex !== null && (
+                    <Button
+                      variant="small"
+                      onClick={() => {
+                        if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
+                          onRemoveSpell(editingSpellIndex)
+                        } else if (
+                          spellEditSnapshot &&
+                          spellEditSnapshot.index === editingSpellIndex
+                        ) {
+                          onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
+                        }
+                        setEditingSpellIndex(null)
+                        setNewSpellIndex(null)
+                        setSpellEditSnapshot(null)
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                  )}
+                </div>
               </div>
             )
           })}
@@ -580,17 +618,45 @@ export function PcClassTab({
                   return renderSpellRow(spell, globalIdx)
                 })}
               </div>
-              <Button
-                variant="small"
-                onClick={() => {
-                  const nextIndex = spells.length
-                  onAddSpell(slotLevel)
-                  setEditingSpellIndex(nextIndex)
-                }}
-                className="mt-1"
-              >
-                + Ajouter sort
-              </Button>
+              <div className="mt-1 flex items-center gap-2">
+                <Button
+                  variant="small"
+                  onClick={() => {
+                    if (editingSpellIndex !== null) {
+                      setEditingSpellIndex(null)
+                      setNewSpellIndex(null)
+                      setSpellEditSnapshot(null)
+                      return
+                    }
+                    const nextIndex = spells.length
+                    onAddSpell(slotLevel)
+                    setEditingSpellIndex(nextIndex)
+                    setNewSpellIndex(nextIndex)
+                  }}
+                >
+                  {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                </Button>
+                {editingSpellIndex !== null && (
+                  <Button
+                    variant="small"
+                    onClick={() => {
+                      if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
+                        onRemoveSpell(editingSpellIndex)
+                      } else if (
+                        spellEditSnapshot &&
+                        spellEditSnapshot.index === editingSpellIndex
+                      ) {
+                        onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
+                      }
+                      setEditingSpellIndex(null)
+                      setNewSpellIndex(null)
+                      setSpellEditSnapshot(null)
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>

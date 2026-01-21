@@ -246,6 +246,14 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
             isRitual: typeof dataSource.isRitual === 'boolean' ? dataSource.isRitual : undefined,
           },
           hasResource,
+          resourceMode:
+            typeof entry.resourceMode === 'string'
+              ? (entry.resourceMode as 'none' | 'independent' | 'class')
+              : hasResource
+              ? 'independent'
+              : 'none',
+          resourceLinkId:
+            typeof entry.resourceLinkId === 'string' ? entry.resourceLinkId : undefined,
           resource: hasResource
             ? {
                 current:

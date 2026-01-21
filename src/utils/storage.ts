@@ -201,6 +201,13 @@ export function loadCharacterFromStorage(): Character | null {
             isRitual: typeof dataSource.isRitual === 'boolean' ? dataSource.isRitual : undefined,
           },
           hasResource,
+          resourceMode:
+            typeof data.resourceMode === 'string'
+              ? (data.resourceMode as 'none' | 'independent' | 'class')
+              : hasResource
+              ? 'independent'
+              : 'none',
+          resourceLinkId: typeof data.resourceLinkId === 'string' ? data.resourceLinkId : undefined,
           resource: hasResource
             ? {
                 current:

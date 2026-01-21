@@ -89,9 +89,16 @@ export function PcClassTab({
     <span className="whitespace-nowrap">{value || '—'}</span>
   )
 
-  const renderSpellHeader = () => (
-    <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr] items-center gap-3 text-[9px] uppercase text-[#7a4b36] mb-1">
+  const renderSpellHeader = (includeLevel: boolean) => (
+    <div
+      className={`grid items-center gap-3 text-[9px] uppercase text-[#7a4b36] mb-1 ${
+        includeLevel
+          ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+          : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+      }`}
+    >
       <span className="font-semibold">Nom</span>
+      {includeLevel && <span>Niv.</span>}
       <span>École</span>
       <span>Type</span>
       <span>Portée</span>
@@ -104,7 +111,7 @@ export function PcClassTab({
     </div>
   )
 
-  const renderSpellRow = (spell: Spell, globalIdx: number) => {
+  const renderSpellRow = (spell: Spell, globalIdx: number, includeLevel: boolean) => {
     const isEditing = editingSpellIndex === globalIdx
     const showDescription = expandedSpellDescriptionIndex === globalIdx
     const crTokens = [
@@ -170,6 +177,20 @@ export function PcClassTab({
               </Button>
             </div>
             <div className="mt-1 grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <FieldLabel>Niveau</FieldLabel>
+                <input
+                  type="number"
+                  min="0"
+                  max="9"
+                  value={spell.level}
+                  onChange={(e) =>
+                    onUpdateSpell(globalIdx, { level: parseInt(e.target.value) || 0 })
+                  }
+                  className="w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs"
+                  placeholder="0"
+                />
+              </div>
               <div className="flex flex-col gap-1">
                 <Select
                   label="Type d'action"
@@ -302,8 +323,15 @@ export function PcClassTab({
           </>
         ) : (
           <>
-            <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr] items-center gap-3 text-[10px]">
+            <div
+              className={`grid items-center gap-3 text-[10px] ${
+                includeLevel
+                  ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+                  : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+              }`}
+            >
               <span className="font-bold text-sm truncate">{spell.name || '—'}</span>
+              {includeLevel && renderSpellValue(String(spell.level ?? '—'))}
               {renderSpellValue(spell.school)}
               {renderSpellValue(spell.type)}
               {renderSpellValue(spell.range)}
@@ -488,7 +516,7 @@ export function PcClassTab({
         </div>
       )}
 
-      {isStandardCaster && (
+      {isStandardCaster && !isPactMagic && (
         <div className="mt-2">
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((slotLevel) => {
             const maxSlotsForLevel = currentMaxSlots[slotLevel] ?? 0
@@ -547,10 +575,10 @@ export function PcClassTab({
                 )}
 
                 <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px]">
-                  {renderSpellHeader()}
+                  {renderSpellHeader(false)}
                   {(spellsByLevel[slotLevel] || []).map((spell) => {
                     const globalIdx = spells.findIndex((s) => s === spell)
-                    return renderSpellRow(spell, globalIdx)
+                    return renderSpellRow(spell, globalIdx, false)
                   })}
                 </div>
 
@@ -599,7 +627,110 @@ export function PcClassTab({
         </div>
       )}
 
-      {!isStandardCaster && (
+      {isPactMagic && (
+        <div className="mt-2">
+          <div className="mb-3 border border-[#c9b89c] p-2 bg-white/40">
+            <SectionHeader as="h4" className="text-sm mb-1.5">
+              Cantrips
+            </SectionHeader>
+            <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px]">
+              {renderSpellHeader(false)}
+              {(spellsByLevel[0] || []).map((spell) => {
+                const globalIdx = spells.findIndex((s) => s === spell)
+                return renderSpellRow(spell, globalIdx, false)
+              })}
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              <Button
+                variant="small"
+                onClick={() => {
+                  if (editingSpellIndex !== null) {
+                    setEditingSpellIndex(null)
+                    setNewSpellIndex(null)
+                    setSpellEditSnapshot(null)
+                    return
+                  }
+                  const nextIndex = spells.length
+                  onAddSpell(0)
+                  setEditingSpellIndex(nextIndex)
+                  setNewSpellIndex(nextIndex)
+                }}
+              >
+                {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+              </Button>
+              {editingSpellIndex !== null && (
+                <Button
+                  variant="small"
+                  onClick={() => {
+                    if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
+                      onRemoveSpell(editingSpellIndex)
+                    } else if (spellEditSnapshot && spellEditSnapshot.index === editingSpellIndex) {
+                      onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
+                    }
+                    setEditingSpellIndex(null)
+                    setNewSpellIndex(null)
+                    setSpellEditSnapshot(null)
+                  }}
+                >
+                  Annuler
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="mb-3 border border-[#c9b89c] p-2 bg-white/40">
+            <SectionHeader as="h4" className="text-sm mb-1.5">
+              Sorts
+            </SectionHeader>
+            <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px]">
+              {renderSpellHeader(true)}
+              {spells
+                .filter((spell) => String(spell.level) !== '0')
+                .map((spell) => {
+                  const globalIdx = spells.findIndex((s) => s === spell)
+                  return renderSpellRow(spell, globalIdx, true)
+                })}
+            </div>
+            <div className="mt-1 flex items-center gap-2">
+              <Button
+                variant="small"
+                onClick={() => {
+                  if (editingSpellIndex !== null) {
+                    setEditingSpellIndex(null)
+                    setNewSpellIndex(null)
+                    setSpellEditSnapshot(null)
+                    return
+                  }
+                  const nextIndex = spells.length
+                  onAddSpell(1)
+                  setEditingSpellIndex(nextIndex)
+                  setNewSpellIndex(nextIndex)
+                }}
+              >
+                {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+              </Button>
+              {editingSpellIndex !== null && (
+                <Button
+                  variant="small"
+                  onClick={() => {
+                    if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
+                      onRemoveSpell(editingSpellIndex)
+                    } else if (spellEditSnapshot && spellEditSnapshot.index === editingSpellIndex) {
+                      onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
+                    }
+                    setEditingSpellIndex(null)
+                    setNewSpellIndex(null)
+                    setSpellEditSnapshot(null)
+                  }}
+                >
+                  Annuler
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isStandardCaster && !isPactMagic && (
         <div className="mt-2">
           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((slotLevel) => (
             <div
@@ -612,10 +743,10 @@ export function PcClassTab({
                   : `Niveau ${slotLevel}`}
               </SectionHeader>
               <div className="border border-[#c9b89c] bg-white/40 p-1.5 text-[11px]">
-                {renderSpellHeader()}
+                {renderSpellHeader(false)}
                 {(spellsByLevel[slotLevel] || []).map((spell) => {
                   const globalIdx = spells.findIndex((s) => s === spell)
-                  return renderSpellRow(spell, globalIdx)
+                  return renderSpellRow(spell, globalIdx, false)
                 })}
               </div>
               <div className="mt-1 flex items-center gap-2">

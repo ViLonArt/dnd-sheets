@@ -200,6 +200,12 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
             : {}
         const dataSource =
           entry.data && typeof entry.data === 'object' ? (entry.data as Record<string, unknown>) : {}
+        const valueAbilitySource =
+          typeof dataSource.valueAbility === 'string' ? dataSource.valueAbility : undefined
+        const valueAbility =
+          valueAbilitySource && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(valueAbilitySource)
+            ? (valueAbilitySource as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
+            : undefined
         const legacyNotes = typeof entry.level === 'string' ? entry.level : ''
         const legacyUsesCurrent = typeof entry.usesCurrent === 'number' ? entry.usesCurrent : undefined
         const legacyUsesMax = typeof entry.usesMax === 'number' ? entry.usesMax : undefined
@@ -234,6 +240,17 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
                 : undefined,
             range: typeof dataSource.range === 'string' ? dataSource.range : undefined,
             value: typeof dataSource.value === 'string' ? dataSource.value : undefined,
+            valueDiceCount:
+              typeof dataSource.valueDiceCount === 'number'
+                ? Math.max(1, Math.floor(dataSource.valueDiceCount))
+                : undefined,
+            valueDie: typeof dataSource.valueDie === 'string' ? dataSource.valueDie : undefined,
+            valueMod: typeof dataSource.valueMod === 'string' ? dataSource.valueMod : undefined,
+            valueUseAbility:
+              typeof dataSource.valueUseAbility === 'boolean'
+                ? dataSource.valueUseAbility
+                : undefined,
+            valueAbility,
             duration: typeof dataSource.duration === 'string' ? dataSource.duration : undefined,
             notes:
               typeof dataSource.notes === 'string'
@@ -305,15 +322,16 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
     if ('inventory' in data && Array.isArray(data.inventory)) {
       const validCategories = new Set(['weapons', 'consumables', 'currency', 'other'])
-      data.inventory = data.inventory.map((item) => {
+      data.inventory = data.inventory.map((item, index) => {
         if (!item || typeof item !== 'object') {
-          return { name: '', quantity: '', notes: '', category: 'other' }
+          return { id: `inv-${index}`, name: '', quantity: '', notes: '', category: 'other' }
         }
         const itemData = item as Record<string, unknown>
         const category = typeof itemData.category === 'string' && validCategories.has(itemData.category)
           ? itemData.category
           : 'other'
         return {
+          id: typeof itemData.id === 'string' ? itemData.id : `inv-${index}`,
           name: typeof itemData.name === 'string' ? itemData.name : '',
           quantity: typeof itemData.quantity === 'string' ? itemData.quantity : '',
           notes: typeof itemData.notes === 'string' ? itemData.notes : '',
@@ -348,7 +366,7 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
 
     if ('attacks' in data && Array.isArray(data.attacks)) {
       const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha', 'none'])
-      data.attacks = data.attacks.map((attack) => {
+      data.attacks = data.attacks.map((attack, index) => {
         if (!attack || typeof attack !== 'object') return attack
         const attackData = attack as Record<string, unknown>
         const bonus = typeof attackData.bonus === 'string' ? attackData.bonus : ''
@@ -356,10 +374,20 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
           ? attackData.ability
           : 'none'
         return {
+          id: typeof attackData.id === 'string' ? attackData.id : `atk-${index}`,
           name: typeof attackData.name === 'string' ? attackData.name : '',
           bonus,
-          damage: typeof attackData.damage === 'string' ? attackData.damage : '',
+          damageDiceCount:
+            typeof attackData.damageDiceCount === 'number'
+              ? Math.max(1, Math.floor(attackData.damageDiceCount))
+              : 1,
+          damageDie: typeof attackData.damageDie === 'string'
+            ? attackData.damageDie
+            : typeof attackData.damage === 'string'
+            ? attackData.damage
+            : '',
           notes: typeof attackData.notes === 'string' ? attackData.notes : '',
+          property: typeof attackData.property === 'string' ? attackData.property : '',
           ability,
           proficient: Boolean(attackData.proficient),
           bonusMod: typeof attackData.bonusMod === 'string' ? attackData.bonusMod : '',
@@ -370,7 +398,7 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
 
     if ('spells' in data && Array.isArray(data.spells)) {
-      data.spells = data.spells.map((spell) => {
+      data.spells = data.spells.map((spell, index) => {
         if (!spell || typeof spell !== 'object') return spell
         const spellData = spell as Record<string, unknown>
         const legacyNotes = typeof spellData.notes === 'string' ? spellData.notes : ''
@@ -381,7 +409,18 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
             : legacyVerbal
             ? 'V'
             : ''
+        const diceModeSource =
+          typeof spellData.diceMode === 'string' ? spellData.diceMode : undefined
+        const diceMode =
+          diceModeSource === 'dice' || diceModeSource === 'custom' ? diceModeSource : undefined
+        const diceCustomSource =
+          typeof spellData.diceCustom === 'string'
+            ? spellData.diceCustom
+            : typeof spellData.dice === 'string'
+            ? spellData.dice
+            : ''
         return {
+          id: typeof spellData.id === 'string' ? spellData.id : `spell-${index}`,
           name: typeof spellData.name === 'string' ? spellData.name : '',
           level:
             typeof spellData.level === 'number' || typeof spellData.level === 'string'
@@ -393,6 +432,14 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
           duration: typeof spellData.duration === 'string' ? spellData.duration : '',
           components,
           dice: typeof spellData.dice === 'string' ? spellData.dice : '',
+          diceMode: diceMode ?? (diceCustomSource ? 'custom' : 'dice'),
+          diceCount:
+            typeof spellData.diceCount === 'number'
+              ? Math.max(1, Math.floor(spellData.diceCount))
+              : 1,
+          diceDie: typeof spellData.diceDie === 'string' ? spellData.diceDie : '',
+          diceMod: typeof spellData.diceMod === 'string' ? spellData.diceMod : '',
+          diceCustom: diceCustomSource,
           concentration: Boolean(spellData.concentration),
           ritual: Boolean(spellData.ritual),
           saveThrow: Boolean(spellData.saveThrow),

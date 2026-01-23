@@ -7,11 +7,14 @@ import { AbilitiesSchema } from './abilities'
  * Attack or spell entry
  */
 export interface Attack {
+  id: string
   name: string
-  damage: string
+  damageDiceCount: number
+  damageDie: string
   ability: AbilityKey
   magicMod: string
   proficiencyLevel: 0 | 1 | 2
+  property: string
   notes: string
   special: string
 }
@@ -53,6 +56,11 @@ export interface ClassFeature {
     actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
     range?: string
     value?: string
+    valueDiceCount?: number
+    valueDie?: string
+    valueMod?: string
+    valueUseAbility?: boolean
+    valueAbility?: AbilityKey
     duration?: string
     notes?: string
     isConcentration?: boolean
@@ -88,6 +96,7 @@ export interface Feat {
  * Spell entry
  */
 export interface Spell {
+  id: string
   name: string
   level: string | number
   school: string
@@ -96,6 +105,11 @@ export interface Spell {
   duration: string
   components: string
   dice?: string
+  diceMode?: 'dice' | 'custom'
+  diceCount?: number
+  diceDie?: string
+  diceMod?: string
+  diceCustom?: string
   concentration?: boolean
   ritual?: boolean
   saveThrow?: boolean
@@ -135,6 +149,7 @@ export type ItemCategory = 'weapons' | 'consumables' | 'currency' | 'other'
  * Inventory item entry
  */
 export interface InventoryItem {
+  id: string
   name: string
   quantity: string
   notes: string
@@ -195,11 +210,14 @@ export interface Character {
  * Zod schema for Attack
  */
 export const AttackSchema = z.object({
+  id: z.string(),
   name: z.string(),
-  damage: z.string(),
+  damageDiceCount: z.number().int().min(1),
+  damageDie: z.string(),
   ability: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
   magicMod: z.string(),
   proficiencyLevel: z.number().int().min(0).max(2),
+  property: z.string(),
   notes: z.string(),
   special: z.string(),
 })
@@ -241,6 +259,11 @@ export const ClassFeatureSchema = z.object({
     actionType: z.enum(['action', 'bonus', 'reaction', 'passive', 'free']).optional(),
     range: z.string().optional(),
     value: z.string().optional(),
+    valueDiceCount: z.number().int().min(1).optional(),
+    valueDie: z.string().optional(),
+    valueMod: z.string().optional(),
+    valueUseAbility: z.boolean().optional(),
+    valueAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
     duration: z.string().optional(),
     notes: z.string().optional(),
     isConcentration: z.boolean().optional(),
@@ -278,6 +301,7 @@ export const FeatSchema = z.object({
  * Zod schema for Spell
  */
 export const SpellSchema = z.object({
+  id: z.string(),
   name: z.string(),
   level: z.union([z.string(), z.number()]),
   school: z.string(),
@@ -286,6 +310,11 @@ export const SpellSchema = z.object({
   duration: z.string(),
   components: z.string(),
   dice: z.string().optional(),
+  diceMode: z.enum(['dice', 'custom']).optional(),
+  diceCount: z.number().int().min(1).optional(),
+  diceDie: z.string().optional(),
+  diceMod: z.string().optional(),
+  diceCustom: z.string().optional(),
   concentration: z.boolean().optional(),
   ritual: z.boolean().optional(),
   saveThrow: z.boolean().optional(),
@@ -363,6 +392,7 @@ export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
 export const ItemCategorySchema = z.enum(['weapons', 'consumables', 'currency', 'other'])
 
 export const InventoryItemSchema = z.object({
+  id: z.string(),
   name: z.string(),
   quantity: z.string(),
   notes: z.string(),

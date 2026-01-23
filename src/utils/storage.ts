@@ -155,6 +155,12 @@ export function loadCharacterFromStorage(): Character | null {
             : {}
         const dataSource =
           data.data && typeof data.data === 'object' ? (data.data as Record<string, unknown>) : {}
+        const valueAbilitySource =
+          typeof dataSource.valueAbility === 'string' ? dataSource.valueAbility : undefined
+        const valueAbility =
+          valueAbilitySource && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(valueAbilitySource)
+            ? (valueAbilitySource as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
+            : undefined
         const legacyNotes = typeof data.level === 'string' ? data.level : ''
         const legacyUsesCurrent = typeof data.usesCurrent === 'number' ? data.usesCurrent : undefined
         const legacyUsesMax = typeof data.usesMax === 'number' ? data.usesMax : undefined
@@ -189,6 +195,17 @@ export function loadCharacterFromStorage(): Character | null {
                 : undefined,
             range: typeof dataSource.range === 'string' ? dataSource.range : undefined,
             value: typeof dataSource.value === 'string' ? dataSource.value : undefined,
+            valueDiceCount:
+              typeof dataSource.valueDiceCount === 'number'
+                ? Math.max(1, Math.floor(dataSource.valueDiceCount))
+                : undefined,
+            valueDie: typeof dataSource.valueDie === 'string' ? dataSource.valueDie : undefined,
+            valueMod: typeof dataSource.valueMod === 'string' ? dataSource.valueMod : undefined,
+            valueUseAbility:
+              typeof dataSource.valueUseAbility === 'boolean'
+                ? dataSource.valueUseAbility
+                : undefined,
+            valueAbility,
             duration: typeof dataSource.duration === 'string' ? dataSource.duration : undefined,
             notes:
               typeof dataSource.notes === 'string'
@@ -259,15 +276,16 @@ export function loadCharacterFromStorage(): Character | null {
     }
     if ('inventory' in parsed && Array.isArray(parsed.inventory)) {
       const validCategories = new Set(['weapons', 'consumables', 'currency', 'other'])
-      parsed.inventory = parsed.inventory.map((item) => {
+      parsed.inventory = parsed.inventory.map((item, index) => {
         if (!item || typeof item !== 'object') {
-          return { name: '', quantity: '', notes: '', category: 'other' }
+          return { id: `inv-${index}`, name: '', quantity: '', notes: '', category: 'other' }
         }
         const itemData = item as Record<string, unknown>
         const category = typeof itemData.category === 'string' && validCategories.has(itemData.category)
           ? itemData.category
           : 'other'
         return {
+          id: typeof itemData.id === 'string' ? itemData.id : `inv-${index}`,
           name: typeof itemData.name === 'string' ? itemData.name : '',
           quantity: typeof itemData.quantity === 'string' ? itemData.quantity : '',
           notes: typeof itemData.notes === 'string' ? itemData.notes : '',
@@ -302,7 +320,7 @@ export function loadCharacterFromStorage(): Character | null {
 
     if ('attacks' in parsed && Array.isArray(parsed.attacks)) {
       const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha', 'none'])
-      parsed.attacks = parsed.attacks.map((attack) => {
+      parsed.attacks = parsed.attacks.map((attack, index) => {
         if (!attack || typeof attack !== 'object') return attack
         const attackData = attack as Record<string, unknown>
         const bonus = typeof attackData.bonus === 'string' ? attackData.bonus : ''
@@ -310,10 +328,20 @@ export function loadCharacterFromStorage(): Character | null {
           ? attackData.ability
           : 'none'
         return {
+          id: typeof attackData.id === 'string' ? attackData.id : `atk-${index}`,
           name: typeof attackData.name === 'string' ? attackData.name : '',
           bonus,
-          damage: typeof attackData.damage === 'string' ? attackData.damage : '',
+          damageDiceCount:
+            typeof attackData.damageDiceCount === 'number'
+              ? Math.max(1, Math.floor(attackData.damageDiceCount))
+              : 1,
+          damageDie: typeof attackData.damageDie === 'string'
+            ? attackData.damageDie
+            : typeof attackData.damage === 'string'
+            ? attackData.damage
+            : '',
           notes: typeof attackData.notes === 'string' ? attackData.notes : '',
+          property: typeof attackData.property === 'string' ? attackData.property : '',
           ability,
           proficient: Boolean(attackData.proficient),
           bonusMod: typeof attackData.bonusMod === 'string' ? attackData.bonusMod : '',
@@ -324,7 +352,7 @@ export function loadCharacterFromStorage(): Character | null {
     }
 
     if ('spells' in parsed && Array.isArray(parsed.spells)) {
-      parsed.spells = parsed.spells.map((spell) => {
+      parsed.spells = parsed.spells.map((spell, index) => {
         if (!spell || typeof spell !== 'object') return spell
         const spellData = spell as Record<string, unknown>
         const legacyNotes = typeof spellData.notes === 'string' ? spellData.notes : ''
@@ -335,7 +363,18 @@ export function loadCharacterFromStorage(): Character | null {
             : legacyVerbal
             ? 'V'
             : ''
+        const diceModeSource =
+          typeof spellData.diceMode === 'string' ? spellData.diceMode : undefined
+        const diceMode =
+          diceModeSource === 'dice' || diceModeSource === 'custom' ? diceModeSource : undefined
+        const diceCustomSource =
+          typeof spellData.diceCustom === 'string'
+            ? spellData.diceCustom
+            : typeof spellData.dice === 'string'
+            ? spellData.dice
+            : ''
         return {
+          id: typeof spellData.id === 'string' ? spellData.id : `spell-${index}`,
           name: typeof spellData.name === 'string' ? spellData.name : '',
           level:
             typeof spellData.level === 'number' || typeof spellData.level === 'string'
@@ -347,6 +386,14 @@ export function loadCharacterFromStorage(): Character | null {
           duration: typeof spellData.duration === 'string' ? spellData.duration : '',
           components,
           dice: typeof spellData.dice === 'string' ? spellData.dice : '',
+          diceMode: diceMode ?? (diceCustomSource ? 'custom' : 'dice'),
+          diceCount:
+            typeof spellData.diceCount === 'number'
+              ? Math.max(1, Math.floor(spellData.diceCount))
+              : 1,
+          diceDie: typeof spellData.diceDie === 'string' ? spellData.diceDie : '',
+          diceMod: typeof spellData.diceMod === 'string' ? spellData.diceMod : '',
+          diceCustom: diceCustomSource,
           concentration: Boolean(spellData.concentration),
           ritual: Boolean(spellData.ritual),
           saveThrow: Boolean(spellData.saveThrow),

@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCharacterForm, useExportToImage } from '@/hooks'
 import { AuthButton } from '@/components/auth/AuthButton'
@@ -14,7 +14,7 @@ import {
   Toolbar,
   Select,
 } from '@/components/ui'
-import { calculateAbilityModifier } from '@/types/abilities'
+import { calculateAbilityModifier, type AbilityKey } from '@/types/abilities'
 import { ABILITIES_ORDER, SKILL_DATA } from '@/features/character-sheet/constants'
 import { applySlotOverrides } from '@/data/classTables'
 import { CLASSES_2024 } from '@/data/classTables2024'
@@ -26,6 +26,7 @@ import type {
   ClassFeature,
   SpeciesTrait,
   Feat,
+  InventoryItem,
 } from '@/types/character'
 
 const ABILITY_NAMES_FR: Record<(typeof ABILITIES_ORDER)[number], string> = {
@@ -80,8 +81,26 @@ export default function CharacterSheetPage() {
   const [expandedFeatureDescriptionId, setExpandedFeatureDescriptionId] = useState<string | null>(
     null
   )
+  const [openFeatureMenuId, setOpenFeatureMenuId] = useState<string | null>(null)
+  const [editingAttackId, setEditingAttackId] = useState<string | null>(null)
+  const [attackEditSnapshot, setAttackEditSnapshot] = useState<{ id: string; attack: Attack } | null>(
+    null
+  )
+  const [newAttackId, setNewAttackId] = useState<string | null>(null)
+  const [openAttackMenuId, setOpenAttackMenuId] = useState<string | null>(null)
+  const [expandedAttackId, setExpandedAttackId] = useState<string | null>(null)
   const [featureEditSnapshots, setFeatureEditSnapshots] = useState<Record<string, ClassFeature>>({})
   const [newFeatureId, setNewFeatureId] = useState<string | null>(null)
+  const [expandedInventoryNotesId, setExpandedInventoryNotesId] = useState<string | null>(
+    null
+  )
+  const [editingInventoryId, setEditingInventoryId] = useState<string | null>(null)
+  const [inventoryEditSnapshot, setInventoryEditSnapshot] = useState<{
+    id: string
+    item: InventoryItem
+  } | null>(null)
+  const [newInventoryId, setNewInventoryId] = useState<string | null>(null)
+  const [openInventoryMenuId, setOpenInventoryMenuId] = useState<string | null>(null)
 
   // Calculate proficiency bonus from level
   const proficiencyBonus = useMemo(() => {
@@ -155,7 +174,13 @@ export default function CharacterSheetPage() {
       concentration: false,
       ritual: false,
     },
-    data: {},
+    data: {
+      valueDiceCount: 1,
+      valueDie: '',
+      valueMod: '',
+      valueUseAbility: false,
+      valueAbility: 'str',
+    },
     hasResource: false,
   })
 
@@ -434,20 +459,52 @@ export default function CharacterSheetPage() {
     return (abilityMod || 0) + (magicMod || 0) + proficiencyBonus * profMult
   }
 
+  const getAttackDamageDisplay = (attack: Attack) => {
+    if (!attack.damageDie) return '—'
+    const abilityMod = calculateAbilityModifier(character.abilities[attack.ability]) || 0
+    const magicMod = parseNumber(attack.magicMod)
+    const totalMod = abilityMod + magicMod
+    const count = Math.max(1, attack.damageDiceCount || 1)
+    return `${count}${attack.damageDie}${formatSigned(totalMod)}`
+  }
+
+  const getFeatureValueDisplay = (feature: ClassFeature) => {
+    const valueDie = feature.data.valueDie
+    const count = Math.max(1, feature.data.valueDiceCount || 1)
+    const flatMod = parseNumber(feature.data.valueMod ?? '')
+    const useAbility = feature.data.valueUseAbility && feature.data.valueAbility
+    const abilityMod = useAbility
+      ? calculateAbilityModifier(
+          character.abilities[feature.data.valueAbility as keyof typeof character.abilities]
+        ) || 0
+      : 0
+    if (!valueDie) {
+      if (feature.data.value) return feature.data.value
+      return '—'
+    }
+    const totalMod = flatMod + abilityMod
+    return `${count}${valueDie}${formatSigned(totalMod)}`
+  }
+
   // Attacks management
   const addAttack = () => {
+    const id = createAttackId()
     updateField('attacks', [
       ...character.attacks,
       {
+        id,
         name: '',
-        damage: '',
+        damageDiceCount: 1,
+        damageDie: '',
         ability: 'str',
         magicMod: '0',
         proficiencyLevel: 0,
+        property: '',
         notes: '',
         special: '',
       },
     ])
+    return id
   }
 
   const updateAttack = (index: number, updates: Partial<Attack>) => {
@@ -455,11 +512,14 @@ export default function CharacterSheetPage() {
     const current = newAttacks[index]
     if (!current) return
     newAttacks[index] = { 
+      id: current.id,
       name: updates.name ?? current.name,
-      damage: updates.damage ?? current.damage,
+      damageDiceCount: updates.damageDiceCount ?? current.damageDiceCount,
+      damageDie: updates.damageDie ?? current.damageDie,
       ability: updates.ability ?? current.ability,
       magicMod: updates.magicMod ?? current.magicMod,
       proficiencyLevel: updates.proficiencyLevel ?? current.proficiencyLevel,
+      property: updates.property ?? current.property,
       notes: updates.notes ?? current.notes,
       special: updates.special ?? current.special,
     }
@@ -467,7 +527,16 @@ export default function CharacterSheetPage() {
   }
 
   const removeAttack = (index: number) => {
+    const removedId = character.attacks[index]?.id
     updateField('attacks', character.attacks.filter((_, i) => i !== index))
+    if (removedId && editingAttackId === removedId) {
+      setEditingAttackId(null)
+      setNewAttackId(null)
+      setAttackEditSnapshot(null)
+    }
+    if (removedId && openAttackMenuId === removedId) {
+      setOpenAttackMenuId(null)
+    }
   }
 
   // Proficiencies management
@@ -586,6 +655,20 @@ export default function CharacterSheetPage() {
     }
   }
 
+  const createAttackId = () => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID()
+    }
+    return `atk-${Date.now()}`
+  }
+
+  const createInventoryItemId = () => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID()
+    }
+    return `inv-${Date.now()}`
+  }
+
   const cancelClassFeatureEdit = (featureId: string) => {
     if (newFeatureId === featureId) {
       const index = character.classFeatures.findIndex((feature) => feature.id === featureId)
@@ -654,10 +737,12 @@ export default function CharacterSheetPage() {
 
   // Inventory management
   const addInventoryItem = (category: ItemCategory) => {
+    const id = createInventoryItemId()
     updateField('inventory', [
       ...character.inventory,
-      { name: '', quantity: '', notes: '', category },
+      { id, name: '', quantity: '', notes: '', category },
     ])
+    return id
   }
 
   const updateInventoryItem = (
@@ -668,6 +753,7 @@ export default function CharacterSheetPage() {
     const current = newItems[index]
     if (!current) return
     newItems[index] = {
+      id: current.id,
       name: updates.name ?? current.name,
       quantity: updates.quantity ?? current.quantity,
       notes: updates.notes ?? current.notes,
@@ -677,14 +763,61 @@ export default function CharacterSheetPage() {
   }
 
   const removeInventoryItem = (index: number) => {
+    const removedId = character.inventory[index]?.id
     updateField('inventory', character.inventory.filter((_, i) => i !== index))
+    if (removedId && editingInventoryId === removedId) {
+      setEditingInventoryId(null)
+      setNewInventoryId(null)
+      setInventoryEditSnapshot(null)
+    }
+    if (removedId && openInventoryMenuId === removedId) {
+      setOpenInventoryMenuId(null)
+    }
+  }
+
+  const cancelInventoryEdit = () => {
+    if (editingInventoryId === null) return
+    if (newInventoryId !== null && newInventoryId === editingInventoryId) {
+      updateField('inventory', character.inventory.filter((item) => item.id !== editingInventoryId))
+    } else if (inventoryEditSnapshot && inventoryEditSnapshot.id === editingInventoryId) {
+      updateField(
+        'inventory',
+        character.inventory.map((item) =>
+          item.id === editingInventoryId ? inventoryEditSnapshot.item : item
+        )
+      )
+    }
+    setEditingInventoryId(null)
+    setNewInventoryId(null)
+    setInventoryEditSnapshot(null)
+  }
+
+  const cancelAttackEdit = () => {
+    if (!editingAttackId) return
+    if (newAttackId && newAttackId === editingAttackId) {
+      updateField('attacks', character.attacks.filter((attack) => attack.id !== editingAttackId))
+    } else if (attackEditSnapshot && attackEditSnapshot.id === editingAttackId) {
+      updateField(
+        'attacks',
+        character.attacks.map((attack) =>
+          attack.id === editingAttackId ? attackEditSnapshot.attack : attack
+        )
+      )
+    }
+    setEditingAttackId(null)
+    setNewAttackId(null)
+    setAttackEditSnapshot(null)
   }
 
   // Spells management
   const addSpell = (level: number) => {
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `spell-${Date.now()}`
     updateField('spells', [
       ...character.spells,
       {
+        id,
         name: '',
         level: level.toString(),
         school: '',
@@ -693,6 +826,11 @@ export default function CharacterSheetPage() {
         duration: '',
         components: '',
         dice: '',
+        diceMode: 'dice',
+        diceCount: 1,
+        diceDie: '',
+        diceMod: '',
+        diceCustom: '',
         concentration: false,
         ritual: false,
         saveThrow: false,
@@ -700,6 +838,7 @@ export default function CharacterSheetPage() {
         description: '',
       },
     ])
+    return id
   }
 
   const updateSpell = (index: number, updates: Partial<Spell>) => {
@@ -707,6 +846,7 @@ export default function CharacterSheetPage() {
     const current = newSpells[index]
     if (!current) return
     newSpells[index] = {
+      id: current.id,
       name: updates.name ?? current.name,
       level: updates.level ?? current.level,
       school: updates.school ?? current.school,
@@ -715,6 +855,11 @@ export default function CharacterSheetPage() {
       duration: updates.duration ?? current.duration,
       components: updates.components ?? current.components,
       dice: updates.dice ?? current.dice,
+      diceMode: updates.diceMode ?? current.diceMode,
+      diceCount: updates.diceCount ?? current.diceCount,
+      diceDie: updates.diceDie ?? current.diceDie,
+      diceMod: updates.diceMod ?? current.diceMod,
+      diceCustom: updates.diceCustom ?? current.diceCustom,
       concentration: updates.concentration ?? current.concentration,
       ritual: updates.ritual ?? current.ritual,
       saveThrow: updates.saveThrow ?? current.saveThrow,
@@ -799,12 +944,51 @@ export default function CharacterSheetPage() {
     }
   }
 
-  const inventorySections: Array<{ key: ItemCategory; label: string }> = [
+  const inventoryCategories: Array<{ key: ItemCategory; label: string }> = [
     { key: 'weapons', label: 'Équipé / Armes / Armures' },
     { key: 'consumables', label: 'Consommables' },
-    { key: 'currency', label: 'Or & Monnaie' },
     { key: 'other', label: 'Autre' },
   ]
+  const editingInventoryCategory =
+    editingInventoryId !== null
+      ? character.inventory.find((item) => item.id === editingInventoryId)?.category
+      : null
+
+  useEffect(() => {
+    if (!openInventoryMenuId) return
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-inventory-menu]')) return
+      setOpenInventoryMenuId(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [openInventoryMenuId])
+
+  useEffect(() => {
+    if (!openAttackMenuId) return
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-attack-menu]')) return
+      setOpenAttackMenuId(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [openAttackMenuId])
+
+  useEffect(() => {
+    if (!openFeatureMenuId) return
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-feature-menu]')) return
+      setOpenFeatureMenuId(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [openFeatureMenuId])
 
   return (
     <div className="min-h-screen p-5 bg-gray-200">
@@ -1156,119 +1340,293 @@ export default function CharacterSheetPage() {
 
                 <div className="mt-2.5 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
                   <SectionHeader>Attaques</SectionHeader>
-                  <div className="grid grid-cols-[1fr_0.6fr_0.4fr_0.4fr_0.5fr_1.2fr_2fr_2fr_auto] gap-1 text-[11px] mt-1">
-                <FieldLabel>Nom</FieldLabel>
-                    <FieldLabel>Carac.</FieldLabel>
-                    <FieldLabel>Mod</FieldLabel>
-                    <FieldLabel>Maîtrise</FieldLabel>
-                    <FieldLabel>Bonus Attaque</FieldLabel>
-                    <FieldLabel>Damage</FieldLabel>
-                <FieldLabel>Notes</FieldLabel>
-                    <FieldLabel>Spécial</FieldLabel>
-                <FieldLabel className="text-center">Suppr.</FieldLabel>
-              </div>
+                  <div className="grid grid-cols-[1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 text-[11px] mt-1">
+                    <FieldLabel className="text-center">Nom</FieldLabel>
+                    <FieldLabel className="text-center">Maîtrise</FieldLabel>
+                    <FieldLabel className="text-center">Bonus Attaque</FieldLabel>
+                    <FieldLabel className="text-center">Damage</FieldLabel>
+                    <FieldLabel className="text-center">Propriété</FieldLabel>
+                    <FieldLabel className="text-center">Spécial</FieldLabel>
+                    <FieldLabel className="text-center">Actions</FieldLabel>
+                  </div>
               <div className="mt-1">
                 {character.attacks.map((attack, idx) => (
                   <div
-                    key={idx}
-                    className="grid grid-cols-[1fr_0.6fr_0.4fr_0.4fr_0.5fr_1.2fr_2fr_2fr_auto] gap-1 items-center mb-1"
+                    key={attack.id}
+                    className="mb-1 border border-[#c9b89c] bg-white/40 p-1.5"
                   >
-                    <Box>
-                        <AutoResizeTextarea
-                        value={attack.name}
-                        onChange={(e) => updateAttack(idx, { name: e.target.value })}
-                          className="w-full bg-transparent border-none outline-none font-bold leading-tight"
-                        placeholder="Nom"
-                      />
-                    </Box>
-                      <Select
-                        value={attack.ability}
-                        onChange={(e) => updateAttack(idx, { ability: e.target.value as Attack['ability'] })}
-                        options={[
-                          { value: 'str', label: 'FOR' },
-                          { value: 'dex', label: 'DEX' },
-                          { value: 'con', label: 'CON' },
-                          { value: 'int', label: 'INT' },
-                          { value: 'wis', label: 'SAG' },
-                          { value: 'cha', label: 'CHA' },
-                        ]}
-                        className="text-[11px] min-h-[22px]"
-                      />
-                    <Box>
-                      <input
-                          type="number"
-                          value={attack.magicMod}
-                          onChange={(e) => updateAttack(idx, { magicMod: e.target.value })}
-                          className="w-full bg-transparent border-none outline-none text-xs text-center"
-                          placeholder="0"
-                      />
-                    </Box>
-                    <div className="flex items-center justify-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextLevel = attack.proficiencyLevel === 2
-                            ? 0
-                            : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
-                          updateAttack(idx, { proficiencyLevel: nextLevel })
-                        }}
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
-                        title={
-                          attack.proficiencyLevel === 2
-                            ? 'Expertise'
-                            : attack.proficiencyLevel === 1
-                            ? 'Maîtrise'
-                            : 'Aucune'
-                        }
-                      >
-                        {getProficiencyLabel(attack.proficiencyLevel)}
-                      </button>
-                    </div>
-                      <Box className="text-[10px] font-semibold text-center">
-                        {formatSigned(getAttackAutoBonus(attack))}
-                    </Box>
-                    <Box>
-                      <input
-                        type="text"
-                        value={attack.damage}
-                        onChange={(e) => updateAttack(idx, { damage: e.target.value })}
-                        className="w-full bg-transparent border-none outline-none text-xs"
-                          placeholder="1d8+X"
-                      />
-                    </Box>
-                    <Box>
-                      <AutoResizeTextarea
-                        value={attack.notes}
-                        onChange={(e) => updateAttack(idx, { notes: e.target.value })}
-                        className="w-full bg-transparent border-none outline-none text-xs"
-                          placeholder="Magie / Notes"
-                      />
-                    </Box>
-                      <Box>
-                        <AutoResizeTextarea
-                          value={attack.special}
-                          onChange={(e) => updateAttack(idx, { special: e.target.value })}
-                          className={
-                            attack.proficiencyLevel === 2
-                              ? 'w-full bg-transparent border-none outline-none text-xs'
-                              : 'w-full bg-gray-100 border border-gray-200 outline-none text-xs text-gray-500'
+                    {editingAttackId === attack.id ? (
+                      <>
+                        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 items-start">
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Nom</FieldLabel>
+                            <AutoResizeTextarea
+                              value={attack.name}
+                              onChange={(e) => updateAttack(idx, { name: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none font-bold leading-tight text-center"
+                              placeholder="Nom"
+                            />
+                          </Box>
+                          <Box className="flex flex-col items-center gap-1 text-center">
+                            <FieldLabel className="text-center">Maîtrise</FieldLabel>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextLevel =
+                                  attack.proficiencyLevel === 2
+                                    ? 0
+                                    : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
+                                updateAttack(idx, { proficiencyLevel: nextLevel })
+                              }}
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
+                              title={
+                                attack.proficiencyLevel === 2
+                                  ? 'Expertise'
+                                  : attack.proficiencyLevel === 1
+                                  ? 'Maîtrise'
+                                  : 'Aucune'
+                              }
+                            >
+                              {getProficiencyLabel(attack.proficiencyLevel)}
+                            </button>
+                          </Box>
+                          <Box className="flex flex-col items-center gap-1 text-[10px] font-semibold text-center">
+                            <FieldLabel className="text-center">Bonus</FieldLabel>
+                            {formatSigned(getAttackAutoBonus(attack))}
+                          </Box>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="small"
+                              onClick={() => {
+                                setEditingAttackId(null)
+                                setNewAttackId(null)
+                                setAttackEditSnapshot(null)
+                              }}
+                            >
+                              OK
+                            </Button>
+                            <Button variant="small" onClick={cancelAttackEdit}>
+                              Annuler
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-1 grid grid-cols-2 gap-2">
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Carac.</FieldLabel>
+                            <Select
+                              value={attack.ability}
+                              onChange={(e) =>
+                                updateAttack(idx, { ability: e.target.value as Attack['ability'] })
+                              }
+                              options={[
+                                { value: 'str', label: 'FOR' },
+                                { value: 'dex', label: 'DEX' },
+                                { value: 'con', label: 'CON' },
+                                { value: 'int', label: 'INT' },
+                                { value: 'wis', label: 'SAG' },
+                                { value: 'cha', label: 'CHA' },
+                              ]}
+                              className="text-[11px] min-h-[22px]"
+                            />
+                          </Box>
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Mod</FieldLabel>
+                            <input
+                              type="number"
+                              value={attack.magicMod}
+                              onChange={(e) => updateAttack(idx, { magicMod: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none text-xs text-center"
+                              placeholder="0"
+                            />
+                          </Box>
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Dés</FieldLabel>
+                            <div className="flex items-center justify-center gap-1">
+                              <input
+                                type="number"
+                                min="1"
+                                value={attack.damageDiceCount}
+                                onChange={(e) =>
+                                  updateAttack(idx, {
+                                    damageDiceCount: Math.max(1, parseInt(e.target.value) || 1),
+                                  })
+                                }
+                                className="w-10 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                              />
+                              <Select
+                                value={attack.damageDie}
+                                onChange={(e) => updateAttack(idx, { damageDie: e.target.value })}
+                                options={[
+                                  { value: '', label: '—' },
+                                  { value: 'd4', label: 'd4' },
+                                  { value: 'd6', label: 'd6' },
+                                  { value: 'd8', label: 'd8' },
+                                  { value: 'd10', label: 'd10' },
+                                  { value: 'd12', label: 'd12' },
+                                ]}
+                                className="text-[11px] min-h-[22px]"
+                              />
+                            </div>
+                          </Box>
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Propriété</FieldLabel>
+                            <AutoResizeTextarea
+                              value={attack.property}
+                              onChange={(e) => updateAttack(idx, { property: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none text-xs text-center"
+                              placeholder="Propriété"
+                            />
+                          </Box>
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Notes</FieldLabel>
+                            <AutoResizeTextarea
+                              value={attack.notes}
+                              onChange={(e) => updateAttack(idx, { notes: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none text-xs text-center"
+                              placeholder="Magie / Notes"
+                            />
+                          </Box>
+                          <Box className="flex flex-col gap-1 text-center">
+                            <FieldLabel className="text-center">Spécial</FieldLabel>
+                            <AutoResizeTextarea
+                              value={attack.special}
+                              onChange={(e) => updateAttack(idx, { special: e.target.value })}
+                              className={
+                                attack.proficiencyLevel === 2
+                                  ? 'w-full bg-transparent border-none outline-none text-xs text-center'
+                                  : 'w-full bg-gray-100 border border-gray-200 outline-none text-xs text-gray-500 text-center'
+                              }
+                              placeholder="Spécial"
+                              disabled={attack.proficiencyLevel !== 2}
+                            />
+                          </Box>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className="grid grid-cols-[1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 items-center cursor-pointer"
+                          onClick={() =>
+                            setExpandedAttackId(expandedAttackId === attack.id ? null : attack.id)
                           }
-                          placeholder="Spécial"
-                          disabled={attack.proficiencyLevel !== 2}
-                        />
-                      </Box>
-                      <button
-                        type="button"
-                        onClick={() => removeAttack(idx)}
-                        className="text-gray-400 hover:text-red-500 text-xs px-1"
-                      >
-                        ×
-                      </button>
+                        >
+                          <div>
+                            <div className="font-bold leading-tight text-center">{attack.name || '—'}</div>
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const nextLevel =
+                                  attack.proficiencyLevel === 2
+                                    ? 0
+                                    : ((attack.proficiencyLevel + 1) as 0 | 1 | 2)
+                                updateAttack(idx, { proficiencyLevel: nextLevel })
+                              }}
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center text-[9px] ${getProficiencyBadgeClasses(attack.proficiencyLevel)}`}
+                              title={
+                                attack.proficiencyLevel === 2
+                                  ? 'Expertise'
+                                  : attack.proficiencyLevel === 1
+                                  ? 'Maîtrise'
+                                  : 'Aucune'
+                              }
+                            >
+                              {getProficiencyLabel(attack.proficiencyLevel)}
+                            </button>
+                          </div>
+                          <div className="text-[10px] font-semibold text-center mr-1">
+                            {formatSigned(getAttackAutoBonus(attack))}
+                          </div>
+                          <div className="text-xs text-center">{getAttackDamageDisplay(attack)}</div>
+                          <div className="text-xs text-center">
+                            <AutoResizeTextarea
+                              value={attack.property}
+                              onChange={(e) => updateAttack(idx, { property: e.target.value })}
+                              className="w-full bg-transparent border-none outline-none text-xs text-center"
+                              placeholder="Propriété"
+                            />
+                          </div>
+                          <div className="text-xs text-center">
+                            {attack.proficiencyLevel === 2 ? (
+                              <AutoResizeTextarea
+                                value={attack.special}
+                                onChange={(e) => updateAttack(idx, { special: e.target.value })}
+                                className="w-full bg-transparent border-none outline-none text-xs text-center"
+                                placeholder="Spécial"
+                              />
+                            ) : (
+                              '_'
+                            )}
+                          </div>
+                          <div
+                            className="relative flex items-center justify-end"
+                            data-attack-menu
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenAttackMenuId(
+                                  openAttackMenuId === attack.id ? null : attack.id
+                                )
+                              }}
+                              className="text-xs px-1"
+                            >
+                              ⋯
+                            </button>
+                            {openAttackMenuId === attack.id && (
+                              <div className="absolute right-0 mt-5 z-10 bg-white border border-[#c9b89c] rounded shadow-sm text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (editingAttackId !== null) return
+                                    setAttackEditSnapshot({ id: attack.id, attack })
+                                    setEditingAttackId(attack.id)
+                                    setOpenAttackMenuId(null)
+                                  }}
+                                  className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    removeAttack(idx)
+                                    setOpenAttackMenuId(null)
+                                  }}
+                                  className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                >
+                                  Supprimer
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {expandedAttackId === attack.id && attack.notes && (
+                          <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1 text-[10px]">
+                            <div className="whitespace-pre-wrap">{attack.notes}</div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 ))}
-                <Button variant="small" onClick={addAttack} className="mt-1">
-                      + Ajouter une attaque
-                </Button>
+                <div className="mt-1 flex items-center gap-2">
+                  <Button
+                    variant="small"
+                    onClick={() => {
+                      const id = addAttack()
+                      setEditingAttackId(id)
+                      setNewAttackId(id)
+                    }}
+                    disabled={editingAttackId !== null}
+                  >
+                    + Ajouter une attaque
+                  </Button>
+                </div>
                   </div>
               </div>
 
@@ -1353,7 +1711,12 @@ export default function CharacterSheetPage() {
                     {manualClassFeatures.map(({ feature, index }) => (
                       <div
                         key={feature.id}
-                        className="mb-2 border border-[#c9b89c] bg-white/40 p-1.5"
+                        className="mb-2 border border-[#c9b89c] bg-white/40 p-1.5 cursor-pointer"
+                        onClick={() =>
+                          setExpandedFeatureDescriptionId(
+                            expandedFeatureDescriptionId === feature.id ? null : feature.id
+                          )
+                        }
                       >
                         {editingFeatureId === feature.id ? (
                           <>
@@ -1378,8 +1741,27 @@ export default function CharacterSheetPage() {
                                   placeholder="Description"
                                 />
                               </Box>
-                              <Button variant="small" onClick={() => removeClassFeature(index)}>
-                                ×
+                              <Button
+                                variant="small"
+                                onClick={() => {
+                                  setEditingFeatureId(null)
+                                  setNewFeatureId(null)
+                                  if (featureEditSnapshots[feature.id]) {
+                                    setFeatureEditSnapshots((prev) => {
+                                      const next = { ...prev }
+                                      delete next[feature.id]
+                                      return next
+                                    })
+                                  }
+                                }}
+                              >
+                                OK
+                              </Button>
+                              <Button
+                                variant="small"
+                                onClick={() => cancelClassFeatureEdit(feature.id)}
+                              >
+                                Annuler
                               </Button>
                             </div>
 
@@ -1473,18 +1855,101 @@ export default function CharacterSheetPage() {
                               {feature.activeFields.value && (
                                 <div className="flex flex-col gap-1">
                                   <FieldLabel>Valeur</FieldLabel>
-                                  <input
-                                    type="text"
-                                    value={feature.data.value ?? ''}
-                                    onChange={(e) =>
-                                      updateClassFeatureAt(index, (current) => ({
-                                        ...current,
-                                        data: { ...current.data, value: e.target.value },
-                                      }))
-                                    }
-                                    className="w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs"
-                                    placeholder="ex: 1d8+3"
-                                  />
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={feature.data.valueDiceCount ?? 1}
+                                      onChange={(e) =>
+                                        updateClassFeatureAt(index, (current) => ({
+                                          ...current,
+                                          data: {
+                                            ...current.data,
+                                            valueDiceCount: Math.max(
+                                              1,
+                                              parseInt(e.target.value, 10) || 1
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                      className="w-10 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                                    />
+                                    <Select
+                                      value={feature.data.valueDie ?? ''}
+                                      onChange={(e) =>
+                                        updateClassFeatureAt(index, (current) => ({
+                                          ...current,
+                                          data: { ...current.data, valueDie: e.target.value },
+                                        }))
+                                      }
+                                      options={[
+                                        { value: '', label: '—' },
+                                        { value: 'd4', label: 'd4' },
+                                        { value: 'd6', label: 'd6' },
+                                        { value: 'd8', label: 'd8' },
+                                        { value: 'd10', label: 'd10' },
+                                        { value: 'd12', label: 'd12' },
+                                      ]}
+                                      className="text-[11px] min-h-[22px]"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={feature.data.valueMod ?? ''}
+                                      onChange={(e) =>
+                                        updateClassFeatureAt(index, (current) => ({
+                                          ...current,
+                                          data: { ...current.data, valueMod: e.target.value },
+                                        }))
+                                      }
+                                      className="w-12 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                                      placeholder="Mod"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[10px]">
+                                    <label className="flex items-center gap-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={feature.data.valueUseAbility ?? false}
+                                        onChange={(e) =>
+                                          updateClassFeatureAt(index, (current) => ({
+                                            ...current,
+                                            data: {
+                                              ...current.data,
+                                              valueUseAbility: e.target.checked,
+                                              valueAbility: e.target.checked
+                                                ? current.data.valueAbility ?? 'str'
+                                                : current.data.valueAbility,
+                                            },
+                                          }))
+                                        }
+                                        className="w-3 h-3"
+                                      />
+                                      <span>Carac.</span>
+                                    </label>
+                                    {feature.data.valueUseAbility && (
+                                      <Select
+                                        value={feature.data.valueAbility ?? 'str'}
+                                        onChange={(e) =>
+                                          updateClassFeatureAt(index, (current) => ({
+                                            ...current,
+                                            data: {
+                                              ...current.data,
+                                              valueAbility: e.target.value as AbilityKey,
+                                            },
+                                          }))
+                                        }
+                                        options={[
+                                          { value: 'str', label: 'FOR' },
+                                          { value: 'dex', label: 'DEX' },
+                                          { value: 'con', label: 'CON' },
+                                          { value: 'int', label: 'INT' },
+                                          { value: 'wis', label: 'SAG' },
+                                          { value: 'cha', label: 'CHA' },
+                                        ]}
+                                        className="text-[11px] min-h-[22px]"
+                                      />
+                                    )}
+                                  </div>
                                 </div>
                               )}
                               {feature.activeFields.duration && (
@@ -1703,21 +2168,54 @@ export default function CharacterSheetPage() {
                                   </div>
                                 )
                               })()}
-                              <div className="ml-auto">
-                                <Button
-                                  variant="small"
-                                  onClick={() => {
-                                    if (!featureEditSnapshots[feature.id]) {
-                                      setFeatureEditSnapshots((prev) => ({
-                                        ...prev,
-                                        [feature.id]: feature,
-                                      }))
-                                    }
-                                    setEditingFeatureId(feature.id)
+                              <div
+                                className="ml-auto relative"
+                                data-feature-menu
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setOpenFeatureMenuId(
+                                      openFeatureMenuId === feature.id ? null : feature.id
+                                    )
                                   }}
+                                  className="text-xs px-1"
                                 >
-                                  Edit
-                                </Button>
+                                  ⋯
+                                </button>
+                                {openFeatureMenuId === feature.id && (
+                                  <div className="absolute right-0 mt-1 z-10 bg-white border border-[#c9b89c] rounded shadow-sm text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (editingFeatureId !== null) return
+                                        if (!featureEditSnapshots[feature.id]) {
+                                          setFeatureEditSnapshots((prev) => ({
+                                            ...prev,
+                                            [feature.id]: feature,
+                                          }))
+                                        }
+                                        setEditingFeatureId(feature.id)
+                                        setOpenFeatureMenuId(null)
+                                      }}
+                                      className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        removeClassFeature(index)
+                                        setOpenFeatureMenuId(null)
+                                      }}
+                                      className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                    >
+                                      Supprimer
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="mt-1 flex items-start gap-3 text-[10px] flex-wrap">
@@ -1733,10 +2231,10 @@ export default function CharacterSheetPage() {
                                   <span>{feature.data.range}</span>
                                 </div>
                               )}
-                              {feature.activeFields.value && feature.data.value && (
+                              {feature.activeFields.value && (
                                 <div className="flex flex-col">
                                   <span className="text-[9px] uppercase text-[#7a4b36]">Valeur</span>
-                                  <span>{feature.data.value}</span>
+                                  <span>{getFeatureValueDisplay(feature)}</span>
                                 </div>
                               )}
                               {feature.activeFields.duration && feature.data.duration && (
@@ -1764,23 +2262,10 @@ export default function CharacterSheetPage() {
                                     </span>
                                   </div>
                                 )}
-                              {feature.description && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setExpandedFeatureDescriptionId(
-                                      expandedFeatureDescriptionId === feature.id ? null : feature.id
-                                    )
-                                  }
-                                  className="px-1 py-0.5 border border-[#bda68a] rounded self-end"
-                                >
-                                  Description
-                                </button>
-                              )}
                             </div>
                             {feature.description &&
                               expandedFeatureDescriptionId === feature.id && (
-                                <div className="mt-1 text-[10px] whitespace-pre-wrap">
+                                <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1 text-[10px] whitespace-pre-wrap">
                                   {feature.description}
                                 </div>
                               )}
@@ -1792,35 +2277,11 @@ export default function CharacterSheetPage() {
                     <div className="mt-1 flex items-center gap-2">
                       <Button
                         variant="small"
-                        onClick={() => {
-                          if (editingFeatureId) {
-                            const featureId = editingFeatureId
-                            setEditingFeatureId(null)
-                            if (newFeatureId === featureId) {
-                              setNewFeatureId(null)
-                            }
-                            if (featureEditSnapshots[featureId]) {
-                              setFeatureEditSnapshots((prev) => {
-                                const next = { ...prev }
-                                delete next[featureId]
-                                return next
-                              })
-                            }
-                          } else {
-                            addClassFeature()
-                          }
-                        }}
+                        onClick={() => addClassFeature()}
+                        disabled={editingFeatureId !== null}
                       >
-                        {editingFeatureId ? 'Confirmer aptitude' : '+ Ajouter une aptitude'}
+                        + Ajouter une aptitude
                       </Button>
-                      {editingFeatureId && (
-                        <Button
-                          variant="small"
-                          onClick={() => cancelClassFeatureEdit(editingFeatureId)}
-                        >
-                          Annuler
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1939,69 +2400,294 @@ export default function CharacterSheetPage() {
           {activeTab === 'inventory' && (
             <PaperContainer>
               <SectionHeader>Inventaire</SectionHeader>
-              <div className="mt-1 space-y-2">
-                {inventorySections.map((section) => (
-                  <div key={section.key} className="border border-[#c9b89c] bg-white/40 p-2">
-                    <div className="flex items-center justify-between">
-                      <FieldLabel>{section.label}</FieldLabel>
-                      <Button variant="small" onClick={() => addInventoryItem(section.key)}>
-                        + Add
-                      </Button>
-                    </div>
-                    <div className="mt-1">
-                      {character.inventory.map((item, idx) => {
-                        if (item.category !== section.key) return null
-                        return (
-                          <div
-                            key={`${section.key}-${idx}`}
-                            className="grid grid-cols-[1.2fr_0.4fr_0.8fr_1.2fr_auto] gap-1 items-center mb-1"
-                          >
-                            <Box>
-                              <input
-                                type="text"
-                                value={item.name}
-                                onChange={(e) => updateInventoryItem(idx, { name: e.target.value })}
-                                className="w-full bg-transparent border-none outline-none font-bold text-lg leading-tight"
-                                placeholder="Objet"
-                              />
-                            </Box>
-                            <Box>
-                              <input
-                                type="text"
-                                value={item.quantity}
-                                onChange={(e) => updateInventoryItem(idx, { quantity: e.target.value })}
-                                className="w-full bg-transparent border-none outline-none text-xs text-center"
-                                placeholder="Qté"
-                              />
-                            </Box>
-                            <Select
-                              value={item.category}
-                              onChange={(e) =>
-                                updateInventoryItem(idx, { category: e.target.value as ItemCategory })
+              <div className="mt-1">
+                {(() => {
+                  const goldIndex = character.inventory.findIndex(
+                    (item) => item.category === 'currency'
+                  )
+                  const goldItem = goldIndex >= 0 ? character.inventory[goldIndex] : undefined
+                  return (
+                    <div className="flex justify-center mb-2">
+                      <Box className="relative px-3 py-1 text-center">
+                        <span className="block text-[9px] uppercase text-[#7a4b36] mb-0.5">
+                          PO
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="small"
+                            onClick={() => {
+                              const current = parseInt(goldItem?.quantity ?? '0') || 0
+                              const next = Math.max(0, current - 1)
+                            if (goldIndex >= 0) {
+                                updateInventoryItem(goldIndex, {
+                                  quantity: String(next),
+                                  name: 'PO',
+                                  category: 'currency',
+                                })
+                              } else {
+                                updateField('inventory', [
+                                  ...character.inventory,
+                                {
+                                  id: createInventoryItemId(),
+                                  name: 'PO',
+                                  quantity: String(next),
+                                  notes: '',
+                                  category: 'currency',
+                                },
+                                ])
                               }
-                              options={inventorySections.map((option) => ({
-                                value: option.key,
-                                label: option.label,
-                              }))}
-                              className="text-[11px] min-h-[22px]"
-                            />
-                            <Box>
-                              <AutoResizeTextarea
-                                value={item.notes}
-                                onChange={(e) => updateInventoryItem(idx, { notes: e.target.value })}
-                                className="w-full bg-transparent border-none outline-none text-xs"
-                                placeholder="Notes"
-                              />
-                            </Box>
-                            <Button variant="small" onClick={() => removeInventoryItem(idx)}>
-                              ×
-                            </Button>
-                          </div>
-                        )
-                      })}
+                            }}
+                          >
+                            -
+                          </Button>
+                          <input
+                            type="text"
+                            value={goldItem?.quantity ?? ''}
+                            onChange={(e) => {
+                              const value = e.target.value
+                            if (goldIndex >= 0) {
+                                updateInventoryItem(goldIndex, {
+                                  quantity: value,
+                                  name: 'PO',
+                                  category: 'currency',
+                                })
+                              } else {
+                                updateField('inventory', [
+                                  ...character.inventory,
+                                {
+                                  id: createInventoryItemId(),
+                                  name: 'PO',
+                                  quantity: value,
+                                  notes: '',
+                                  category: 'currency',
+                                },
+                                ])
+                              }
+                            }}
+                            size={Math.max(2, String(goldItem?.quantity ?? '').length)}
+                            className="w-auto min-w-[32px] bg-transparent border-none outline-none text-sm text-center font-semibold"
+                            placeholder="0"
+                          />
+                          <Button
+                            variant="small"
+                            onClick={() => {
+                              const current = parseInt(goldItem?.quantity ?? '0') || 0
+                              const next = current + 1
+                            if (goldIndex >= 0) {
+                                updateInventoryItem(goldIndex, {
+                                  quantity: String(next),
+                                  name: 'PO',
+                                  category: 'currency',
+                                })
+                              } else {
+                                updateField('inventory', [
+                                  ...character.inventory,
+                                {
+                                  id: createInventoryItemId(),
+                                  name: 'PO',
+                                  quantity: String(next),
+                                  notes: '',
+                                  category: 'currency',
+                                },
+                                ])
+                              }
+                            }}
+                          >
+                            +
+                          </Button>
+                        </div>
+                      </Box>
                     </div>
-                  </div>
-                ))}
+                  )
+                })()}
+                <div className="grid grid-cols-3 gap-2">
+                  {inventoryCategories.map((section) => (
+                    <div key={section.key} className="border border-[#c9b89c] bg-white/40 p-2">
+                      <div className="flex items-center justify-between">
+                        <FieldLabel>{section.label}</FieldLabel>
+                      </div>
+                      <div className="mt-1">
+                        {character.inventory.map((item, idx) => {
+                          if (item.category !== section.key) return null
+                          const isEditingItem = editingInventoryId === item.id
+                          return (
+                            <div key={item.id} className="mb-1">
+                              {isEditingItem ? (
+                                <>
+                                  <div className="grid grid-cols-[1.4fr_0.4fr_auto] gap-1 items-center">
+                                    <Box>
+                                      <input
+                                        type="text"
+                                        value={item.name}
+                                        onChange={(e) =>
+                                          updateInventoryItem(idx, { name: e.target.value })
+                                        }
+                                        className="w-full bg-transparent border-none outline-none font-bold leading-tight"
+                                        placeholder="Objet"
+                                      />
+                                    </Box>
+                                    <Box>
+                                      <input
+                                        type="text"
+                                        value={item.quantity}
+                                        onChange={(e) =>
+                                          updateInventoryItem(idx, { quantity: e.target.value })
+                                        }
+                                        className="w-full bg-transparent border-none outline-none text-xs text-center"
+                                        placeholder="Qté"
+                                      />
+                                    </Box>
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        variant="small"
+                                        onClick={() => {
+                                          setEditingInventoryId(null)
+                                          setNewInventoryId(null)
+                                          setInventoryEditSnapshot(null)
+                                        }}
+                                      >
+                                        OK
+                                      </Button>
+                                      <Button variant="small" onClick={cancelInventoryEdit}>
+                                        Annuler
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <Box className="mt-1">
+                                    <AutoResizeTextarea
+                                      value={item.notes}
+                                      onChange={(e) =>
+                                        updateInventoryItem(idx, { notes: e.target.value })
+                                      }
+                                      className="w-full bg-transparent border-none outline-none text-xs"
+                                      placeholder="Notes"
+                                    />
+                                  </Box>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="grid grid-cols-[1.4fr_0.4fr_auto] gap-1 items-center">
+                                    <Box>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setExpandedInventoryNotesId(
+                                            expandedInventoryNotesId === item.id ? null : item.id
+                                          )
+                                        }
+                                        className="w-full text-left bg-transparent border-none outline-none font-bold leading-tight"
+                                      >
+                                        {item.name || 'Objet'}
+                                      </button>
+                                    </Box>
+                                    <div className="flex items-center gap-1 justify-center">
+                                      <Button
+                                        variant="small"
+                                        onClick={() => {
+                                          const current = parseInt(item.quantity || '0') || 0
+                                          updateInventoryItem(idx, { quantity: String(Math.max(0, current - 1)) })
+                                        }}
+                                      >
+                                        -
+                                      </Button>
+                                      <input
+                                        type="text"
+                                        value={item.quantity}
+                                        onChange={(e) =>
+                                          updateInventoryItem(idx, { quantity: e.target.value })
+                                        }
+                                        className="w-10 bg-transparent border-none outline-none text-xs text-center"
+                                        placeholder="0"
+                                      />
+                                      <Button
+                                        variant="small"
+                                        onClick={() => {
+                                          const current = parseInt(item.quantity || '0') || 0
+                                          updateInventoryItem(idx, { quantity: String(current + 1) })
+                                        }}
+                                      >
+                                        +
+                                      </Button>
+                                    </div>
+                                    <div className="flex items-center justify-end">
+                                      <div className="relative" data-inventory-menu>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setOpenInventoryMenuId(
+                                              openInventoryMenuId === item.id ? null : item.id
+                                            )
+                                          }
+                                          className="text-xs px-1"
+                                        >
+                                          ⋯
+                                        </button>
+                                        {openInventoryMenuId === item.id && (
+                                          <div className="absolute right-0 mt-1 z-10 bg-white border border-[#c9b89c] rounded shadow-sm text-xs">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                if (editingInventoryId !== null) return
+                                                setInventoryEditSnapshot({ id: item.id, item })
+                                                setEditingInventoryId(item.id)
+                                                setOpenInventoryMenuId(null)
+                                              }}
+                                              className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                            >
+                                              Edit
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                removeInventoryItem(idx)
+                                                setOpenInventoryMenuId(null)
+                                              }}
+                                              className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                                            >
+                                              Supprimer
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {expandedInventoryNotesId === item.id && (
+                                    <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1">
+                                      <AutoResizeTextarea
+                                        value={item.notes}
+                                        onChange={(e) =>
+                                          updateInventoryItem(idx, { notes: e.target.value })
+                                        }
+                                        className="w-full bg-transparent border-none outline-none text-xs"
+                                        placeholder="Notes"
+                                      />
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Button
+                          variant="small"
+                          onClick={() => {
+                            const nextId = addInventoryItem(section.key)
+                            setEditingInventoryId(nextId)
+                            setNewInventoryId(nextId)
+                          }}
+                          disabled={
+                            editingInventoryId !== null &&
+                            editingInventoryCategory !== section.key
+                          }
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <SectionHeader className="mt-2.5">Description & Notes</SectionHeader>

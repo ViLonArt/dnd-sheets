@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
 import {
@@ -24,7 +24,7 @@ type PcClassTabProps = {
   currentMaxSlots: Record<number, number>
   onSpellcastingAttributeChange: (value: SpellcastingAttribute) => void
   onUpdateSpellSlot: (level: number, field: 'total' | 'used', value: number) => void
-  onAddSpell: (level: number) => void
+  onAddSpell: (level: number) => string
   onUpdateSpell: (index: number, updates: Partial<Spell>) => void
   onRemoveSpell: (index: number) => void
 }
@@ -54,11 +54,12 @@ export function PcClassTab({
   onRemoveSpell,
 }: PcClassTabProps) {
   const [allowSlotOverrides, setAllowSlotOverrides] = useState(false)
-  const [editingSpellIndex, setEditingSpellIndex] = useState<number | null>(null)
-  const [spellEditSnapshot, setSpellEditSnapshot] = useState<{ index: number; spell: Spell } | null>(
+  const [editingSpellId, setEditingSpellId] = useState<string | null>(null)
+  const [spellEditSnapshot, setSpellEditSnapshot] = useState<{ id: string; spell: Spell } | null>(
     null
   )
-  const [newSpellIndex, setNewSpellIndex] = useState<number | null>(null)
+  const [newSpellId, setNewSpellId] = useState<string | null>(null)
+  const [openSpellMenuId, setOpenSpellMenuId] = useState<string | null>(null)
   const [expandedSpellDescriptionIndex, setExpandedSpellDescriptionIndex] = useState<number | null>(
     null
   )
@@ -89,6 +90,37 @@ export function PcClassTab({
     <span className="whitespace-nowrap">{value || '—'}</span>
   )
 
+  const parseNumber = (value: string) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  const formatSigned = (value: number) => (value >= 0 ? `+${value}` : `${value}`)
+
+  const getSpellValueDisplay = (spell: Spell) => {
+    if (spell.diceMode === 'custom') {
+      return spell.diceCustom ?? ''
+    }
+    if (!spell.diceDie) {
+      return spell.dice ?? ''
+    }
+    const count = Math.max(1, spell.diceCount || 1)
+    const mod = parseNumber(spell.diceMod ?? '')
+    return `${count}${spell.diceDie}${formatSigned(mod)}`
+  }
+
+  useEffect(() => {
+    if (!openSpellMenuId) return
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-spell-menu]')) return
+      setOpenSpellMenuId(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [openSpellMenuId])
+
   const renderSpellHeader = (includeLevel: boolean) => (
     <div
       className={`grid items-center gap-3 text-[9px] uppercase text-[#7a4b36] mb-1 ${
@@ -104,7 +136,7 @@ export function PcClassTab({
       <span>Portée</span>
       <span>Durée</span>
       <span>Composants</span>
-      <span>Dé</span>
+      <span>Valeur</span>
       <span>Jet de sauv.</span>
       <span>C/R</span>
       <span className="text-right">Actions</span>
@@ -112,7 +144,7 @@ export function PcClassTab({
   )
 
   const renderSpellRow = (spell: Spell, globalIdx: number, includeLevel: boolean) => {
-    const isEditing = editingSpellIndex === globalIdx
+    const isEditing = editingSpellId === spell.id
     const showDescription = expandedSpellDescriptionIndex === globalIdx
     const crTokens = [
       spell.concentration ? 'C' : null,
@@ -146,6 +178,7 @@ export function PcClassTab({
     const saveThrowValue = spell.saveThrow
       ? abilityLabels[spell.saveThrowAbility ?? 'STR'] ?? 'STR'
       : ''
+    const valueMode = spell.diceMode === 'custom' ? 'custom' : 'dice'
 
     return (
       <div key={globalIdx} className="border border-[#c9b89c] bg-white/40 p-1.5 mb-1">
@@ -172,8 +205,30 @@ export function PcClassTab({
                   ]}
                 />
               </Box>
-              <Button variant="small" onClick={() => onRemoveSpell(globalIdx)}>
-                ×
+              <Button
+                variant="small"
+                onClick={() => {
+                  setEditingSpellId(null)
+                  setNewSpellId(null)
+                  setSpellEditSnapshot(null)
+                }}
+              >
+                OK
+              </Button>
+              <Button
+                variant="small"
+                onClick={() => {
+                  if (newSpellId && newSpellId === spell.id) {
+                    onRemoveSpell(globalIdx)
+                  } else if (spellEditSnapshot && spellEditSnapshot.id === spell.id) {
+                    onUpdateSpell(globalIdx, spellEditSnapshot.spell)
+                  }
+                  setEditingSpellId(null)
+                  setNewSpellId(null)
+                  setSpellEditSnapshot(null)
+                }}
+              >
+                Annuler
               </Button>
             </div>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -246,14 +301,63 @@ export function PcClassTab({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <FieldLabel>Dice</FieldLabel>
-                <input
-                  type="text"
-                  value={spell.dice ?? ''}
-                  onChange={(e) => onUpdateSpell(globalIdx, { dice: e.target.value })}
-                  className="w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs"
-                  placeholder="ex: 2d6"
+                <FieldLabel>Valeur</FieldLabel>
+                <Select
+                  value={valueMode}
+                  onChange={(e) =>
+                    onUpdateSpell(globalIdx, {
+                      diceMode: e.target.value as Spell['diceMode'],
+                    })
+                  }
+                  options={[
+                    { value: 'dice', label: 'Dés' },
+                    { value: 'custom', label: 'Perso' },
+                  ]}
+                  className="text-[11px] min-h-[22px]"
                 />
+                {valueMode === 'custom' ? (
+                  <input
+                    type="text"
+                    value={spell.diceCustom ?? ''}
+                    onChange={(e) => onUpdateSpell(globalIdx, { diceCustom: e.target.value })}
+                    className="w-full bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs"
+                    placeholder="Valeur"
+                  />
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={spell.diceCount ?? 1}
+                      onChange={(e) =>
+                        onUpdateSpell(globalIdx, {
+                          diceCount: Math.max(1, parseInt(e.target.value, 10) || 1),
+                        })
+                      }
+                      className="w-10 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                    />
+                    <Select
+                      value={spell.diceDie ?? ''}
+                      onChange={(e) => onUpdateSpell(globalIdx, { diceDie: e.target.value })}
+                      options={[
+                        { value: '', label: '—' },
+                        { value: 'd4', label: 'd4' },
+                        { value: 'd6', label: 'd6' },
+                        { value: 'd8', label: 'd8' },
+                        { value: 'd10', label: 'd10' },
+                        { value: 'd12', label: 'd12' },
+                      ]}
+                      className="text-[11px] min-h-[22px]"
+                    />
+                    <input
+                      type="text"
+                      value={spell.diceMod ?? ''}
+                      onChange={(e) => onUpdateSpell(globalIdx, { diceMod: e.target.value })}
+                      className="w-12 text-center bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-[10px]"
+                      placeholder="Mod"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-1 flex items-center gap-3 text-[10px]">
@@ -328,7 +432,10 @@ export function PcClassTab({
                 includeLevel
                   ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
                   : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
-              }`}
+              } cursor-pointer`}
+              onClick={() =>
+                setExpandedSpellDescriptionIndex(showDescription ? null : globalIdx)
+              }
             >
               <span className="font-bold text-sm truncate">{spell.name || '—'}</span>
               {includeLevel && renderSpellValue(String(spell.level ?? '—'))}
@@ -337,44 +444,55 @@ export function PcClassTab({
               {renderSpellValue(spell.range)}
               {renderSpellValue(spell.duration)}
               {renderSpellValue(spell.components)}
-              {renderSpellValue(spell.dice ?? '')}
+              {renderSpellValue(getSpellValueDisplay(spell))}
               {renderSpellValue(saveThrowValue)}
               {renderSpellValue(crTokens.join(', '))}
-              <span className="flex justify-end items-center gap-2">
-                <Button
-                  variant="small"
-                  onClick={() => {
-                    if (editingSpellIndex === null) {
-                      setSpellEditSnapshot({ index: globalIdx, spell })
-                      setEditingSpellIndex(globalIdx)
-                    }
-                  }}
-                  disabled={editingSpellIndex !== null}
-                >
-                  Edit
-                </Button>
-                <Button variant="small" onClick={() => onRemoveSpell(globalIdx)}>
-                  ×
-                </Button>
-              </span>
-            </div>
-            <div className="mt-1">
-              {spell.description ? (
+              <span className="relative flex justify-end items-center gap-2" data-spell-menu>
                 <button
                   type="button"
-                  onClick={() =>
-                    setExpandedSpellDescriptionIndex(showDescription ? null : globalIdx)
-                  }
-                  className="px-1 py-0.5 border border-[#bda68a] rounded text-[10px]"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpenSpellMenuId(openSpellMenuId === spell.id ? null : spell.id)
+                  }}
+                  className="text-xs px-1"
                 >
-                  Description
+                  ⋯
                 </button>
-              ) : (
-                <span className="text-[10px] text-[#7a4b36]">—</span>
-              )}
+                {openSpellMenuId === spell.id && (
+                  <div
+                    className="absolute right-0 mt-5 z-10 bg-white border border-[#c9b89c] rounded shadow-sm text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editingSpellId !== null) return
+                        setSpellEditSnapshot({ id: spell.id, spell })
+                        setEditingSpellId(spell.id)
+                        setOpenSpellMenuId(null)
+                      }}
+                      className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onRemoveSpell(globalIdx)
+                        setOpenSpellMenuId(null)
+                      }}
+                      className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4]"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </span>
             </div>
             {spell.description && showDescription && (
-              <div className="mt-1 text-[10px] whitespace-pre-wrap">{spell.description}</div>
+              <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1 text-[10px] whitespace-pre-wrap">
+                {spell.description}
+              </div>
             )}
           </>
         )}
@@ -586,40 +704,14 @@ export function PcClassTab({
                   <Button
                     variant="small"
                     onClick={() => {
-                      if (editingSpellIndex !== null) {
-                        setEditingSpellIndex(null)
-                        setNewSpellIndex(null)
-                        setSpellEditSnapshot(null)
-                        return
-                      }
-                      const nextIndex = spells.length
-                      onAddSpell(slotLevel)
-                      setEditingSpellIndex(nextIndex)
-                      setNewSpellIndex(nextIndex)
+                      const id = onAddSpell(slotLevel)
+                      setEditingSpellId(id)
+                      setNewSpellId(id)
                     }}
+                    disabled={editingSpellId !== null}
                   >
-                    {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                    + Ajouter sort
                   </Button>
-                  {editingSpellIndex !== null && (
-                    <Button
-                      variant="small"
-                      onClick={() => {
-                        if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
-                          onRemoveSpell(editingSpellIndex)
-                        } else if (
-                          spellEditSnapshot &&
-                          spellEditSnapshot.index === editingSpellIndex
-                        ) {
-                          onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
-                        }
-                        setEditingSpellIndex(null)
-                        setNewSpellIndex(null)
-                        setSpellEditSnapshot(null)
-                      }}
-                    >
-                      Annuler
-                    </Button>
-                  )}
                 </div>
               </div>
             )
@@ -644,37 +736,14 @@ export function PcClassTab({
               <Button
                 variant="small"
                 onClick={() => {
-                  if (editingSpellIndex !== null) {
-                    setEditingSpellIndex(null)
-                    setNewSpellIndex(null)
-                    setSpellEditSnapshot(null)
-                    return
-                  }
-                  const nextIndex = spells.length
-                  onAddSpell(0)
-                  setEditingSpellIndex(nextIndex)
-                  setNewSpellIndex(nextIndex)
+                  const id = onAddSpell(0)
+                  setEditingSpellId(id)
+                  setNewSpellId(id)
                 }}
+                disabled={editingSpellId !== null}
               >
-                {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                + Ajouter sort
               </Button>
-              {editingSpellIndex !== null && (
-                <Button
-                  variant="small"
-                  onClick={() => {
-                    if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
-                      onRemoveSpell(editingSpellIndex)
-                    } else if (spellEditSnapshot && spellEditSnapshot.index === editingSpellIndex) {
-                      onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
-                    }
-                    setEditingSpellIndex(null)
-                    setNewSpellIndex(null)
-                    setSpellEditSnapshot(null)
-                  }}
-                >
-                  Annuler
-                </Button>
-              )}
             </div>
           </div>
           <div className="mb-3 border border-[#c9b89c] p-2 bg-white/40">
@@ -694,37 +763,14 @@ export function PcClassTab({
               <Button
                 variant="small"
                 onClick={() => {
-                  if (editingSpellIndex !== null) {
-                    setEditingSpellIndex(null)
-                    setNewSpellIndex(null)
-                    setSpellEditSnapshot(null)
-                    return
-                  }
-                  const nextIndex = spells.length
-                  onAddSpell(1)
-                  setEditingSpellIndex(nextIndex)
-                  setNewSpellIndex(nextIndex)
+                  const id = onAddSpell(1)
+                  setEditingSpellId(id)
+                  setNewSpellId(id)
                 }}
+                disabled={editingSpellId !== null}
               >
-                {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                + Ajouter sort
               </Button>
-              {editingSpellIndex !== null && (
-                <Button
-                  variant="small"
-                  onClick={() => {
-                    if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
-                      onRemoveSpell(editingSpellIndex)
-                    } else if (spellEditSnapshot && spellEditSnapshot.index === editingSpellIndex) {
-                      onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
-                    }
-                    setEditingSpellIndex(null)
-                    setNewSpellIndex(null)
-                    setSpellEditSnapshot(null)
-                  }}
-                >
-                  Annuler
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -753,40 +799,14 @@ export function PcClassTab({
                 <Button
                   variant="small"
                   onClick={() => {
-                    if (editingSpellIndex !== null) {
-                      setEditingSpellIndex(null)
-                      setNewSpellIndex(null)
-                      setSpellEditSnapshot(null)
-                      return
-                    }
-                    const nextIndex = spells.length
-                    onAddSpell(slotLevel)
-                    setEditingSpellIndex(nextIndex)
-                    setNewSpellIndex(nextIndex)
+                    const id = onAddSpell(slotLevel)
+                    setEditingSpellId(id)
+                    setNewSpellId(id)
                   }}
+                  disabled={editingSpellId !== null}
                 >
-                  {editingSpellIndex !== null ? 'Confirmer sort' : '+ Ajouter sort'}
+                  + Ajouter sort
                 </Button>
-                {editingSpellIndex !== null && (
-                  <Button
-                    variant="small"
-                    onClick={() => {
-                      if (newSpellIndex !== null && newSpellIndex === editingSpellIndex) {
-                        onRemoveSpell(editingSpellIndex)
-                      } else if (
-                        spellEditSnapshot &&
-                        spellEditSnapshot.index === editingSpellIndex
-                      ) {
-                        onUpdateSpell(editingSpellIndex, spellEditSnapshot.spell)
-                      }
-                      setEditingSpellIndex(null)
-                      setNewSpellIndex(null)
-                      setSpellEditSnapshot(null)
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                )}
               </div>
             </div>
           ))}

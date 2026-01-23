@@ -1,3 +1,5 @@
+import type { AbilityKey } from './abilities'
+
 export type SlotOverrides = Record<number, number>
 
 export interface PcData {
@@ -24,6 +26,11 @@ export interface ClassFeature {
     actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
     range?: string
     value?: string
+    valueDiceCount?: number
+    valueDie?: string
+    valueMod?: string
+    valueUseAbility?: boolean
+    valueAbility?: AbilityKey
     duration?: string
     notes?: string
     isConcentration?: boolean

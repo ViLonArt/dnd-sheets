@@ -60,9 +60,9 @@ export function PcClassTab({
   )
   const [newSpellId, setNewSpellId] = useState<string | null>(null)
   const [openSpellMenuId, setOpenSpellMenuId] = useState<string | null>(null)
-  const [expandedSpellDescriptionIndex, setExpandedSpellDescriptionIndex] = useState<number | null>(
-    null
-  )
+  const [expandedSpellDescriptionIndices, setExpandedSpellDescriptionIndices] = useState<
+    Set<number>
+  >(() => new Set())
 
   const classData = CLASSES_2024[className]
   const levelIndex = Math.max(1, Math.min(20, level)) - 1
@@ -147,7 +147,7 @@ export function PcClassTab({
 
   const renderSpellRow = (spell: Spell, globalIdx: number, includeLevel: boolean) => {
     const isEditing = editingSpellId === spell.id
-    const showDescription = expandedSpellDescriptionIndex === globalIdx
+    const showDescription = expandedSpellDescriptionIndices.has(globalIdx)
     const crTokens = [
       spell.concentration ? 'C' : null,
       spell.ritual ? 'R' : null,
@@ -436,7 +436,15 @@ export function PcClassTab({
                   : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
               } cursor-pointer`}
               onClick={() =>
-                setExpandedSpellDescriptionIndex(showDescription ? null : globalIdx)
+                setExpandedSpellDescriptionIndices((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(globalIdx)) {
+                    next.delete(globalIdx)
+                  } else {
+                    next.add(globalIdx)
+                  }
+                  return next
+                })
               }
             >
               <span className="font-bold text-sm truncate">{spell.name || '—'}</span>

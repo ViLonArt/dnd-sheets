@@ -77,6 +77,15 @@ export interface ClassFeature {
 }
 
 /**
+ * Portrait state for image positioning/zooming
+ */
+export interface PortraitState {
+  zoom: number
+  offsetX: number
+  offsetY: number
+}
+
+/**
  * Species trait entry
  */
 export interface SpeciesTrait {
@@ -193,6 +202,8 @@ export interface Character {
   conditions: string
   inventory: InventoryItem[]
   backstory: string
+  portrait: string | null
+  portraitState: PortraitState
   // Description & Features
   biography: string
   otherProficiencies: string
@@ -279,6 +290,15 @@ export const ClassFeatureSchema = z.object({
       reset: z.enum(['short', 'long']),
     })
     .optional(),
+})
+
+/**
+ * Zod schema for PortraitState
+ */
+export const PortraitStateSchema = z.object({
+  zoom: z.number().min(0.5).max(3),
+  offsetX: z.number(),
+  offsetY: z.number(),
 })
 
 /**
@@ -436,6 +456,8 @@ export const CharacterSchema = z.object({
   conditions: z.string(),
   inventory: z.array(InventoryItemSchema),
   backstory: z.string(),
+  portrait: z.string().nullable(),
+  portraitState: PortraitStateSchema,
   biography: z.string(),
   otherProficiencies: z.string(),
   featuresTraits: z.string(),
@@ -525,6 +547,12 @@ export function createEmptyCharacter(): Character {
     conditions: '',
     inventory: [],
     backstory: '',
+    portrait: null,
+    portraitState: {
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
     biography: '',
     otherProficiencies: '',
     featuresTraits: '',

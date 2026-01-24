@@ -97,6 +97,23 @@ export function loadCharacterFromStorage(): Character | null {
     if (!('featuresTraits' in parsed)) {
       parsed.featuresTraits = ''
     }
+    if (!('portrait' in parsed)) {
+      parsed.portrait = null
+    }
+    if (
+      !('portraitState' in parsed) ||
+      !parsed.portraitState ||
+      typeof parsed.portraitState !== 'object'
+    ) {
+      parsed.portraitState = { zoom: 1, offsetX: 0, offsetY: 0 }
+    } else {
+      const state = parsed.portraitState as Record<string, unknown>
+      parsed.portraitState = {
+        zoom: typeof state.zoom === 'number' ? state.zoom : 1,
+        offsetX: typeof state.offsetX === 'number' ? state.offsetX : 0,
+        offsetY: typeof state.offsetY === 'number' ? state.offsetY : 0,
+      }
+    }
     if (!('proficiencies' in parsed)) {
       parsed.proficiencies = []
     }

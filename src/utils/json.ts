@@ -142,6 +142,19 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     if (!('featuresTraits' in data)) {
       data.featuresTraits = ''
     }
+    if (!('portrait' in data)) {
+      data.portrait = null
+    }
+    if (!('portraitState' in data) || !data.portraitState || typeof data.portraitState !== 'object') {
+      data.portraitState = { zoom: 1, offsetX: 0, offsetY: 0 }
+    } else {
+      const state = data.portraitState as Record<string, unknown>
+      data.portraitState = {
+        zoom: typeof state.zoom === 'number' ? state.zoom : 1,
+        offsetX: typeof state.offsetX === 'number' ? state.offsetX : 0,
+        offsetY: typeof state.offsetY === 'number' ? state.offsetY : 0,
+      }
+    }
     if (!('proficiencies' in data)) {
       data.proficiencies = []
     }

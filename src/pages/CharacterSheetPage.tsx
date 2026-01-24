@@ -2,6 +2,8 @@ import { useRef, useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useCharacterForm, useExportToImage } from '@/hooks'
 import { AuthButton } from '@/components/auth/AuthButton'
+import { useAuth } from '@/contexts/AuthContext'
+import { uploadImage, dataURLtoFile } from '@/services/sheetService'
 import { PcClassTab } from '@/components/PcClassTab'
 import {
   PaperContainer,
@@ -14,11 +16,13 @@ import {
   Toolbar,
   Select,
 } from '@/components/ui'
+import { ImageCropperModal } from '@/components/ImageCropperModal'
 import { calculateAbilityModifier, type AbilityKey } from '@/types/abilities'
 import { ABILITIES_ORDER, SKILL_DATA } from '@/features/character-sheet/constants'
 import { applySlotOverrides } from '@/data/classTables'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import { SUBCLASS_OPTIONS } from '@/data/dndRules'
+import { cn } from '@/utils/cn'
 import type {
   Attack,
   Spell,
@@ -73,9 +77,16 @@ const THIRD_CASTER_SUBCLASSES = new Set([
 export default function CharacterSheetPage() {
   const sheetRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const portraitInputRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuth()
   const { character, updateField, updateCharacter, handleExport, handleImport, reset } = useCharacterForm()
   const { exportToPdf, exportToPng, isExporting } = useExportToImage()
   const [error, setError] = useState<string | null>(null)
+  const [isCropperOpen, setIsCropperOpen] = useState(false)
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [openPortraitMenu, setOpenPortraitMenu] = useState(false)
+  const PORTRAIT_ASPECT_RATIO = 160 / 220
   const [activeTab, setActiveTab] = useState<'core' | 'spells' | 'inventory'>('core')
   const [isEditingInit, setIsEditingInit] = useState(false)
   const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null)
@@ -89,7 +100,7 @@ export default function CharacterSheetPage() {
   )
   const [newAttackId, setNewAttackId] = useState<string | null>(null)
   const [openAttackMenuId, setOpenAttackMenuId] = useState<string | null>(null)
-  const [expandedAttackId, setExpandedAttackId] = useState<string | null>(null)
+  const [expandedAttackIds, setExpandedAttackIds] = useState<Set<string>>(() => new Set())
   const [featureEditSnapshots, setFeatureEditSnapshots] = useState<Record<string, ClassFeature>>({})
   const [newFeatureId, setNewFeatureId] = useState<string | null>(null)
   const [expandedInventoryNotesId, setExpandedInventoryNotesId] = useState<string | null>(
@@ -980,6 +991,61 @@ export default function CharacterSheetPage() {
     }
   }
 
+  const handlePortraitClick = () => {
+    portraitInputRef.current?.click()
+  }
+
+  const handlePortraitUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string
+      setSelectedImageSrc(dataUrl)
+      setIsCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const handleCropperSave = async (croppedImageUrl: string) => {
+    if (!user) {
+      setError('You must be logged in to upload images')
+      return
+    }
+
+    setIsUploadingImage(true)
+    setError(null)
+
+    try {
+      const file = dataURLtoFile(croppedImageUrl, 'portrait.png')
+      const slug = character.name
+        ? character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
+        : 'character'
+      const publicUrl = await uploadImage(file, slug)
+      updateField('portrait', publicUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+      setSelectedImageSrc(null)
+    } catch (err) {
+      console.error('Failed to upload image:', err)
+      setError(err instanceof Error ? err.message : 'Failed to upload image')
+      updateField('portrait', croppedImageUrl)
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleCropperClose = () => {
+    setIsCropperOpen(false)
+    setSelectedImageSrc(null)
+  }
+
+  const handlePortraitDelete = () => {
+    updateField('portrait', null)
+    updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+  }
+
   const inventoryCategories: Array<{ key: ItemCategory; label: string }> = [
     { key: 'weapons', label: 'Équipé / Armes / Armures' },
     { key: 'consumables', label: 'Consommables' },
@@ -1025,6 +1091,18 @@ export default function CharacterSheetPage() {
     document.addEventListener('click', handleClick)
     return () => document.removeEventListener('click', handleClick)
   }, [openFeatureMenuId])
+
+  useEffect(() => {
+    if (!openPortraitMenu) return
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest('[data-portrait-menu]')) return
+      setOpenPortraitMenu(false)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [openPortraitMenu])
 
   return (
     <div className="min-h-screen p-5 bg-gray-200">
@@ -1072,80 +1150,138 @@ export default function CharacterSheetPage() {
         <div ref={sheetRef}>
           <PaperContainer>
           {/* Header */}
-          <header>
-            <input
-              type="text"
-              value={character.name}
-              onChange={(e) => updateField('name', e.target.value)}
-              placeholder="Nom du personnage"
-              className="font-display text-ink text-[26px] mb-2 uppercase bg-transparent border-none outline-none focus:underline w-full"
-            />
-            <div className="grid grid-cols-4 gap-x-2.5 gap-y-1.5 text-xs">
-              <Select
-                label="Classe"
-                value={character.class}
-                onChange={(e) => handleClassChange(e.target.value)}
-                options={classOptions}
+          <header className="grid grid-cols-[110px_1fr] gap-4 items-start">
+            <div className="flex flex-col items-start gap-2">
+              <div
+                className={cn(
+                  'w-[110px] h-[150px] bg-gradient-to-br from-[#d2b48c] via-paper to-[#c9ad8f] border-2 border-ink flex items-center justify-center text-ink font-display text-[11px] uppercase overflow-hidden relative cursor-pointer',
+                  isUploadingImage && 'opacity-50 cursor-wait'
+                )}
+                onClick={handlePortraitClick}
+              >
+                {isUploadingImage ? (
+                  <span className="text-[10px]">Uploading...</span>
+                ) : character.portrait ? (
+                  <img
+                    src={character.portrait}
+                    alt="Portrait"
+                    className="w-full h-full object-cover block"
+                    draggable={false}
+                  />
+                ) : (
+                  <span>Portrait</span>
+                )}
+              </div>
+              <input
+                ref={portraitInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePortraitUpload}
+                className="hidden"
               />
-              <Select
-                label={CLASSES_2024[character.class]?.subclassLabel ?? 'Sous-classe'}
-                value={character.subclass}
-                onChange={(e) => updateField('subclass', e.target.value)}
-                options={subclassOptions.map((option) => ({
-                  value: option,
-                  label: option,
-                }))}
-                disabled={character.level < 3}
-              />
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] uppercase tracking-wider text-[#7a4b36]">
-                  Niveau
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={character.level}
-                  onChange={(e) => {
-                    const level = parseInt(e.target.value) || 1
-                    updateField('level', Math.max(1, Math.min(20, level)))
+              <div className="relative" data-portrait-menu onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpenPortraitMenu((prev) => !prev)
                   }}
-                  className="w-12 text-center font-semibold bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs focus:border-ink focus:outline-none"
-                  placeholder="1"
+                  className="text-xs px-1"
+                >
+                  ⋯
+                </button>
+                {openPortraitMenu && (
+                  <div className="absolute left-0 mt-1 z-10 bg-white border border-[#c9b89c] rounded shadow-sm text-xs min-w-[120px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handlePortraitDelete()
+                        setOpenPortraitMenu(false)
+                      }}
+                      className="block w-full text-left px-2 py-1 hover:bg-[#f6efe4] disabled:opacity-50"
+                      disabled={!character.portrait}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <input
+                type="text"
+                value={character.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                placeholder="Nom du personnage"
+                className="font-display text-ink text-[26px] mb-2 uppercase bg-transparent border-none outline-none focus:underline w-full"
+              />
+              <div className="grid grid-cols-4 gap-x-2.5 gap-y-1.5 text-xs">
+                <Select
+                  label="Classe"
+                  value={character.class}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  options={classOptions}
+                />
+                <Select
+                  label={CLASSES_2024[character.class]?.subclassLabel ?? 'Sous-classe'}
+                  value={character.subclass}
+                  onChange={(e) => updateField('subclass', e.target.value)}
+                  options={subclassOptions.map((option) => ({
+                    value: option,
+                    label: option,
+                  }))}
+                  disabled={character.level < 3}
+                />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[#7a4b36]">
+                    Niveau
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={character.level}
+                    onChange={(e) => {
+                      const level = parseInt(e.target.value) || 1
+                      updateField('level', Math.max(1, Math.min(20, level)))
+                    }}
+                    className="w-12 text-center font-semibold bg-transparent border border-[#bda68a] rounded px-1 py-0.5 text-xs focus:border-ink focus:outline-none"
+                    placeholder="1"
+                  />
+                </div>
+                <TextInput
+                  label="Passif/Profession"
+                  value={character.background}
+                  onChange={(e) => updateField('background', e.target.value)}
+                  className="text-xs"
+                />
+                <TextInput
+                  label="Race"
+                  value={character.race}
+                  onChange={(e) => updateField('race', e.target.value)}
+                  className="text-xs"
+                />
+                <TextInput
+                  label="Alignement"
+                  value={character.alignment}
+                  onChange={(e) => updateField('alignment', e.target.value)}
+                  className="text-xs"
+                />
+                <TextInput
+                  label="Points d'expérience"
+                  value={character.xp}
+                  onChange={(e) => updateField('xp', e.target.value)}
+                  className="text-xs"
                 />
               </div>
-              <TextInput
-                label="Passif/Profession"
-                value={character.background}
-                onChange={(e) => updateField('background', e.target.value)}
-                className="text-xs"
-              />
-              <TextInput
-                label="Race"
-                value={character.race}
-                onChange={(e) => updateField('race', e.target.value)}
-                className="text-xs"
-              />
-              <TextInput
-                label="Alignement"
-                value={character.alignment}
-                onChange={(e) => updateField('alignment', e.target.value)}
-                className="text-xs"
-              />
-              <TextInput
-                label="Points d'expérience"
-                value={character.xp}
-                onChange={(e) => updateField('xp', e.target.value)}
-                className="text-xs"
-              />
-            </div>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button variant="small" onClick={handleShortRest}>
-                Repos court
-              </Button>
-              <Button variant="small" onClick={handleLongRest}>
-                Repos long
-              </Button>
+              <div className="mt-2 flex justify-end gap-2">
+                <Button variant="small" onClick={handleShortRest}>
+                  Repos court
+                </Button>
+                <Button variant="small" onClick={handleLongRest}>
+                  Repos long
+                </Button>
+              </div>
             </div>
           </header>
 
@@ -1553,7 +1689,15 @@ export default function CharacterSheetPage() {
                         <div
                           className="grid grid-cols-[1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 items-center cursor-pointer"
                           onClick={() =>
-                            setExpandedAttackId(expandedAttackId === attack.id ? null : attack.id)
+                            setExpandedAttackIds((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(attack.id)) {
+                                next.delete(attack.id)
+                              } else {
+                                next.add(attack.id)
+                              }
+                              return next
+                            })
                           }
                         >
                           <div>
@@ -1651,7 +1795,7 @@ export default function CharacterSheetPage() {
                             )}
                           </div>
                         </div>
-                        {expandedAttackId === attack.id && attack.notes && (
+                        {expandedAttackIds.has(attack.id) && attack.notes && (
                           <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1 text-[10px]">
                             <div className="whitespace-pre-wrap">{attack.notes}</div>
                           </div>
@@ -2766,6 +2910,14 @@ export default function CharacterSheetPage() {
             </PaperContainer>
           )}
         </div>
+
+        <ImageCropperModal
+          isOpen={isCropperOpen}
+          imageSrc={selectedImageSrc}
+          onClose={handleCropperClose}
+          onSave={handleCropperSave}
+          aspectRatio={PORTRAIT_ASPECT_RATIO}
+        />
       </div>
     </div>
   )

@@ -139,7 +139,9 @@ export function PcClassTab({
       <span>Valeur</span>
       <span>Jet de sauv.</span>
       <span>C/R</span>
-      <span className="text-right">Actions</span>
+      <span className="text-right" aria-hidden="true">
+        &nbsp;
+      </span>
     </div>
   )
 

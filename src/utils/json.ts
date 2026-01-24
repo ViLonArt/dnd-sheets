@@ -365,18 +365,33 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     }
 
     if ('attacks' in data && Array.isArray(data.attacks)) {
-      const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha', 'none'])
+      const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha'])
       data.attacks = data.attacks.map((attack, index) => {
         if (!attack || typeof attack !== 'object') return attack
         const attackData = attack as Record<string, unknown>
-        const bonus = typeof attackData.bonus === 'string' ? attackData.bonus : ''
-        const ability = typeof attackData.ability === 'string' && validAbilities.has(attackData.ability)
-          ? attackData.ability
-          : 'none'
+        const ability =
+          typeof attackData.ability === 'string' && validAbilities.has(attackData.ability)
+            ? (attackData.ability as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
+            : 'str'
+        const proficiencyLevel =
+          typeof attackData.proficiencyLevel === 'number'
+            ? Math.max(0, Math.min(2, Math.round(attackData.proficiencyLevel)))
+            : typeof attackData.proficient === 'boolean'
+            ? attackData.proficient
+              ? 1
+              : 0
+            : 0
+        const magicMod =
+          typeof attackData.magicMod === 'string'
+            ? attackData.magicMod
+            : typeof attackData.bonusMod === 'string'
+            ? attackData.bonusMod
+            : typeof attackData.bonus === 'string'
+            ? attackData.bonus
+            : '0'
         return {
           id: typeof attackData.id === 'string' ? attackData.id : `atk-${index}`,
           name: typeof attackData.name === 'string' ? attackData.name : '',
-          bonus,
           damageDiceCount:
             typeof attackData.damageDiceCount === 'number'
               ? Math.max(1, Math.floor(attackData.damageDiceCount))
@@ -388,11 +403,10 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
             : '',
           notes: typeof attackData.notes === 'string' ? attackData.notes : '',
           property: typeof attackData.property === 'string' ? attackData.property : '',
+          special: typeof attackData.special === 'string' ? attackData.special : '',
           ability,
-          proficient: Boolean(attackData.proficient),
-          bonusMod: typeof attackData.bonusMod === 'string' ? attackData.bonusMod : '',
-          useManualBonus:
-            typeof attackData.useManualBonus === 'boolean' ? attackData.useManualBonus : Boolean(bonus),
+          magicMod,
+          proficiencyLevel,
         }
       })
     }

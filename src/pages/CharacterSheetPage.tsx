@@ -27,6 +27,7 @@ import type {
   SpeciesTrait,
   Feat,
   InventoryItem,
+  Character,
 } from '@/types/character'
 
 const ABILITY_NAMES_FR: Record<(typeof ABILITIES_ORDER)[number], string> = {
@@ -78,8 +79,8 @@ export default function CharacterSheetPage() {
   const [activeTab, setActiveTab] = useState<'core' | 'spells' | 'inventory'>('core')
   const [isEditingInit, setIsEditingInit] = useState(false)
   const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null)
-  const [expandedFeatureDescriptionId, setExpandedFeatureDescriptionId] = useState<string | null>(
-    null
+  const [expandedFeatureDescriptionIds, setExpandedFeatureDescriptionIds] = useState<Set<string>>(
+    () => new Set()
   )
   const [openFeatureMenuId, setOpenFeatureMenuId] = useState<string | null>(null)
   const [editingAttackId, setEditingAttackId] = useState<string | null>(null)
@@ -486,6 +487,40 @@ export default function CharacterSheetPage() {
     return `${count}${valueDie}${formatSigned(totalMod)}`
   }
 
+  const applyRest = (type: 'short' | 'long') => {
+    const maxHp = effectiveHpMax
+    const currentHp = parseNumber(character.hpCurrent)
+    const healed = Math.floor(maxHp / 2)
+    const nextHp = type === 'long' ? maxHp : Math.min(maxHp, currentHp + healed)
+    const nextFeatures = character.classFeatures.map((feature) => {
+      if (!feature.resource) return feature
+      if (type !== 'long' && feature.resource.reset !== 'short') return feature
+      return {
+        ...feature,
+        resource: {
+          ...feature.resource,
+          current: 0,
+        },
+      }
+    })
+    const updates: Partial<Character> = {
+      hpCurrent: String(nextHp),
+      classFeatures: nextFeatures,
+    }
+    if (type === 'long') {
+      updates.spellSlots = Object.fromEntries(
+        Object.entries(character.spellSlots).map(([level, slot]) => [
+          level,
+          { ...slot, used: 0 },
+        ])
+      )
+    }
+    updateCharacter(updates)
+  }
+
+  const handleShortRest = () => applyRest('short')
+  const handleLongRest = () => applyRest('long')
+
   // Attacks management
   const addAttack = () => {
     const id = createAttackId()
@@ -634,6 +669,7 @@ export default function CharacterSheetPage() {
       id: linkId,
       current,
       max,
+      reset: definition.reset,
     }
   }
 
@@ -1103,6 +1139,14 @@ export default function CharacterSheetPage() {
                 className="text-xs"
               />
             </div>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button variant="small" onClick={handleShortRest}>
+                Repos court
+              </Button>
+              <Button variant="small" onClick={handleLongRest}>
+                Repos long
+              </Button>
+            </div>
           </header>
 
           <div className="mt-3 flex gap-2">
@@ -1128,7 +1172,7 @@ export default function CharacterSheetPage() {
 
           {activeTab === 'core' && (
             <div className="mt-3 grid grid-cols-12 gap-6">
-              <div className="col-span-2 min-w-[180px]">
+              <div className="col-span-2 min-w-[180px] pr-4 border-r border-[#c9b89c]">
               <SectionHeader>Caractéristiques</SectionHeader>
                 <div className="mt-1 flex items-center gap-2">
                   <FieldLabel>Bonus de Maîtrise</FieldLabel>
@@ -1205,7 +1249,7 @@ export default function CharacterSheetPage() {
               </div>
               </div>
 
-              <div className="col-span-10">
+              <div className="col-span-10 pl-4">
                 <div className="grid grid-cols-3 gap-2">
                   <TextInput
                     label="CA"
@@ -1347,7 +1391,9 @@ export default function CharacterSheetPage() {
                     <FieldLabel className="text-center">Damage</FieldLabel>
                     <FieldLabel className="text-center">Propriété</FieldLabel>
                     <FieldLabel className="text-center">Spécial</FieldLabel>
-                    <FieldLabel className="text-center">Actions</FieldLabel>
+                    <FieldLabel className="text-center" aria-hidden="true">
+                      &nbsp;
+                    </FieldLabel>
                   </div>
               <div className="mt-1">
                 {character.attacks.map((attack, idx) => (
@@ -1713,9 +1759,15 @@ export default function CharacterSheetPage() {
                         key={feature.id}
                         className="mb-2 border border-[#c9b89c] bg-white/40 p-1.5 cursor-pointer"
                         onClick={() =>
-                          setExpandedFeatureDescriptionId(
-                            expandedFeatureDescriptionId === feature.id ? null : feature.id
-                          )
+                          setExpandedFeatureDescriptionIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(feature.id)) {
+                              next.delete(feature.id)
+                            } else {
+                              next.add(feature.id)
+                            }
+                            return next
+                          })
                         }
                       >
                         {editingFeatureId === feature.id ? (
@@ -2120,7 +2172,11 @@ export default function CharacterSheetPage() {
                             <div className="flex items-center gap-2">
                               <div className="font-bold text-sm truncate">{feature.name || '—'}</div>
                               {getFeatureResourceMode(feature) === 'independent' && (
-                                <div className="flex items-center gap-1 text-[10px]">
+                                <div
+                                  className="flex items-center gap-1 text-[10px]"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
                                   <input
                                     type="number"
                                     min="0"
@@ -2144,13 +2200,22 @@ export default function CharacterSheetPage() {
                                   <span className="min-w-[18px] text-center">
                                     {feature.resource?.max ?? 0}
                                   </span>
+                                  <span className="text-[10px] text-[#7a4b36]">
+                                    {(feature.resource?.reset ?? 'long') === 'short'
+                                      ? 'Repos court/long'
+                                      : 'Repos long'}
+                                  </span>
                                 </div>
                               )}
                               {getFeatureResourceMode(feature) === 'class' && (() => {
                                 const linked = getLinkedClassResource(feature)
                                 if (!linked) return null
                                 return (
-                                  <div className="flex items-center gap-1 text-[10px]">
+                                  <div
+                                    className="flex items-center gap-1 text-[10px]"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                  >
                                     <input
                                       type="number"
                                       min="0"
@@ -2165,6 +2230,9 @@ export default function CharacterSheetPage() {
                                     />
                                     <span>/</span>
                                     <span className="min-w-[18px] text-center">{linked.max}</span>
+                                    <span className="text-[10px] text-[#7a4b36]">
+                                      {linked.reset === 'short' ? 'Repos court/long' : 'Repos long'}
+                                    </span>
                                   </div>
                                 )
                               })()}
@@ -2218,39 +2286,31 @@ export default function CharacterSheetPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="mt-1 flex items-start gap-3 text-[10px] flex-wrap">
-                              {feature.activeFields.type && feature.data.actionType && (
-                                <div className="flex flex-col">
-                                  <span className="text-[9px] uppercase text-[#7a4b36]">Type</span>
-                                  <span>{feature.data.actionType}</span>
-                                </div>
-                              )}
-                              {feature.activeFields.range && feature.data.range && (
-                                <div className="flex flex-col">
-                                  <span className="text-[9px] uppercase text-[#7a4b36]">Portée</span>
-                                  <span>{feature.data.range}</span>
-                                </div>
-                              )}
-                              {feature.activeFields.value && (
-                                <div className="flex flex-col">
-                                  <span className="text-[9px] uppercase text-[#7a4b36]">Valeur</span>
-                                  <span>{getFeatureValueDisplay(feature)}</span>
-                                </div>
-                              )}
-                              {feature.activeFields.duration && feature.data.duration && (
-                                <div className="flex flex-col">
-                                  <span className="text-[9px] uppercase text-[#7a4b36]">Durée</span>
-                                  <span>{feature.data.duration}</span>
-                                </div>
-                              )}
-                              {(feature.activeFields.concentration || feature.activeFields.ritual) &&
-                                (feature.data.isConcentration || feature.data.isRitual) && (
-                                  <div className="flex flex-col">
-                                    <span className="text-[9px] uppercase text-[#7a4b36]">&nbsp;</span>
-                                    <span>
-                                      {[
+                            <div className="mt-1 grid grid-cols-[1fr_1fr_1fr_1fr_0.6fr] items-start gap-3 text-[10px]">
+                              <div className="flex flex-col">
+                                <span className="text-[9px] uppercase text-[#7a4b36]">Type</span>
+                                <span>{feature.activeFields.type ? feature.data.actionType || '—' : '—'}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[9px] uppercase text-[#7a4b36]">Portée</span>
+                                <span>{feature.activeFields.range ? feature.data.range || '—' : '—'}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[9px] uppercase text-[#7a4b36]">Valeur</span>
+                                <span>{feature.activeFields.value ? getFeatureValueDisplay(feature) : '—'}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[9px] uppercase text-[#7a4b36]">Durée</span>
+                                <span>{feature.activeFields.duration ? feature.data.duration || '—' : '—'}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[9px] uppercase text-[#7a4b36]">C/R</span>
+                                <span>
+                                  {(feature.activeFields.concentration || feature.activeFields.ritual) &&
+                                  (feature.data.isConcentration || feature.data.isRitual)
+                                    ? [
                                         feature.activeFields.concentration &&
-                                          feature.data.isConcentration
+                                        feature.data.isConcentration
                                           ? 'C'
                                           : null,
                                         feature.activeFields.ritual && feature.data.isRitual
@@ -2258,13 +2318,13 @@ export default function CharacterSheetPage() {
                                           : null,
                                       ]
                                         .filter(Boolean)
-                                        .join(', ')}
-                                    </span>
-                                  </div>
-                                )}
+                                        .join(', ')
+                                    : '—'}
+                                </span>
+                              </div>
                             </div>
                             {feature.description &&
-                              expandedFeatureDescriptionId === feature.id && (
+                              expandedFeatureDescriptionIds.has(feature.id) && (
                                 <div className="mt-1 border-l-2 border-[#bda68a] bg-white/30 px-2 py-1 text-[10px] whitespace-pre-wrap">
                                   {feature.description}
                                 </div>

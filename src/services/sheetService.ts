@@ -50,11 +50,6 @@ export async function createSheet(
 }
 
 /**
- * Alias for createSheet (saveSheet)
- */
-export const saveSheet = createSheet
-
-/**
  * Get a sheet by ID or slug (public access)
  * Accepts either a UUID or a slug identifier
  * The backend will search both the 'id' and 'slug' columns using an OR filter
@@ -135,93 +130,6 @@ export async function updateSheet(
 }
 
 /**
- * Delete a sheet (requires ownership)
- */
-export async function deleteSheet(id: string): Promise<void> {
-  try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const { data: sessionData } = await supabase.auth.getSession()
-    
-    if (!sessionData?.session) {
-      throw new Error('You must be logged in to delete a sheet')
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/sheet-api/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to delete sheet' }))
-      console.error('Error deleting sheet:', errorData, 'Status:', response.status)
-      throw new Error(errorData.error || `Failed to delete sheet: ${response.statusText}`)
-    }
-  } catch (err) {
-    console.error('Failed to delete sheet:', err)
-    throw err instanceof Error ? err : new Error('Failed to delete sheet')
-  }
-}
-
-/**
- * Upload an avatar image to Supabase Storage
- * Returns the public URL of the uploaded image
- */
-export async function uploadAvatar(
-  file: Blob,
-  filename: string
-): Promise<string> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !sessionData?.session?.user) {
-    throw new Error('You must be logged in to upload an avatar')
-  }
-
-  const userId = sessionData.session.user.id
-  const filePath = `${userId}/${filename}`
-
-  // Upload the file
-  const { error } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: true, // Replace if exists
-    })
-
-  if (error) {
-    throw new Error(`Failed to upload avatar: ${error.message}`)
-  }
-
-  // Get the public URL
-  const { data: urlData } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(filePath)
-
-  return urlData.publicUrl
-}
-
-/**
- * Delete an avatar from Supabase Storage
- */
-export async function deleteAvatar(filePath: string): Promise<void> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  
-  if (sessionError || !sessionData?.session) {
-    throw new Error('You must be logged in to delete an avatar')
-  }
-
-  const { error } = await supabase.storage
-    .from('avatars')
-    .remove([filePath])
-
-  if (error) {
-    throw new Error(`Failed to delete avatar: ${error.message}`)
-  }
-}
-
-/**
  * Upload an image to Supabase Storage
  * Returns the public URL of the uploaded image
  * @param file - The image file to upload
@@ -271,9 +179,12 @@ export async function uploadImage(file: File, slug?: string): Promise<string> {
  * Useful for uploading cropped images from canvas
  */
 export function dataURLtoFile(dataurl: string, filename: string): File {
-  const arr = dataurl.split(',')
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png'
-  const bstr = atob(arr[1])
+  const [header, body] = dataurl.split(',')
+  if (!header || !body) {
+    throw new Error('Invalid data URL')
+  }
+  const mime = header.match(/:(.*?);/)?.[1] || 'image/png'
+  const bstr = atob(body)
   let n = bstr.length
   const u8arr = new Uint8Array(n)
   while (n--) {

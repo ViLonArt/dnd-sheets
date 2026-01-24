@@ -1,6 +1,7 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
+import { useOutsideClick } from '@/hooks'
 import {
   AutoResizeTextarea,
   Box,
@@ -109,17 +110,11 @@ export function PcClassTab({
     return `${count}${spell.diceDie}${formatSigned(mod)}`
   }
 
-  useEffect(() => {
-    if (!openSpellMenuId) return
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null
-      if (!target) return
-      if (target.closest('[data-spell-menu]')) return
-      setOpenSpellMenuId(null)
-    }
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [openSpellMenuId])
+  useOutsideClick({
+    isActive: Boolean(openSpellMenuId),
+    onOutsideClick: () => setOpenSpellMenuId(null),
+    ignoreSelector: '[data-spell-menu]',
+  })
 
   const renderSpellHeader = (includeLevel: boolean) => (
     <div

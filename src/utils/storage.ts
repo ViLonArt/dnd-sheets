@@ -1,8 +1,20 @@
 import type { Character } from '@/types/character'
 import type { Npc } from '@/types/npc'
+import { CLASSES_2024 } from '@/data/classTables2024'
 
 const CHARACTER_STORAGE_KEY = 'dnd-character-data'
 const NPC_STORAGE_KEY = 'dnd-npc-data'
+
+const getBaseSlotsFrom2024 = (className: string, level: number) => {
+  const classData = CLASSES_2024[className]
+  const levelIndex = Math.max(1, Math.min(20, level)) - 1
+  const slots = classData?.levels[levelIndex]?.slots ?? []
+  const totals: Record<number, number> = {}
+  for (let slotLevel = 1; slotLevel <= 9; slotLevel += 1) {
+    totals[slotLevel] = slots[slotLevel] ?? 0
+  }
+  return totals
+}
 
 /**
  * Save character to localStorage
@@ -66,6 +78,14 @@ export function loadCharacterFromStorage(): Character | null {
     if (!('spellcastingAttribute' in parsed)) {
       parsed.spellcastingAttribute = 'None'
     }
+
+    // Ensure subclass exists
+    if (!('subclass' in parsed)) {
+      parsed.subclass = ''
+    }
+    if (!('subclassNotes' in parsed)) {
+      parsed.subclassNotes = ''
+    }
     
     // Ensure new fields exist for backward compatibility
     if (!('biography' in parsed)) {
@@ -76,6 +96,23 @@ export function loadCharacterFromStorage(): Character | null {
     }
     if (!('featuresTraits' in parsed)) {
       parsed.featuresTraits = ''
+    }
+    if (!('portrait' in parsed)) {
+      parsed.portrait = null
+    }
+    if (
+      !('portraitState' in parsed) ||
+      !parsed.portraitState ||
+      typeof parsed.portraitState !== 'object'
+    ) {
+      parsed.portraitState = { zoom: 1, offsetX: 0, offsetY: 0 }
+    } else {
+      const state = parsed.portraitState as Record<string, unknown>
+      parsed.portraitState = {
+        zoom: typeof state.zoom === 'number' ? state.zoom : 1,
+        offsetX: typeof state.offsetX === 'number' ? state.offsetX : 0,
+        offsetY: typeof state.offsetY === 'number' ? state.offsetY : 0,
+      }
     }
     if (!('proficiencies' in parsed)) {
       parsed.proficiencies = []
@@ -107,6 +144,122 @@ export function loadCharacterFromStorage(): Character | null {
     }
     if (!('classFeatures' in parsed)) {
       parsed.classFeatures = []
+    }
+    if ('classFeatures' in parsed && Array.isArray(parsed.classFeatures)) {
+      parsed.classFeatures = parsed.classFeatures.map((feature, index) => {
+        if (!feature || typeof feature !== 'object') {
+          return {
+            id: `feature-${index}`,
+            name: '',
+            description: '',
+            activeFields: {
+              type: false,
+              range: false,
+              value: false,
+              duration: false,
+              notes: false,
+              concentration: false,
+              ritual: false,
+            },
+            data: {},
+            hasResource: false,
+          }
+        }
+        const data = feature as Record<string, unknown>
+        const activeFieldsSource =
+          data.activeFields && typeof data.activeFields === 'object'
+            ? (data.activeFields as Record<string, unknown>)
+            : {}
+        const dataSource =
+          data.data && typeof data.data === 'object' ? (data.data as Record<string, unknown>) : {}
+        const valueAbilitySource =
+          typeof dataSource.valueAbility === 'string' ? dataSource.valueAbility : undefined
+        const valueAbility =
+          valueAbilitySource && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(valueAbilitySource)
+            ? (valueAbilitySource as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
+            : undefined
+        const legacyNotes = typeof data.level === 'string' ? data.level : ''
+        const legacyUsesCurrent = typeof data.usesCurrent === 'number' ? data.usesCurrent : undefined
+        const legacyUsesMax = typeof data.usesMax === 'number' ? data.usesMax : undefined
+        const hasLegacyResource = legacyUsesCurrent !== undefined || legacyUsesMax !== undefined
+        const resourceSource =
+          data.resource && typeof data.resource === 'object'
+            ? (data.resource as Record<string, unknown>)
+            : {}
+        const hasResource =
+          typeof data.hasResource === 'boolean' ? data.hasResource : hasLegacyResource
+        return {
+          id: typeof data.id === 'string' ? data.id : `feature-${index}`,
+          name: typeof data.name === 'string' ? data.name : '',
+          description: typeof data.description === 'string' ? data.description : '',
+          activeFields: {
+            type: typeof activeFieldsSource.type === 'boolean' ? activeFieldsSource.type : false,
+            range: typeof activeFieldsSource.range === 'boolean' ? activeFieldsSource.range : false,
+            value: typeof activeFieldsSource.value === 'boolean' ? activeFieldsSource.value : false,
+            duration:
+              typeof activeFieldsSource.duration === 'boolean' ? activeFieldsSource.duration : false,
+            notes: typeof activeFieldsSource.notes === 'boolean' ? activeFieldsSource.notes : false,
+            concentration:
+              typeof activeFieldsSource.concentration === 'boolean'
+                ? activeFieldsSource.concentration
+                : false,
+            ritual: typeof activeFieldsSource.ritual === 'boolean' ? activeFieldsSource.ritual : false,
+          },
+          data: {
+            actionType:
+              typeof dataSource.actionType === 'string'
+                ? (dataSource.actionType as 'action' | 'bonus' | 'reaction' | 'passive' | 'free')
+                : undefined,
+            range: typeof dataSource.range === 'string' ? dataSource.range : undefined,
+            value: typeof dataSource.value === 'string' ? dataSource.value : undefined,
+            valueDiceCount:
+              typeof dataSource.valueDiceCount === 'number'
+                ? Math.max(1, Math.floor(dataSource.valueDiceCount))
+                : undefined,
+            valueDie: typeof dataSource.valueDie === 'string' ? dataSource.valueDie : undefined,
+            valueMod: typeof dataSource.valueMod === 'string' ? dataSource.valueMod : undefined,
+            valueUseAbility:
+              typeof dataSource.valueUseAbility === 'boolean'
+                ? dataSource.valueUseAbility
+                : undefined,
+            valueAbility,
+            duration: typeof dataSource.duration === 'string' ? dataSource.duration : undefined,
+            notes:
+              typeof dataSource.notes === 'string'
+                ? dataSource.notes
+                : legacyNotes || undefined,
+            isConcentration:
+              typeof dataSource.isConcentration === 'boolean'
+                ? dataSource.isConcentration
+                : undefined,
+            isRitual: typeof dataSource.isRitual === 'boolean' ? dataSource.isRitual : undefined,
+          },
+          hasResource,
+          resourceMode:
+            typeof data.resourceMode === 'string'
+              ? (data.resourceMode as 'none' | 'independent' | 'class')
+              : hasResource
+              ? 'independent'
+              : 'none',
+          resourceLinkId: typeof data.resourceLinkId === 'string' ? data.resourceLinkId : undefined,
+          resource: hasResource
+            ? {
+                current:
+                  typeof resourceSource.current === 'number'
+                    ? Math.max(0, resourceSource.current)
+                    : Math.max(0, legacyUsesCurrent ?? 0),
+                max:
+                  typeof resourceSource.max === 'number'
+                    ? Math.max(0, resourceSource.max)
+                    : Math.max(0, legacyUsesMax ?? 0),
+                reset:
+                  typeof resourceSource.reset === 'string' && resourceSource.reset === 'short'
+                    ? 'short'
+                    : 'long',
+              }
+            : undefined,
+        }
+      })
     }
     if (!('speciesTraits' in parsed)) {
       parsed.speciesTraits = []
@@ -140,15 +293,16 @@ export function loadCharacterFromStorage(): Character | null {
     }
     if ('inventory' in parsed && Array.isArray(parsed.inventory)) {
       const validCategories = new Set(['weapons', 'consumables', 'currency', 'other'])
-      parsed.inventory = parsed.inventory.map((item) => {
+      parsed.inventory = parsed.inventory.map((item, index) => {
         if (!item || typeof item !== 'object') {
-          return { name: '', quantity: '', notes: '', category: 'other' }
+          return { id: `inv-${index}`, name: '', quantity: '', notes: '', category: 'other' }
         }
         const itemData = item as Record<string, unknown>
         const category = typeof itemData.category === 'string' && validCategories.has(itemData.category)
           ? itemData.category
           : 'other'
         return {
+          id: typeof itemData.id === 'string' ? itemData.id : `inv-${index}`,
           name: typeof itemData.name === 'string' ? itemData.name : '',
           quantity: typeof itemData.quantity === 'string' ? itemData.quantity : '',
           notes: typeof itemData.notes === 'string' ? itemData.notes : '',
@@ -182,42 +336,137 @@ export function loadCharacterFromStorage(): Character | null {
     }
 
     if ('attacks' in parsed && Array.isArray(parsed.attacks)) {
-      const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha', 'none'])
-      parsed.attacks = parsed.attacks.map((attack) => {
+      const validAbilities = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha'])
+      parsed.attacks = parsed.attacks.map((attack, index) => {
         if (!attack || typeof attack !== 'object') return attack
         const attackData = attack as Record<string, unknown>
-        const bonus = typeof attackData.bonus === 'string' ? attackData.bonus : ''
-        const ability = typeof attackData.ability === 'string' && validAbilities.has(attackData.ability)
-          ? attackData.ability
-          : 'none'
+        const ability =
+          typeof attackData.ability === 'string' && validAbilities.has(attackData.ability)
+            ? (attackData.ability as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
+            : 'str'
+        const proficiencyLevel =
+          typeof attackData.proficiencyLevel === 'number'
+            ? Math.max(0, Math.min(2, Math.round(attackData.proficiencyLevel)))
+            : typeof attackData.proficient === 'boolean'
+            ? attackData.proficient
+              ? 1
+              : 0
+            : 0
+        const magicMod =
+          typeof attackData.magicMod === 'string'
+            ? attackData.magicMod
+            : typeof attackData.bonusMod === 'string'
+            ? attackData.bonusMod
+            : typeof attackData.bonus === 'string'
+            ? attackData.bonus
+            : '0'
         return {
+          id: typeof attackData.id === 'string' ? attackData.id : `atk-${index}`,
           name: typeof attackData.name === 'string' ? attackData.name : '',
-          bonus,
-          damage: typeof attackData.damage === 'string' ? attackData.damage : '',
+          damageDiceCount:
+            typeof attackData.damageDiceCount === 'number'
+              ? Math.max(1, Math.floor(attackData.damageDiceCount))
+              : 1,
+          damageDie: typeof attackData.damageDie === 'string'
+            ? attackData.damageDie
+            : typeof attackData.damage === 'string'
+            ? attackData.damage
+            : '',
           notes: typeof attackData.notes === 'string' ? attackData.notes : '',
+          property: typeof attackData.property === 'string' ? attackData.property : '',
+          special: typeof attackData.special === 'string' ? attackData.special : '',
           ability,
-          proficient: Boolean(attackData.proficient),
-          bonusMod: typeof attackData.bonusMod === 'string' ? attackData.bonusMod : '',
-          useManualBonus:
-            typeof attackData.useManualBonus === 'boolean' ? attackData.useManualBonus : Boolean(bonus),
+          magicMod,
+          proficiencyLevel,
         }
       })
     }
 
     if ('spells' in parsed && Array.isArray(parsed.spells)) {
-      parsed.spells = parsed.spells.map((spell) => {
+      parsed.spells = parsed.spells.map((spell, index) => {
         if (!spell || typeof spell !== 'object') return spell
         const spellData = spell as Record<string, unknown>
+        const legacyNotes = typeof spellData.notes === 'string' ? spellData.notes : ''
+        const legacyVerbal = Boolean(spellData.verbal)
+        const components =
+          typeof spellData.components === 'string'
+            ? spellData.components
+            : legacyVerbal
+            ? 'V'
+            : ''
+        const diceModeSource =
+          typeof spellData.diceMode === 'string' ? spellData.diceMode : undefined
+        const diceMode =
+          diceModeSource === 'dice' || diceModeSource === 'custom' ? diceModeSource : undefined
+        const diceCustomSource =
+          typeof spellData.diceCustom === 'string'
+            ? spellData.diceCustom
+            : typeof spellData.dice === 'string'
+            ? spellData.dice
+            : ''
         return {
+          id: typeof spellData.id === 'string' ? spellData.id : `spell-${index}`,
           name: typeof spellData.name === 'string' ? spellData.name : '',
-          level: typeof spellData.level === 'number' || typeof spellData.level === 'string' ? spellData.level : 0,
-          notes: typeof spellData.notes === 'string' ? spellData.notes : '',
-          prepared: Boolean(spellData.prepared),
+          level:
+            typeof spellData.level === 'number' || typeof spellData.level === 'string'
+              ? spellData.level
+              : 0,
+          school: typeof spellData.school === 'string' ? spellData.school : '',
+          type: typeof spellData.type === 'string' ? spellData.type : '',
+          range: typeof spellData.range === 'string' ? spellData.range : '',
+          duration: typeof spellData.duration === 'string' ? spellData.duration : '',
+          components,
+          dice: typeof spellData.dice === 'string' ? spellData.dice : '',
+          diceMode: diceMode ?? (diceCustomSource ? 'custom' : 'dice'),
+          diceCount:
+            typeof spellData.diceCount === 'number'
+              ? Math.max(1, Math.floor(spellData.diceCount))
+              : 1,
+          diceDie: typeof spellData.diceDie === 'string' ? spellData.diceDie : '',
+          diceMod: typeof spellData.diceMod === 'string' ? spellData.diceMod : '',
+          diceCustom: diceCustomSource,
           concentration: Boolean(spellData.concentration),
           ritual: Boolean(spellData.ritual),
-          verbal: Boolean(spellData.verbal),
+          saveThrow: Boolean(spellData.saveThrow),
+          saveThrowAbility:
+            typeof spellData.saveThrowAbility === 'string'
+              ? (spellData.saveThrowAbility as 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA')
+              : 'STR',
+          description:
+            typeof spellData.description === 'string'
+              ? spellData.description
+              : legacyNotes,
         }
       })
+    }
+
+    // Ensure slotOverrides exists (migrate from old totals if possible)
+    if (!('slotOverrides' in parsed) || !parsed.slotOverrides || typeof parsed.slotOverrides !== 'object') {
+      const overrides: Record<number, number> = {}
+      const className =
+        typeof parsed.class === 'string'
+          ? parsed.class
+          : typeof (parsed as Record<string, unknown>).className === 'string'
+          ? ((parsed as Record<string, unknown>).className as string)
+          : ''
+      const baseSlots = getBaseSlotsFrom2024(className, parsed.level as number)
+      const spellSlots = parsed.spellSlots as Record<number, { total?: unknown }> | undefined
+      for (let level = 1; level <= 9; level += 1) {
+        const total = spellSlots?.[level]?.total
+        if (typeof total === 'number' && Number.isFinite(total)) {
+          overrides[level] = total - (baseSlots[level] ?? 0)
+        }
+      }
+      parsed.slotOverrides = overrides
+    } else {
+      const overrides = parsed.slotOverrides as Record<string, unknown>
+      const cleaned: Record<number, number> = {}
+      for (const [key, value] of Object.entries(overrides)) {
+        const level = Number(key)
+        if (!Number.isFinite(level) || typeof value !== 'number' || !Number.isFinite(value)) continue
+        cleaned[level] = value
+      }
+      parsed.slotOverrides = cleaned
     }
     
     return (parsed as unknown) as Character

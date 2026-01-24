@@ -36,6 +36,9 @@ export {
   createEmptyCharacter,
 } from './character'
 
+// PC automation types
+export type { PcData, SlotOverrides } from './pc'
+
 // NPC types and schemas
 export type { Npc, PortraitState } from './npc'
 export {

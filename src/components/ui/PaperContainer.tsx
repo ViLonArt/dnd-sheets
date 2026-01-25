@@ -15,7 +15,7 @@ export function PaperContainer({
     <div
       className={cn(
         'bg-paper border border-border shadow-lg',
-        'bg-[url("https://upload.wikimedia.org/wikipedia/commons/5/5f/Old_paper_texture_27.jpg")]',
+        'bg-[url("paper-texture.jpg")]',
         'bg-cover p-5 mx-auto relative',
         variant === 'spell-block' && 'mt-1.5',
         className

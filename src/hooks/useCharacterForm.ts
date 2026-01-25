@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Character } from '@/types/character'
 import { createEmptyCharacter } from '@/types/character'
 import {
@@ -7,12 +7,38 @@ import {
   exportCharacterToJson,
   importCharacterFromJson,
 } from '@/utils'
+import { normalizeCharacterData } from '@/utils/characterMigrations'
 
-export function useCharacterForm() {
+export function useCharacterForm(initialData?: Character) {
   const [character, setCharacter] = useState<Character>(() => {
+    if (initialData) {
+      return normalizeCharacterData(
+        initialData as unknown as Record<string, unknown>
+      ) as unknown as Character
+    }
     const saved = loadCharacterFromStorage()
     return saved || createEmptyCharacter()
   })
+  const isInitialMount = useRef(true)
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
+    if (initialData) {
+      setCharacter(
+        normalizeCharacterData(
+          initialData as unknown as Record<string, unknown>
+        ) as unknown as Character
+      )
+      return
+    }
+
+    const saved = loadCharacterFromStorage()
+    setCharacter(saved || createEmptyCharacter())
+  }, [initialData])
 
   // Auto-save to localStorage whenever character changes
   useEffect(() => {

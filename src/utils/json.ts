@@ -1,6 +1,7 @@
 import { CharacterSchema, type Character } from '@/types/character'
 import { NpcSchema, type Npc } from '@/types/npc'
 import { parseAbilityScore } from '@/types/abilities'
+import { normalizeCharacterData } from './characterMigrations'
 
 /**
  * Export character data to JSON file
@@ -46,85 +47,15 @@ export async function importCharacterFromJson(file: File): Promise<Character> {
     // This preserves multi-line text from textarea fields when importing
     const data = JSON.parse(text) as Record<string, unknown>
     
-    // Migrate old string format abilities to new number format
-    if (data && typeof data === 'object' && 'abilities' in data) {
-      const abilities = data.abilities as Record<string, unknown>
-      const migratedAbilities: Record<string, number> = {}
-      for (const [key, value] of Object.entries(abilities)) {
-        if (typeof value === 'string') {
-          // Old format: "16 (+3)" -> 16
-          migratedAbilities[key] = parseAbilityScore(value)
-        } else if (typeof value === 'number') {
-          // New format: already a number
-          migratedAbilities[key] = value
-        } else {
-          migratedAbilities[key] = 10
-        }
-      }
-      data.abilities = migratedAbilities
-    }
-    
     // Guard clause: ensure data is an object
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid character data: expected an object')
     }
-    
-    // Migrate old classLevel to new class/level fields
-    if ('classLevel' in data && !('class' in data)) {
-      const classLevel = (data.classLevel as string) ?? ''
-      // Try to parse "Class Name 5" or "Class 5" format
-      const match = classLevel.match(/^(.+?)\s*(\d+)$/)
-      if (match && match[1] && match[2]) {
-        data.class = match[1].trim()
-        data.level = parseInt(match[2], 10) || 1
-      } else {
-        data.class = classLevel
-        data.level = 1
-      }
-      delete data.classLevel
-    }
-    
-    // Migrate old spellAbility to new spellcastingAttribute
-    if ('spellAbility' in data && !('spellcastingAttribute' in data)) {
-      const spellAbility = ((data.spellAbility as string) ?? '').toUpperCase().trim()
-      if (spellAbility.includes('INT') || spellAbility.includes('INTELLIGENCE')) {
-        data.spellcastingAttribute = 'INT'
-      } else if (spellAbility.includes('WIS') || spellAbility.includes('WISDOM') || spellAbility.includes('SAG')) {
-        data.spellcastingAttribute = 'WIS'
-      } else if (spellAbility.includes('CHA') || spellAbility.includes('CHARISMA')) {
-        data.spellcastingAttribute = 'CHA'
-      } else {
-        data.spellcastingAttribute = 'None'
-      }
-      delete data.spellAbility
-    }
-    
-    // Ensure level exists and is valid
-    if (!('level' in data) || typeof data.level !== 'number') {
-      data.level = 1
-    }
-    if (typeof data.level === 'number') {
-      data.level = Math.max(1, Math.min(20, data.level))
-    }
-    
-    // Ensure spellcastingAttribute exists
-    if (!('spellcastingAttribute' in data)) {
-      data.spellcastingAttribute = 'None'
-    }
-    
-    // Ensure new fields exist for backward compatibility
-    if (!('biography' in data)) {
-      data.biography = ''
-    }
-    if (!('otherProficiencies' in data)) {
-      data.otherProficiencies = ''
-    }
-    if (!('featuresTraits' in data)) {
-      data.featuresTraits = ''
-    }
-    
+
+    const normalized = normalizeCharacterData(data)
+
     // Validate with Zod - this ensures the data matches the Character interface
-    const validated = CharacterSchema.parse(data)
+    const validated = CharacterSchema.parse(normalized)
     return (validated as unknown) as Character
   } catch (error) {
     if (error instanceof SyntaxError) {

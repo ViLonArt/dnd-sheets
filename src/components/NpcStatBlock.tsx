@@ -2,6 +2,7 @@ import type { Npc } from '@/types/npc'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'
 import { Button } from '@/components/ui'
+import paperTexture from '@/assets/paper-texture.jpg';
 
 interface NpcStatBlockProps {
   npc: Npc
@@ -10,7 +11,8 @@ interface NpcStatBlockProps {
 
 export function NpcStatBlock({ npc, onEdit }: NpcStatBlockProps) {
   return (
-    <div className="max-w-6xl mx-auto bg-paper border border-border shadow-lg bg-[url('paper-texture.jpg')] bg-cover relative overflow-hidden">
+    <div className="max-w-6xl mx-auto bg-paper border border-border shadow-lg bg-cover relative overflow-hidden"
+    style={{ backgroundImage: `url(${paperTexture})` }}>
       {/* Inner border effect */}
       <div className="absolute inset-[10px] border border-ink/25 pointer-events-none z-10" />
       {onEdit && (

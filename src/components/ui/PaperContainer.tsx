@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react'
 import { cn } from '@/utils/cn'
+import paperTexture from '@/assets/paper-texture.jpg';
 
 export interface PaperContainerProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'spell-block'
@@ -15,11 +16,11 @@ export function PaperContainer({
     <div
       className={cn(
         'bg-paper border border-border shadow-lg',
-        'bg-[url("paper-texture.jpg")]',
         'bg-cover p-5 mx-auto relative',
         variant === 'spell-block' && 'mt-1.5',
         className
       )}
+      style={{ backgroundImage: `url(${paperTexture})` }}
       {...props}
     >
       {/* Inner border effect */}

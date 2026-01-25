@@ -5,20 +5,24 @@ import { Button, Toolbar } from '@/components/ui'
 
 type CharacterToolbarProps = {
   isExporting: boolean
+  isSaving: boolean
   onExport: () => void
   onImportFile: (event: ChangeEvent<HTMLInputElement>) => void
   onReset: () => void
   onDownloadPdf: () => void
   onDownloadPng: () => void
+  onSave: () => void
 }
 
 export function CharacterToolbar({
   isExporting,
+  isSaving,
   onExport,
   onImportFile,
   onReset,
   onDownloadPdf,
   onDownloadPng,
+  onSave,
 }: CharacterToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -32,6 +36,9 @@ export function CharacterToolbar({
       right={
         <>
           <AuthButton />
+          <Button onClick={onSave} disabled={isSaving}>
+            {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
           <Button onClick={onExport}>Exporter la fiche (JSON)</Button>
           <Button onClick={() => fileInputRef.current?.click()}>
             Importer une fiche

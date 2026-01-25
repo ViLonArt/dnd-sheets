@@ -19,6 +19,14 @@ export interface SheetResponse {
   updated_at: string
 }
 
+export interface CharacterSheetResponse {
+  id: string
+  owner_id: string
+  data: Character
+  created_at: string
+  updated_at: string
+}
+
 /**
  * Create a new sheet
  * The Supabase client automatically includes the Authorization header if logged in
@@ -130,6 +138,114 @@ export async function updateSheet(
 }
 
 /**
+ * Create a new character sheet
+ */
+export async function createCharacterSheet(
+  data: Character
+): Promise<CharacterSheetResponse> {
+  try {
+    const { data: result, error } = await supabase.functions.invoke('character-sheet-api', {
+      method: 'POST',
+      body: { data },
+    })
+
+    if (error) {
+      console.error('Error creating character sheet:', error)
+      throw new Error(error.message || 'Failed to create character sheet')
+    }
+
+    if (!result || !result.id) {
+      console.error('Invalid response from character-sheet-api:', result)
+      throw new Error('Invalid response: missing sheet ID')
+    }
+
+    return result as CharacterSheetResponse
+  } catch (err) {
+    console.error('Failed to create character sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to create character sheet')
+  }
+}
+
+/**
+ * Get a character sheet by ID or slug (public access)
+ */
+export async function getCharacterSheet(
+  identifier: string
+): Promise<CharacterSheetResponse> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: sessionData } = await supabase.auth.getSession()
+
+    const url = new URL(`${supabaseUrl}/functions/v1/character-sheet-api`)
+    url.searchParams.set('id', identifier)
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(sessionData?.session?.access_token && {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        }),
+      },
+    })
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Failed to fetch character sheet' }))
+      console.error('Error fetching character sheet:', errorData, 'Status:', response.status)
+      throw new Error(errorData.error || `Failed to fetch character sheet: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    return result as CharacterSheetResponse
+  } catch (err) {
+    console.error('Failed to get character sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to get character sheet')
+  }
+}
+
+/**
+ * Update an existing character sheet (requires ownership)
+ */
+export async function updateCharacterSheet(
+  id: string,
+  data: Character
+): Promise<CharacterSheetResponse> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const { data: sessionData } = await supabase.auth.getSession()
+
+    if (!sessionData?.session) {
+      throw new Error('You must be logged in to update a character sheet')
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/character-sheet-api/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({ data }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: 'Failed to update character sheet' }))
+      console.error('Error updating character sheet:', errorData, 'Status:', response.status)
+      throw new Error(errorData.error || `Failed to update character sheet: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    return result as CharacterSheetResponse
+  } catch (err) {
+    console.error('Failed to update character sheet:', err)
+    throw err instanceof Error ? err : new Error('Failed to update character sheet')
+  }
+}
+
+/**
  * Upload an image to Supabase Storage
  * Returns the public URL of the uploaded image
  * @param file - The image file to upload
@@ -148,11 +264,11 @@ export async function uploadImage(file: File, slug?: string): Promise<string> {
   const filename = slug 
     ? `${slug}-${timestamp}.${extension}`
     : `${timestamp}.${extension}`
-  const path = `users/${userId}/${filename}`
+  const path = `${userId}/${filename}`
 
   // Upload the file
   const { data, error } = await supabase.storage
-    .from('character-images')
+    .from('avatars')
     .upload(path, file, {
       cacheControl: '3600',
       upsert: true, // Replace if exists
@@ -168,7 +284,7 @@ export async function uploadImage(file: File, slug?: string): Promise<string> {
 
   // Get the public URL
   const { data: urlData } = supabase.storage
-    .from('character-images')
+    .from('avatars')
     .getPublicUrl(data.path)
 
   return urlData.publicUrl

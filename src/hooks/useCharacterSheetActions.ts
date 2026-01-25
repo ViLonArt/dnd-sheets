@@ -1,13 +1,10 @@
 import { useCallback, useState, type ChangeEvent, type RefObject } from 'react'
-import type { User } from '@supabase/supabase-js'
-import { dataURLtoFile, uploadImage } from '@/services/sheetService'
 import type { Character } from '@/types/character'
 
 type UpdateField = <K extends keyof Character>(field: K, value: Character[K]) => void
 
 type UseCharacterSheetActionsParams = {
   character: Character
-  user: User | null
   sheetRef: RefObject<HTMLElement>
   updateField: UpdateField
   updateCharacter: (updates: Partial<Character>) => void
@@ -21,7 +18,6 @@ type UseCharacterSheetActionsParams = {
 
 export function useCharacterSheetActions({
   character,
-  user,
   sheetRef,
   updateField,
   updateCharacter,
@@ -35,7 +31,6 @@ export function useCharacterSheetActions({
   const [error, setError] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
 
   const parseNumber = (value: string) => {
     const parsed = Number(value)
@@ -135,32 +130,12 @@ export function useCharacterSheetActions({
 
   const handleCropperSave = useCallback(
     async (croppedImageUrl: string) => {
-      if (!user) {
-        setError('You must be logged in to upload images')
-        return
-      }
-
-      setIsUploadingImage(true)
       setError(null)
-
-      try {
-        const file = dataURLtoFile(croppedImageUrl, 'portrait.png')
-        const slug = character.name
-          ? character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
-          : 'character'
-        const publicUrl = await uploadImage(file, slug)
-        updateField('portrait', publicUrl)
-        updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
-        setSelectedImageSrc(null)
-      } catch (err) {
-        console.error('Failed to upload image:', err)
-        setError(err instanceof Error ? err.message : 'Failed to upload image')
-        updateField('portrait', croppedImageUrl)
-      } finally {
-        setIsUploadingImage(false)
-      }
+      updateField('portrait', croppedImageUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+      setSelectedImageSrc(null)
     },
-    [character.name, updateField, user]
+    [updateField]
   )
 
   const handleCropperClose = useCallback(() => {
@@ -177,7 +152,6 @@ export function useCharacterSheetActions({
     error,
     isCropperOpen,
     selectedImageSrc,
-    isUploadingImage,
     handleShortRest,
     handleLongRest,
     handleExportClick,

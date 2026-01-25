@@ -91,13 +91,14 @@ export default function NpcSheetPage() {
 
     try {
       setError(null)
+      const npcToSave = await uploadPortraitIfNeeded(npc)
       if (sheetId) {
         // Update existing sheet
-        await updateSheet(sheetId, npc)
+        await updateSheet(sheetId, npcToSave)
         alert('Sheet saved successfully!')
       } else {
         // Create new sheet
-        const result = await createSheet(npc)
+        const result = await createSheet(npcToSave)
         setSheetId(result.id)
         // Update URL without page reload
         window.history.replaceState({}, '', `/npc/${result.id}`)
@@ -110,6 +111,31 @@ export default function NpcSheetPage() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save sheet'
       setError(errorMessage)
       alert(errorMessage)
+    }
+  }
+
+  const uploadPortraitIfNeeded = async (currentNpc: Npc) => {
+    const portrait = currentNpc.portrait
+    if (!portrait || !portrait.startsWith('data:image/')) {
+      return currentNpc
+    }
+
+    setIsUploadingImage(true)
+    try {
+      const file = dataURLtoFile(portrait, 'portrait.png')
+      const slug = currentNpc.name
+        ? currentNpc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
+        : 'npc'
+      const publicUrl = await uploadImage(file, slug)
+      updateField('portrait', publicUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+      return {
+        ...currentNpc,
+        portrait: publicUrl,
+        portraitState: { zoom: 1, offsetX: 0, offsetY: 0 },
+      }
+    } finally {
+      setIsUploadingImage(false)
     }
   }
 
@@ -140,38 +166,16 @@ export default function NpcSheetPage() {
   }
 
   const handleCropperSave = async (croppedImageUrl: string) => {
-    if (!user) {
-      setError('You must be logged in to upload images')
-      return
-    }
-
-    setIsUploadingImage(true)
     setError(null)
 
     try {
-      // Convert data URL to File
-      const file = dataURLtoFile(croppedImageUrl, 'portrait.png')
-      
-      // Generate a slug for the filename (use NPC name or default)
-      const slug = npc.name 
-        ? npc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
-        : 'npc'
-      
-      // Upload to Supabase Storage
-      const publicUrl = await uploadImage(file, slug)
-      
-      // Update form with the public URL
-      updateField('portrait', publicUrl)
+      updateField('portrait', croppedImageUrl)
       updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
-      
+
       setSelectedImageSrc(null)
     } catch (err) {
-      console.error('Failed to upload image:', err)
-      setError(err instanceof Error ? err.message : 'Failed to upload image')
-      // Optionally, fall back to data URL if upload fails
-      updateField('portrait', croppedImageUrl)
-    } finally {
-      setIsUploadingImage(false)
+      console.error('Failed to set portrait:', err)
+      setError(err instanceof Error ? err.message : 'Failed to set portrait')
     }
   }
 

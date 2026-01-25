@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, SectionHeader, Select } from '@/components/ui'
 import { useOutsideClick } from '@/hooks'
-import { calculateAbilityModifier, type AbilityKey } from '@/types/abilities'
+import { calculateAbilityModifier} from '@/types/abilities'
 import type { Abilities } from '@/types/abilities'
 import type { ClassFeature } from '@/types/character'
 

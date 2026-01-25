@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Npc } from '@/types/npc'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'

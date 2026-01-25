@@ -28,10 +28,10 @@ jobs:
       - name: Set Environment Variables
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "VITE_BASE_PATH=/NOM-DE-VOTRE-REPO/" >> $GITHUB_ENV
+            echo "VITE_BASE_PATH=/dnd-sheets/" >> $GITHUB_ENV
             echo "DEPLOY_FOLDER=." >> $GITHUB_ENV
           else
-            echo "VITE_BASE_PATH=/NOM-DE-VOTRE-REPO/dev/" >> $GITHUB_ENV
+            echo "VITE_BASE_PATH=/dnd-sheets/dev/" >> $GITHUB_ENV
             echo "DEPLOY_FOLDER=dev" >> $GITHUB_ENV
           fi
 

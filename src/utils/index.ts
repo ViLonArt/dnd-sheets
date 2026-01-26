@@ -12,10 +12,6 @@ export {
 export {
   saveCharacterToStorage,
   loadCharacterFromStorage,
-  clearCharacterStorage,
-  saveNpcToStorage,
-  loadNpcFromStorage,
-  clearNpcStorage,
 } from './storage'
 
 export { exportToPdf } from './pdf'

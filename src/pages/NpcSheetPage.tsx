@@ -1,5 +1,9 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { useNpcForm, useExportToImage } from '@/hooks'
+import { useAuth } from '@/contexts/AuthContext'
+import { AuthButton } from '@/components/auth/AuthButton'
+import { getSheet, createSheet, updateSheet, uploadImage, dataURLtoFile } from '@/services/sheetService'
 import {
   PaperContainer,
   Heading,
@@ -12,21 +16,128 @@ import {
   AutoResizeTextarea,
 } from '@/components/ui'
 import { ImageCropperModal } from '@/components/ImageCropperModal'
+import { NpcStatBlock } from '@/components/NpcStatBlock'
 import { calculateAbilityModifier } from '@/types/abilities'
 import { ABILITIES_ORDER, ABILITY_LABELS } from '@/features/character-sheet/constants'
+import { cn } from '@/utils/cn'
+import type { Npc } from '@/types/npc'
 
 export default function NpcSheetPage() {
+  const { id } = useParams<{ id: string }>()
   const sheetRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const portraitInputRef = useRef<HTMLInputElement>(null)
-  const { npc, updateField, handleExport, handleImport, reset } = useNpcForm()
-  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
+  const { user } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [isCropperOpen, setIsCropperOpen] = useState(false)
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null)
+  const [sheetId, setSheetId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [initialNpcData, setInitialNpcData] = useState<Npc | undefined>(undefined)
+  
+  // Determine if this is a new sheet
+  const isNew = !id || id === 'new'
+  const [isEditing, setIsEditing] = useState(isNew)
+  
+  const { npc, updateField, handleExport, handleImport, reset } = useNpcForm(initialNpcData)
+  const { exportToPdf, exportToPng, isExporting } = useExportToImage()
 
   // Portrait frame aspect ratio: 160x220 = ~0.727
   const PORTRAIT_ASPECT_RATIO = 160 / 220
+
+  // Load sheet data from URL if id exists
+  useEffect(() => {
+    const loadSheet = async () => {
+      if (!id) {
+        setSheetId(null)
+        setInitialNpcData(undefined) // Reset to blank sheet
+        setIsEditing(true) // New sheet starts in edit mode
+        return
+      }
+
+      setIsLoading(true)
+      try {
+        const sheet = await getSheet(id)
+        setSheetId(sheet.id)
+
+        // Set initial data to populate form
+        if (sheet.data) {
+          setInitialNpcData(sheet.data as Npc)
+        } else {
+          setInitialNpcData(undefined)
+        }
+        
+        // Existing sheet starts in view mode
+        setIsEditing(false)
+      } catch (err) {
+        console.error('Failed to load sheet:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load sheet')
+        setInitialNpcData(undefined)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSheet()
+  }, [id])
+
+  // Save sheet to Supabase
+  const handleSave = async () => {
+    if (!user) {
+      alert('You must be logged in to save sheets')
+      return
+    }
+
+    try {
+      setError(null)
+      const npcToSave = await uploadPortraitIfNeeded(npc)
+      if (sheetId) {
+        // Update existing sheet
+        await updateSheet(sheetId, npcToSave)
+        alert('Sheet saved successfully!')
+      } else {
+        // Create new sheet
+        const result = await createSheet(npcToSave)
+        setSheetId(result.id)
+        // Update URL without page reload
+        window.history.replaceState({}, '', `/npc/${result.id}`)
+        alert('Sheet saved successfully!')
+      }
+      // Return to view mode after successful save
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Failed to save sheet:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save sheet'
+      setError(errorMessage)
+      alert(errorMessage)
+    }
+  }
+
+  const uploadPortraitIfNeeded = async (currentNpc: Npc) => {
+    const portrait = currentNpc.portrait
+    if (!portrait || !portrait.startsWith('data:image/')) {
+      return currentNpc
+    }
+
+    setIsUploadingImage(true)
+    try {
+      const file = dataURLtoFile(portrait, 'portrait.png')
+      const slug = currentNpc.name
+        ? currentNpc.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 20)
+        : 'npc'
+      const publicUrl = await uploadImage(file, slug)
+      updateField('portrait', publicUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+      return {
+        ...currentNpc,
+        portrait: publicUrl,
+        portraitState: { zoom: 1, offsetX: 0, offsetY: 0 },
+      }
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
 
   // Handle ability score changes
   const handleAbilityChange = (ability: string, value: number) => {
@@ -54,11 +165,18 @@ export default function NpcSheetPage() {
     e.target.value = ''
   }
 
-  const handleCropperSave = (croppedImageUrl: string) => {
-    updateField('portrait', croppedImageUrl)
-    // Clean up old portraitState since we no longer need it
-    updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
-    setSelectedImageSrc(null)
+  const handleCropperSave = async (croppedImageUrl: string) => {
+    setError(null)
+
+    try {
+      updateField('portrait', croppedImageUrl)
+      updateField('portraitState', { zoom: 1, offsetX: 0, offsetY: 0 })
+
+      setSelectedImageSrc(null)
+    } catch (err) {
+      console.error('Failed to set portrait:', err)
+      setError(err instanceof Error ? err.message : 'Failed to set portrait')
+    }
   }
 
   const handleCropperClose = () => {
@@ -149,35 +267,59 @@ export default function NpcSheetPage() {
               <Button onClick={handleDownloadPng} disabled={isExporting} variant="small">
                 {isExporting ? 'Génération...' : 'Télécharger en PNG'}
               </Button>
-              <Button onClick={() => portraitInputRef.current?.click()}>
-                Choisir un portrait
-              </Button>
-              <input
-                ref={portraitInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePortraitUpload}
-                className="hidden"
-              />
-              <Button onClick={handlePortraitDelete} disabled={!npc.portrait}>
-                Supprimer le portrait
-              </Button>
+              {isEditing && (
+                <>
+                  <Button 
+                    onClick={() => portraitInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                  >
+                    {isUploadingImage ? 'Téléchargement...' : 'Choisir un portrait'}
+                  </Button>
+                  <input
+                    ref={portraitInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePortraitUpload}
+                    className="hidden"
+                  />
+                  <Button onClick={handlePortraitDelete} disabled={!npc.portrait}>
+                    Supprimer le portrait
+                  </Button>
+                </>
+              )}
             </>
           }
           right={
             <>
+              <AuthButton />
               <Button onClick={handleExportClick}>Exporter la fiche (JSON)</Button>
-              <Button onClick={handleImportClick}>Importer une fiche</Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button onClick={handleReset} variant="small">
-                Reset
-              </Button>
+              {isEditing ? (
+                <>
+                  <Button onClick={handleImportClick}>Importer une fiche</Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/json"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button onClick={() => setIsEditing(false)} variant="small">
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} variant="small">
+                    Save
+                  </Button>
+                  <Button onClick={handleReset} variant="small">
+                    Reset
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => setIsEditing(true)} variant="small">
+                    Edit
+                  </Button>
+                </>
+              )}
             </>
           }
         />
@@ -188,8 +330,21 @@ export default function NpcSheetPage() {
           </div>
         )}
 
+        {isLoading && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+            Loading sheet...
+          </div>
+        )}
+
+        {isUploadingImage && (
+          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+            Uploading image...
+          </div>
+        )}
+
         <div ref={sheetRef}>
-          <PaperContainer>
+          {isEditing ? (
+            <PaperContainer>
           <div className="flex justify-between items-start gap-3">
             {/* Header with Name, Type, Description */}
             <div className="flex-1">
@@ -223,10 +378,15 @@ export default function NpcSheetPage() {
 
             {/* Portrait */}
             <div
-              className="w-[160px] h-[220px] bg-gradient-to-br from-[#d2b48c] via-paper to-[#c9ad8f] border-2 border-dashed border-ink flex items-center justify-center text-ink font-display text-sm uppercase overflow-hidden relative cursor-pointer"
+              className={cn(
+                "w-[160px] h-[220px] bg-gradient-to-br from-[#d2b48c] via-paper to-[#c9ad8f] border-2 border-dashed border-ink flex items-center justify-center text-ink font-display text-sm uppercase overflow-hidden relative cursor-pointer",
+                isUploadingImage && "opacity-50 cursor-wait"
+              )}
               onClick={handlePortraitClick}
             >
-              {npc.portrait ? (
+              {isUploadingImage ? (
+                <span className="text-xs">Uploading...</span>
+              ) : npc.portrait ? (
                 <img
                   src={npc.portrait}
                   alt="Portrait"
@@ -360,6 +520,9 @@ export default function NpcSheetPage() {
             </Button>
           </div>
         </PaperContainer>
+          ) : (
+            <NpcStatBlock npc={npc} onEdit={() => setIsEditing(true)} />
+          )}
         </div>
 
         {/* Image Cropper Modal */}

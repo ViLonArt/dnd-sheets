@@ -5,6 +5,7 @@ export interface PropertyLineProps extends HTMLAttributes<HTMLDivElement> {
   label: string
   value?: string
   editable?: boolean
+  disabled?: boolean
   onValueChange?: (value: string) => void
 }
 
@@ -13,6 +14,7 @@ export function PropertyLine({
   label,
   value = '',
   editable = false,
+  disabled = false,
   onValueChange,
   ...props
 }: PropertyLineProps) {
@@ -24,7 +26,8 @@ export function PropertyLine({
           type="text"
           value={value}
           onChange={(e) => onValueChange?.(e.target.value)}
-          className="inline bg-transparent border-none outline-none focus:underline font-body"
+          disabled={disabled}
+          className="inline bg-transparent border-none outline-none focus:underline font-body disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ minWidth: '100px' }}
         />
       ) : (

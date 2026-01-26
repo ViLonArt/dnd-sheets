@@ -1,15 +1,22 @@
 import { z } from 'zod'
-import type { Abilities, SavingThrowProficiencies, SkillProficiencies } from './abilities'
+import type { SlotOverrides } from './pc'
+import type { Abilities, SavingThrowProficiencies, SkillProficiencies, AbilityKey } from './abilities'
 import { AbilitiesSchema } from './abilities'
 
 /**
  * Attack or spell entry
  */
 export interface Attack {
+  id: string
   name: string
-  bonus: string
-  damage: string
+  damageDiceCount: number
+  damageDie: string
+  ability: AbilityKey
+  magicMod: string
+  proficiencyLevel: 0 | 1 | 2
+  property: string
   notes: string
+  special: string
 }
 
 /**
@@ -21,13 +28,102 @@ export interface Trait {
 }
 
 /**
+ * Proficiency entry
+ */
+export interface ProficiencyItem {
+  name: string
+  description: string
+  category: 'armor' | 'weapon' | 'tool' | 'other'
+}
+
+/**
+ * Class feature entry
+ */
+export interface ClassFeature {
+  id: string
+  name: string
+  description: string
+  activeFields: {
+    type: boolean
+    range: boolean
+    value: boolean
+    duration: boolean
+    notes: boolean
+    concentration: boolean
+    ritual: boolean
+  }
+  data: {
+    actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
+    range?: string
+    value?: string
+    valueDiceCount?: number
+    valueDie?: string
+    valueMod?: string
+    valueUseAbility?: boolean
+    valueAbility?: AbilityKey
+    duration?: string
+    notes?: string
+    isConcentration?: boolean
+    isRitual?: boolean
+  }
+  hasResource: boolean
+  resourceMode?: 'none' | 'independent' | 'class'
+  resourceLinkId?: string
+  resource?: {
+    current: number
+    max: number
+    reset: 'short' | 'long'
+  }
+}
+
+/**
+ * Portrait state for image positioning/zooming
+ */
+export interface PortraitState {
+  zoom: number
+  offsetX: number
+  offsetY: number
+}
+
+/**
+ * Species trait entry
+ */
+export interface SpeciesTrait {
+  name: string
+  description: string
+}
+
+/**
+ * Feat entry
+ */
+export interface Feat {
+  name: string
+  description: string
+}
+
+/**
  * Spell entry
  */
 export interface Spell {
+  id: string
   name: string
   level: string | number
-  notes: string
-  prepared: boolean
+  school: string
+  type: string
+  range: string
+  duration: string
+  components: string
+  dice?: string
+  diceMode?: 'dice' | 'custom'
+  diceCount?: number
+  diceDie?: string
+  diceMod?: string
+  diceCustom?: string
+  concentration?: boolean
+  ritual?: boolean
+  saveThrow?: boolean
+  saveThrowAbility?: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
+  description?: string
 }
 
 /**
@@ -44,9 +140,30 @@ export interface SpellSlot {
 export type SpellSlots = Record<number, SpellSlot>
 
 /**
+ * Spell slot overrides by level (1-9)
+ */
+export type SpellSlotOverrides = SlotOverrides
+
+/**
  * Spellcasting attribute type
  */
 export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
+
+/**
+ * Inventory item categories
+ */
+export type ItemCategory = 'weapons' | 'consumables' | 'currency' | 'other'
+
+/**
+ * Inventory item entry
+ */
+export interface InventoryItem {
+  id: string
+  name: string
+  quantity: string
+  notes: string
+  category: ItemCategory
+}
 
 /**
  * Character sheet data model
@@ -54,6 +171,8 @@ export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
 export interface Character {
   name: string
   class: string
+  subclass: string
+  subclassNotes: string
   level: number
   background: string
   race: string
@@ -63,15 +182,28 @@ export interface Character {
   saves: SavingThrowProficiencies
   skills: SkillProficiencies
   ac: string // Armor Class
-  init: string // Initiative
+  init: string // Initiative (computed)
+  initMisc: number
   speed: string
   hpMax: string
+  hpMaxOverride: string
   hpCurrent: string
-  hitDice: string
+  tempHp: string
+  hitDiceType: number
   attacks: Attack[]
   traits: Trait[]
-  equipment: string
+  proficiencies: ProficiencyItem[]
+  proficienciesText: string
+  classFeatures: ClassFeature[]
+  speciesTraits: SpeciesTrait[]
+  feats: Feat[]
+  savingThrowAdvantages: string
+  savingThrowDisadvantages: string
+  conditions: string
+  inventory: InventoryItem[]
   backstory: string
+  portrait: string | null
+  portraitState: PortraitState
   // Description & Features
   biography: string
   otherProficiencies: string
@@ -82,16 +214,23 @@ export interface Character {
   spellAtk: string
   spells: Spell[]
   spellSlots: SpellSlots
+  slotOverrides: SpellSlotOverrides
 }
 
 /**
  * Zod schema for Attack
  */
 export const AttackSchema = z.object({
+  id: z.string(),
   name: z.string(),
-  bonus: z.string(),
-  damage: z.string(),
+  damageDiceCount: z.number().int().min(1),
+  damageDie: z.string(),
+  ability: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
+  magicMod: z.string(),
+  proficiencyLevel: z.number().int().min(0).max(2),
+  property: z.string(),
   notes: z.string(),
+  special: z.string(),
 })
 
 /**
@@ -103,13 +242,104 @@ export const TraitSchema = z.object({
 })
 
 /**
+ * Zod schema for ProficiencyItem
+ */
+export const ProficiencyItemSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  category: z.enum(['armor', 'weapon', 'tool', 'other']),
+})
+
+/**
+ * Zod schema for ClassFeature
+ */
+export const ClassFeatureSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  activeFields: z.object({
+    type: z.boolean(),
+    range: z.boolean(),
+    value: z.boolean(),
+    duration: z.boolean(),
+    notes: z.boolean(),
+    concentration: z.boolean(),
+    ritual: z.boolean(),
+  }),
+  data: z.object({
+    actionType: z.enum(['action', 'bonus', 'reaction', 'passive', 'free']).optional(),
+    range: z.string().optional(),
+    value: z.string().optional(),
+    valueDiceCount: z.number().int().min(1).optional(),
+    valueDie: z.string().optional(),
+    valueMod: z.string().optional(),
+    valueUseAbility: z.boolean().optional(),
+    valueAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+    duration: z.string().optional(),
+    notes: z.string().optional(),
+    isConcentration: z.boolean().optional(),
+    isRitual: z.boolean().optional(),
+  }),
+  hasResource: z.boolean(),
+  resourceMode: z.enum(['none', 'independent', 'class']).optional(),
+  resourceLinkId: z.string().optional(),
+  resource: z
+    .object({
+      current: z.number().int().min(0),
+      max: z.number().int().min(0),
+      reset: z.enum(['short', 'long']),
+    })
+    .optional(),
+})
+
+/**
+ * Zod schema for PortraitState
+ */
+export const PortraitStateSchema = z.object({
+  zoom: z.number().min(0.5).max(3),
+  offsetX: z.number(),
+  offsetY: z.number(),
+})
+
+/**
+ * Zod schema for SpeciesTrait
+ */
+export const SpeciesTraitSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+})
+
+/**
+ * Zod schema for Feat
+ */
+export const FeatSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+})
+
+/**
  * Zod schema for Spell
  */
 export const SpellSchema = z.object({
+  id: z.string(),
   name: z.string(),
   level: z.union([z.string(), z.number()]),
-  notes: z.string(),
-  prepared: z.boolean(),
+  school: z.string(),
+  type: z.string(),
+  range: z.string(),
+  duration: z.string(),
+  components: z.string(),
+  dice: z.string().optional(),
+  diceMode: z.enum(['dice', 'custom']).optional(),
+  diceCount: z.number().int().min(1).optional(),
+  diceDie: z.string().optional(),
+  diceMod: z.string().optional(),
+  diceCustom: z.string().optional(),
+  concentration: z.boolean().optional(),
+  ritual: z.boolean().optional(),
+  saveThrow: z.boolean().optional(),
+  saveThrowAbility: z.enum(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']).optional(),
+  description: z.string().optional(),
 })
 
 /**
@@ -126,6 +356,14 @@ export const SpellSlotSchema = z.object({
 export const SpellSlotsSchema = z.record(
   z.string().regex(/^\d+$/).transform(Number),
   SpellSlotSchema
+)
+
+/**
+ * Zod schema for SpellSlotOverrides (record of level -> override)
+ */
+export const SpellSlotOverridesSchema = z.record(
+  z.string().regex(/^\d+$/).transform(Number),
+  z.number().int()
 )
 
 /**
@@ -160,7 +398,7 @@ export const SkillProficienciesSchema = z.record(
     'stealth',
     'survival',
   ]),
-  z.boolean()
+  z.number().int().min(0).max(2)
 )
 
 /**
@@ -169,11 +407,26 @@ export const SkillProficienciesSchema = z.record(
 export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
 
 /**
+ * Zod schema for InventoryItem
+ */
+export const ItemCategorySchema = z.enum(['weapons', 'consumables', 'currency', 'other'])
+
+export const InventoryItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  quantity: z.string(),
+  notes: z.string(),
+  category: ItemCategorySchema,
+})
+
+/**
  * Zod schema for Character (full validation)
  */
 export const CharacterSchema = z.object({
   name: z.string(),
   class: z.string(),
+  subclass: z.string(),
+  subclassNotes: z.string(),
   level: z.number().int().min(1).max(20),
   background: z.string(),
   race: z.string(),
@@ -184,14 +437,27 @@ export const CharacterSchema = z.object({
   skills: SkillProficienciesSchema,
   ac: z.string(),
   init: z.string(),
+  initMisc: z.number().int(),
   speed: z.string(),
   hpMax: z.string(),
+  hpMaxOverride: z.string(),
   hpCurrent: z.string(),
-  hitDice: z.string(),
+  tempHp: z.string(),
+  hitDiceType: z.number().int().min(4).max(12),
   attacks: z.array(AttackSchema),
   traits: z.array(TraitSchema),
-  equipment: z.string(),
+  proficiencies: z.array(ProficiencyItemSchema),
+  proficienciesText: z.string(),
+  classFeatures: z.array(ClassFeatureSchema),
+  speciesTraits: z.array(SpeciesTraitSchema),
+  feats: z.array(FeatSchema),
+  savingThrowAdvantages: z.string(),
+  savingThrowDisadvantages: z.string(),
+  conditions: z.string(),
+  inventory: z.array(InventoryItemSchema),
   backstory: z.string(),
+  portrait: z.string().nullable(),
+  portraitState: PortraitStateSchema,
   biography: z.string(),
   otherProficiencies: z.string(),
   featuresTraits: z.string(),
@@ -200,6 +466,7 @@ export const CharacterSchema = z.object({
   spellAtk: z.string(),
   spells: z.array(SpellSchema),
   spellSlots: SpellSlotsSchema,
+  slotOverrides: SpellSlotOverridesSchema,
 })
 
 /**
@@ -216,6 +483,8 @@ export function createEmptyCharacter(): Character {
   return {
     name: '',
     class: '',
+    subclass: '',
+    subclassNotes: '',
     level: 1,
     background: '',
     race: '',
@@ -238,35 +507,52 @@ export function createEmptyCharacter(): Character {
       cha: false,
     },
     skills: {
-      acrobatics: false,
-      animalHandling: false,
-      arcana: false,
-      athletics: false,
-      deception: false,
-      history: false,
-      insight: false,
-      intimidation: false,
-      investigation: false,
-      medicine: false,
-      nature: false,
-      perception: false,
-      performance: false,
-      persuasion: false,
-      religion: false,
-      sleight: false,
-      stealth: false,
-      survival: false,
+      acrobatics: 0,
+      animalHandling: 0,
+      arcana: 0,
+      athletics: 0,
+      deception: 0,
+      history: 0,
+      insight: 0,
+      intimidation: 0,
+      investigation: 0,
+      medicine: 0,
+      nature: 0,
+      perception: 0,
+      performance: 0,
+      persuasion: 0,
+      religion: 0,
+      sleight: 0,
+      stealth: 0,
+      survival: 0,
     },
     ac: '',
     init: '',
+    initMisc: 0,
     speed: '',
     hpMax: '',
+    hpMaxOverride: '',
     hpCurrent: '',
-    hitDice: '',
+    tempHp: '',
+    hitDiceType: 8,
     attacks: [],
     traits: [],
-    equipment: '',
+    proficiencies: [],
+    proficienciesText: '',
+    classFeatures: [],
+    speciesTraits: [],
+    feats: [],
+    savingThrowAdvantages: '',
+    savingThrowDisadvantages: '',
+    conditions: '',
+    inventory: [],
     backstory: '',
+    portrait: null,
+    portraitState: {
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
     biography: '',
     otherProficiencies: '',
     featuresTraits: '',
@@ -275,6 +561,7 @@ export function createEmptyCharacter(): Character {
     spellAtk: '',
     spells: [],
     spellSlots: {},
+    slotOverrides: {},
   }
 }
 

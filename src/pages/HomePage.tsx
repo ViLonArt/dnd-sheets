@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom'
 import { PaperContainer, Heading, Button } from '@/components/ui'
+import { AuthButton } from '@/components/auth/AuthButton'
 
 export default function HomePage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="max-w-4xl w-full">
         <PaperContainer>
+          <div className="flex justify-end mb-4">
+            <AuthButton />
+          </div>
           <div className="text-center mb-6">
             <Heading size="lg" className="mb-2">
               Outil de Fiches D&D 5e

@@ -39,9 +39,10 @@ export type SkillKey =
   | 'survival'
 
 /**
- * Proficiency flags for skills
+ * Proficiency level for skills
+ * 0 = unskilled, 1 = proficient, 2 = expertise
  */
-export type SkillProficiencies = Record<SkillKey, boolean>
+export type SkillProficiencies = Record<SkillKey, 0 | 1 | 2>
 
 /**
  * Calculate ability modifier from score

@@ -1,5 +1,6 @@
 import { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/utils/cn'
+import paperTexture from '@/assets/paper-texture.jpg';
 
 export interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   isOpen: boolean
@@ -19,9 +20,10 @@ export function Modal({ isOpen, onClose, title, children, className, ...props }:
       <div
         className={cn(
           'bg-paper border border-border shadow-2xl rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto',
-          'bg-[url("https://upload.wikimedia.org/wikipedia/commons/5/5f/Old_paper_texture_27.jpg")] bg-cover',
+          'bg-cover',
           className
         )}
+        style={{ backgroundImage: `url(${paperTexture})` }}
         onClick={(e) => e.stopPropagation()}
         {...props}
       >

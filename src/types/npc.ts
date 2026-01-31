@@ -25,6 +25,7 @@ export interface Npc {
   skills: string[] // Array of skill/resistance strings
   special: string[] // Array of special ability strings
   actions: string[] // Array of action strings
+  legendary_actions: string[] // Array of legendary action strings
   portrait: string | null // Data URL or null
   portraitState: PortraitState
 }
@@ -52,6 +53,7 @@ export const NpcSchema = z.object({
   skills: z.array(z.string()),
   special: z.array(z.string()),
   actions: z.array(z.string()),
+  legendary_actions: z.array(z.string()),
   portrait: z.string().nullable(),
   portraitState: PortraitStateSchema,
 })
@@ -85,6 +87,7 @@ export function createEmptyNpc(): Npc {
     skills: [],
     special: [],
     actions: [],
+    legendary_actions: [],
     portrait: null,
     portraitState: {
       zoom: 1,

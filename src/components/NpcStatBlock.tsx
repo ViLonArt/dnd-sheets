@@ -128,6 +128,22 @@ export function NpcStatBlock({ npc, onEdit }: NpcStatBlockProps) {
             </div>
           </div>
         )}
+
+        {/* Legendary Actions */}
+        {npc.legendary_actions.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xs uppercase tracking-wider text-gray-500 mb-3">
+              Actions légendaires
+            </h2>
+            <div className="space-y-4">
+              {npc.legendary_actions.map((action, idx) => (
+                <p key={idx} className="text-lg text-gray-900 leading-relaxed">
+                  {action}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
         </div>
 
         {/* Right Column: Portrait (40%) */}

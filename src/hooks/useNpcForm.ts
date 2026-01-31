@@ -6,9 +6,27 @@ import {
   importNpcFromJson,
 } from '@/utils'
 
+const normalizeNpcData = (data?: Npc): Npc => {
+  const defaults = createEmptyNpc()
+  if (!data) {
+    return defaults
+  }
+
+  return {
+    ...defaults,
+    ...data,
+    abilities: data.abilities ?? defaults.abilities,
+    skills: Array.isArray(data.skills) ? data.skills : [],
+    special: Array.isArray(data.special) ? data.special : [],
+    actions: Array.isArray(data.actions) ? data.actions : [],
+    legendary_actions: Array.isArray(data.legendary_actions) ? data.legendary_actions : [],
+    portraitState: data.portraitState ?? defaults.portraitState,
+  }
+}
+
 export function useNpcForm(initialData?: Npc) {
   const [npc, setNpc] = useState<Npc>(() => {
-    return initialData || createEmptyNpc()
+    return normalizeNpcData(initialData)
   })
   const isInitialMount = useRef(true)
 
@@ -21,12 +39,7 @@ export function useNpcForm(initialData?: Npc) {
     }
 
     // When initialData changes, update form state
-    if (initialData) {
-      setNpc(initialData)
-    } else {
-      // Reset to empty when navigating to blank sheet
-      setNpc(createEmptyNpc())
-    }
+    setNpc(normalizeNpcData(initialData))
   }, [initialData])
 
   const updateNpc = useCallback((updates: Partial<Npc>) => {

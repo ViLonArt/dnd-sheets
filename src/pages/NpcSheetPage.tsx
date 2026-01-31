@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useNpcForm, useExportToImage } from '@/hooks'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthButton } from '@/components/auth/AuthButton'
@@ -190,17 +190,21 @@ export default function NpcSheetPage() {
   }
 
   // Inline list management
-  const addListItem = (field: 'skills' | 'special' | 'actions') => {
+  const addListItem = (field: 'skills' | 'special' | 'actions' | 'legendary_actions') => {
     updateField(field, [...npc[field], ''])
   }
 
-  const updateListItem = (field: 'skills' | 'special' | 'actions', index: number, value: string) => {
+  const updateListItem = (
+    field: 'skills' | 'special' | 'actions' | 'legendary_actions',
+    index: number,
+    value: string
+  ) => {
     const newList = [...npc[field]]
     newList[index] = value
     updateField(field, newList)
   }
 
-  const removeListItem = (field: 'skills' | 'special' | 'actions', index: number) => {
+  const removeListItem = (field: 'skills' | 'special' | 'actions' | 'legendary_actions', index: number) => {
     updateField(field, npc[field].filter((_, i) => i !== index))
   }
 
@@ -261,6 +265,9 @@ export default function NpcSheetPage() {
         <Toolbar
           left={
             <>
+              <Link to="/npc">
+                <Button variant="small">⬅ Retour à la liste</Button>
+              </Link>
               <Button onClick={handleDownloadPdf} disabled={isExporting}>
                 {isExporting ? 'Génération...' : 'Télécharger en PDF'}
               </Button>
@@ -517,6 +524,33 @@ export default function NpcSheetPage() {
             ))}
             <Button variant="small" onClick={() => addListItem('actions')} className="w-full mt-1.5">
               + Ajouter une action
+            </Button>
+          </div>
+
+          {/* Legendary Actions */}
+          <SectionHeader className="mt-3">Actions légendaires</SectionHeader>
+          <div className="mt-1.5">
+            {npc.legendary_actions.map((action, idx) => (
+              <div key={idx} className="flex items-start gap-1.5 mb-1.5">
+                <Box className="flex-1">
+                  <AutoResizeTextarea
+                    value={action}
+                    onChange={(e) => updateListItem('legendary_actions', idx, e.target.value)}
+                    className="w-full bg-transparent border-none outline-none text-xs"
+                    placeholder="Nouvelle action légendaire"
+                  />
+                </Box>
+                <Button variant="small" onClick={() => removeListItem('legendary_actions', idx)}>
+                  ×
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="small"
+              onClick={() => addListItem('legendary_actions')}
+              className="w-full mt-1.5"
+            >
+              + Ajouter une action légendaire
             </Button>
           </div>
         </PaperContainer>

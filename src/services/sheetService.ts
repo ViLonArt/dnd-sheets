@@ -19,6 +19,14 @@ export interface SheetResponse {
   updated_at: string
 }
 
+export interface SheetListItem {
+  id: string
+  slug: string | null
+  name: string
+  portrait: string | null
+  updatedAt: string
+}
+
 export interface CharacterSheetResponse {
   id: string
   owner_id: string
@@ -95,6 +103,74 @@ export async function getSheet(identifier: string): Promise<SheetResponse> {
     console.error('Failed to get sheet:', err)
     throw err instanceof Error ? err : new Error('Failed to get sheet')
   }
+}
+
+const normalizeSheetData = (data: unknown): Record<string, unknown> | null => {
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data) as unknown
+      if (parsed && typeof parsed === 'object') {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      return null
+    }
+  }
+
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>
+    if (record.data && typeof record.data === 'object') {
+      return record.data as Record<string, unknown>
+    }
+    return record
+  }
+
+  return null
+}
+
+const getSheetName = (data: unknown): string => {
+  const normalized = normalizeSheetData(data)
+  const name = normalized?.name
+  if (typeof name === 'string' && name.trim()) {
+    return name.trim()
+  }
+  return 'Sans nom'
+}
+
+const getSheetPortrait = (data: unknown): string | null => {
+  const normalized = normalizeSheetData(data)
+  const portrait = normalized?.portrait ?? normalized?.portraitUrl ?? normalized?.image
+  if (typeof portrait === 'string' && portrait.trim()) {
+    return portrait.trim()
+  }
+  if (portrait && typeof portrait === 'object') {
+    const portraitRecord = portrait as Record<string, unknown>
+    const url = portraitRecord.url ?? portraitRecord.src
+    if (typeof url === 'string' && url.trim()) {
+      return url.trim()
+    }
+  }
+  return null
+}
+
+export async function listNpcSheets(): Promise<SheetListItem[]> {
+  const { data, error } = await supabase
+    .from('sheets')
+    .select('id, slug, data, updated_at')
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Error listing NPC sheets:', error)
+    throw new Error(error.message || 'Failed to load NPC sheets')
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    slug: row.slug ?? null,
+    name: getSheetName(row.data),
+    portrait: getSheetPortrait(row.data),
+    updatedAt: row.updated_at,
+  }))
 }
 
 /**
@@ -203,6 +279,26 @@ export async function getCharacterSheet(
     console.error('Failed to get character sheet:', err)
     throw err instanceof Error ? err : new Error('Failed to get character sheet')
   }
+}
+
+export async function listCharacterSheets(): Promise<SheetListItem[]> {
+  const { data, error } = await supabase
+    .from('character_sheets')
+    .select('id, slug, data, updated_at')
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Error listing character sheets:', error)
+    throw new Error(error.message || 'Failed to load character sheets')
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    slug: row.slug ?? null,
+    name: getSheetName(row.data),
+    portrait: getSheetPortrait(row.data),
+    updatedAt: row.updated_at,
+  }))
 }
 
 /**

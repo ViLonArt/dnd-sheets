@@ -3,6 +3,45 @@ import { NpcSchema, type Npc } from '@/types/npc'
 import { parseAbilityScore } from '@/types/abilities'
 import { normalizeCharacterData } from './characterMigrations'
 
+const normalizeNpcData = (data: Record<string, unknown>): Record<string, unknown> => {
+  if (!('legendary_actions' in data)) {
+    const legacyLegendary = data['legendaryActions']
+    data.legendary_actions = legacyLegendary ?? []
+    if ('legendaryActions' in data) {
+      delete data['legendaryActions']
+    }
+  }
+
+  const listFields = ['skills', 'special', 'actions', 'legendary_actions'] as const
+  for (const field of listFields) {
+    const value = data[field]
+    if (Array.isArray(value)) {
+      data[field] = value.filter((item) => typeof item === 'string')
+    } else if (typeof value === 'string' && value.trim()) {
+      data[field] = [value]
+    } else {
+      data[field] = []
+    }
+  }
+
+  if ('abilities' in data && data.abilities && typeof data.abilities === 'object') {
+    const abilities = (data.abilities as Record<string, unknown>) ?? {}
+    const migratedAbilities: Record<string, number> = {}
+    for (const [key, value] of Object.entries(abilities)) {
+      if (typeof value === 'string') {
+        migratedAbilities[key] = parseAbilityScore(value)
+      } else if (typeof value === 'number') {
+        migratedAbilities[key] = value
+      } else {
+        migratedAbilities[key] = 10
+      }
+    }
+    data.abilities = migratedAbilities
+  }
+
+  return data
+}
+
 /**
  * Export character data to JSON file
  */
@@ -26,7 +65,8 @@ export function exportCharacterToJson(character: Character, filename = 'fiche-pj
 export function exportNpcToJson(npc: Npc, filename = 'fiche-pnj.json'): void {
   try {
     // Validate before export
-    const validated = NpcSchema.parse(npc)
+    const normalized = normalizeNpcData({ ...(npc as unknown as Record<string, unknown>) })
+    const validated = NpcSchema.parse(normalized)
     // JSON.stringify automatically escapes newlines (\n) as \\n in the JSON string
     // This preserves multi-line text from textarea fields (e.g., actions, special abilities)
     const json = JSON.stringify(validated, null, 2)
@@ -84,26 +124,10 @@ export async function importNpcFromJson(file: File): Promise<Npc> {
       throw new Error('Invalid NPC data: expected an object')
     }
     
-    // Migrate old string format abilities to new number format
-    if ('abilities' in data) {
-      const abilities = (data.abilities as Record<string, unknown>) ?? {}
-      const migratedAbilities: Record<string, number> = {}
-      for (const [key, value] of Object.entries(abilities)) {
-        if (typeof value === 'string') {
-          // Old format: "16 (+3)" -> 16
-          migratedAbilities[key] = parseAbilityScore(value)
-        } else if (typeof value === 'number') {
-          // New format: already a number
-          migratedAbilities[key] = value
-        } else {
-          migratedAbilities[key] = 10
-        }
-      }
-      data.abilities = migratedAbilities
-    }
-    
+    const normalized = normalizeNpcData(data as Record<string, unknown>)
+
     // Validate with Zod
-    const validated = NpcSchema.parse(data)
+    const validated = NpcSchema.parse(normalized)
     return (validated as unknown) as Npc
   } catch (error) {
     if (error instanceof SyntaxError) {

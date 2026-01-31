@@ -29,8 +29,8 @@ export function CharacterToolbar({
   return (
     <Toolbar
       left={
-        <Link to="/">
-          <Button>⬅ Retour</Button>
+        <Link to="/character">
+          <Button>⬅ Retour à la liste</Button>
         </Link>
       }
       right={

@@ -29,9 +29,14 @@ export default function HomePage() {
                 Portrait interactif, attributs, compétences, aptitudes spéciales et actions. Export PNG et sauvegarde/chargement JSON.
               </p>
               <div className="mt-auto">
-                <Link to="/npc">
-                  <Button className="w-full">Créer / modifier une fiche PNJ</Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link to="/npc" className="flex-1">
+                    <Button className="w-full">Voir les fiches PNJ</Button>
+                  </Link>
+                  <Link to="/npc/new" className="flex-1">
+                    <Button variant="small" className="w-full">Créer une fiche</Button>
+                  </Link>
+                </div>
               </div>
             </article>
 
@@ -44,9 +49,14 @@ export default function HomePage() {
                 Fiche inspirée de la feuille officielle 5e : caractéristiques, compétences, combat, traits et historique.
               </p>
               <div className="mt-auto">
-                <Link to="/character">
-                  <Button className="w-full">Créer / modifier une fiche PJ</Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link to="/character" className="flex-1">
+                    <Button className="w-full">Voir les fiches PJ</Button>
+                  </Link>
+                  <Link to="/character/new" className="flex-1">
+                    <Button variant="small" className="w-full">Créer une fiche</Button>
+                  </Link>
+                </div>
               </div>
             </article>
           </div>

@@ -100,7 +100,7 @@ export default function CharacterSheetPage() {
     effectiveHpMax,
   })
 
-  const { addSpell, updateSpell, removeSpell, updateSpellSlot } = useSpellsActions({
+  const { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells } = useSpellsActions({
     character,
     updateField,
     updateCharacter,
@@ -274,6 +274,7 @@ export default function CharacterSheetPage() {
               onAddSpell={addSpell}
               onUpdateSpell={updateSpell}
               onRemoveSpell={removeSpell}
+              onReorderSpells={reorderSpells}
             />
           )}
 

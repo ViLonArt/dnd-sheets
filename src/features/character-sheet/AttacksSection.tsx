@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, SectionHeader, Select } from '@/components/ui'
 import { useOutsideClick } from '@/hooks'
 import { calculateAbilityModifier } from '@/types/abilities'
@@ -24,6 +25,22 @@ export function AttacksSection({
   getProficiencyBadgeClasses,
   onAttacksChange,
 }: AttacksSectionProps) {
+  const damageTypeOptions = [
+    { value: '', label: '—' },
+    { value: 'Tranchant', label: 'Tranchant' },
+    { value: 'Perforant', label: 'Perforant' },
+    { value: 'Contondant', label: 'Contondant' },
+    { value: 'Feu', label: 'Feu' },
+    { value: 'Froid', label: 'Froid' },
+    { value: 'Foudre', label: 'Foudre' },
+    { value: 'Tonnerre', label: 'Tonnerre' },
+    { value: 'Acide', label: 'Acide' },
+    { value: 'Poison', label: 'Poison' },
+    { value: 'Psychique', label: 'Psychique' },
+    { value: 'Radiant', label: 'Radiant' },
+    { value: 'Nécrotique', label: 'Nécrotique' },
+    { value: 'Force', label: 'Force' },
+  ]
   const [editingAttackId, setEditingAttackId] = useState<string | null>(null)
   const [attackEditSnapshot, setAttackEditSnapshot] = useState<{ id: string; attack: Attack } | null>(
     null
@@ -31,6 +48,9 @@ export function AttacksSection({
   const [newAttackId, setNewAttackId] = useState<string | null>(null)
   const [openAttackMenuId, setOpenAttackMenuId] = useState<string | null>(null)
   const [expandedAttackIds, setExpandedAttackIds] = useState<Set<string>>(() => new Set())
+  const [draggingAttackIndex, setDraggingAttackIndex] = useState<number | null>(null)
+  const [dragOverAttackIndex, setDragOverAttackIndex] = useState<number | null>(null)
+  const [dragOverAttackEdge, setDragOverAttackEdge] = useState<'top' | 'bottom' | null>(null)
 
   useOutsideClick({
     isActive: Boolean(openAttackMenuId),
@@ -59,6 +79,7 @@ export function AttacksSection({
         name: '',
         damageDiceCount: 1,
         damageDie: '',
+        damageType: '',
         ability: 'str',
         magicMod: '0',
         proficiencyLevel: 0,
@@ -79,6 +100,7 @@ export function AttacksSection({
       name: updates.name ?? current.name,
       damageDiceCount: updates.damageDiceCount ?? current.damageDiceCount,
       damageDie: updates.damageDie ?? current.damageDie,
+      damageType: updates.damageType ?? current.damageType,
       ability: updates.ability ?? current.ability,
       magicMod: updates.magicMod ?? current.magicMod,
       proficiencyLevel: updates.proficiencyLevel ?? current.proficiencyLevel,
@@ -131,13 +153,63 @@ export function AttacksSection({
     const magicMod = parseNumber(attack.magicMod)
     const totalMod = abilityMod + magicMod
     const count = Math.max(1, attack.damageDiceCount || 1)
-    return `${count}${attack.damageDie}${formatSigned(totalMod)}`
+    const base = `${count}${attack.damageDie}${formatSigned(totalMod)}`
+    return attack.damageType ? `${base} ${attack.damageType}` : base
+  }
+
+  const resetAttackDragState = () => {
+    setDraggingAttackIndex(null)
+    setDragOverAttackIndex(null)
+    setDragOverAttackEdge(null)
+  }
+
+  const reorderAttacks = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    const next = [...attacks]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+    const insertIndex = fromIndex < toIndex ? Math.max(0, toIndex - 1) : toIndex
+    next.splice(insertIndex, 0, moved)
+    onAttacksChange(next)
+  }
+
+  const handleAttackDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (editingAttackId !== null) return
+    setDraggingAttackIndex(index)
+    setDragOverAttackIndex(null)
+    setDragOverAttackEdge(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', attacks[index]?.id ?? String(index))
+  }
+
+  const handleAttackDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (draggingAttackIndex === null || draggingAttackIndex === index) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const isTop = event.clientY - rect.top < rect.height / 2
+    setDragOverAttackIndex(index)
+    setDragOverAttackEdge(isTop ? 'top' : 'bottom')
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleAttackDrop = (index: number) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    if (draggingAttackIndex === null || draggingAttackIndex === index) {
+      resetAttackDragState()
+      return
+    }
+    const insertIndex = dragOverAttackEdge === 'bottom' ? index + 1 : index
+    reorderAttacks(draggingAttackIndex, insertIndex)
+    resetAttackDragState()
   }
 
   return (
     <div className="mt-2.5 border border-[#c9b89c] bg-white/60 rounded p-2 shadow-sm h-auto">
       <SectionHeader>Attaques</SectionHeader>
-      <div className="grid grid-cols-[1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 text-[11px] mt-1">
+      <div className="grid grid-cols-[auto_1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 text-[11px] mt-1">
+        <FieldLabel className="text-center" aria-hidden="true">
+          &nbsp;
+        </FieldLabel>
         <FieldLabel className="text-center">Nom</FieldLabel>
         <FieldLabel className="text-center">Maîtrise</FieldLabel>
         <FieldLabel className="text-center">Bonus Attaque</FieldLabel>
@@ -152,7 +224,21 @@ export function AttacksSection({
         {attacks.map((attack, idx) => (
           <div
             key={attack.id}
-            className="mb-1 border border-[#c9b89c] bg-white/40 p-1.5"
+            className={`mb-1 border border-[#c9b89c] bg-white/40 p-1.5 ${
+              dragOverAttackIndex === idx && dragOverAttackEdge === 'top'
+                ? 'border-t-2 border-t-[#7a4b36]'
+                : dragOverAttackIndex === idx && dragOverAttackEdge === 'bottom'
+                  ? 'border-b-2 border-b-[#7a4b36]'
+                  : ''
+            } ${draggingAttackIndex === idx ? 'opacity-60' : ''}`}
+            onDragOver={handleAttackDragOver(idx)}
+            onDrop={handleAttackDrop(idx)}
+            onDragLeave={() => {
+              if (dragOverAttackIndex === idx) {
+                setDragOverAttackIndex(null)
+                setDragOverAttackEdge(null)
+              }
+            }}
           >
             {editingAttackId === attack.id ? (
               <>
@@ -266,6 +352,12 @@ export function AttacksSection({
                         className="text-[11px] min-h-[22px]"
                       />
                     </div>
+                    <Select
+                      value={attack.damageType ?? ''}
+                      onChange={(e) => updateAttack(idx, { damageType: e.target.value })}
+                      options={damageTypeOptions}
+                      className="text-[11px] min-h-[22px]"
+                    />
                   </Box>
                   <Box className="flex flex-col gap-1 text-center">
                     <FieldLabel className="text-center">Propriété</FieldLabel>
@@ -304,7 +396,7 @@ export function AttacksSection({
             ) : (
               <>
                 <div
-                  className="grid grid-cols-[1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 items-center cursor-pointer"
+                  className="grid grid-cols-[auto_1fr_0.4fr_0.55fr_1fr_0.7fr_1fr_auto] gap-1 items-center cursor-pointer"
                   onClick={() =>
                     setExpandedAttackIds((prev) => {
                       const next = new Set(prev)
@@ -317,8 +409,20 @@ export function AttacksSection({
                     })
                   }
                 >
-                  <div>
-                    <div className="font-bold leading-tight text-center">
+                  <span
+                    role="button"
+                    aria-label="Réordonner l'attaque"
+                    draggable={editingAttackId === null}
+                    onDragStart={handleAttackDragStart(idx)}
+                    onDragEnd={resetAttackDragState}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="text-xs text-[#7a4b36] cursor-grab select-none"
+                  >
+                    ⋮⋮
+                  </span>
+                  <div className="min-w-0">
+                    <div className="font-bold leading-tight text-center truncate">
                       {attack.name || '—'}
                     </div>
                   </div>

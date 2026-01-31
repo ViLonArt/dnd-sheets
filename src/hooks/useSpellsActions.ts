@@ -41,8 +41,10 @@ export function useSpellsActions({
           diceDie: '',
           diceMod: '',
           diceCustom: '',
+        damageType: '',
           concentration: false,
           ritual: false,
+        prepared: false,
           saveThrow: false,
           saveThrowAbility: 'STR',
           description: '',
@@ -73,13 +75,28 @@ export function useSpellsActions({
         diceDie: updates.diceDie ?? current.diceDie,
         diceMod: updates.diceMod ?? current.diceMod,
         diceCustom: updates.diceCustom ?? current.diceCustom,
+        damageType: updates.damageType ?? current.damageType,
         concentration: updates.concentration ?? current.concentration,
         ritual: updates.ritual ?? current.ritual,
+        prepared: updates.prepared ?? current.prepared,
         saveThrow: updates.saveThrow ?? current.saveThrow,
         saveThrowAbility: updates.saveThrowAbility ?? current.saveThrowAbility,
         description: updates.description ?? current.description,
       }
       updateField('spells', newSpells)
+    },
+    [character.spells, updateField]
+  )
+
+  const reorderSpells = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+      const next = [...character.spells]
+      const [moved] = next.splice(fromIndex, 1)
+      if (!moved) return
+      const insertIndex = fromIndex < toIndex ? Math.max(0, toIndex - 1) : toIndex
+      next.splice(insertIndex, 0, moved)
+      updateField('spells', next)
     },
     [character.spells, updateField]
   )
@@ -120,5 +137,5 @@ export function useSpellsActions({
     ]
   )
 
-  return { addSpell, updateSpell, removeSpell, updateSpellSlot }
+  return { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells }
 }

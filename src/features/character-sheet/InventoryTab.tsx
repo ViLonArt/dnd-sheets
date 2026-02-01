@@ -139,7 +139,7 @@ export function InventoryTab({
     const fromCategoryIndex = categoryIndices.indexOf(fromIndex)
     const toCategoryIndex = categoryIndices.indexOf(targetIndex)
     if (fromCategoryIndex < 0 || toCategoryIndex < 0) return
-    const categoryItems = categoryIndices.map((idx) => inventory[idx])
+    const categoryItems = categoryIndices.map((idx) => inventory[idx]!)
     const [moved] = categoryItems.splice(fromCategoryIndex, 1)
     if (!moved) return
     const baseInsertIndex = edge === 'bottom' ? toCategoryIndex + 1 : toCategoryIndex
@@ -150,7 +150,7 @@ export function InventoryTab({
     categoryItems.splice(insertIndex, 0, moved)
     const next = [...inventory]
     categoryIndices.forEach((idx, i) => {
-      next[idx] = categoryItems[i]
+      next[idx] = categoryItems[i]!
     })
     onInventoryChange(next)
   }

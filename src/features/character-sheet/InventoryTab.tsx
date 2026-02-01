@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, PaperContainer, SectionHeader } from '@/components/ui'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import type { InventoryItem, ItemCategory } from '@/types/character'
 
 type InventoryTabProps = {
@@ -41,6 +42,10 @@ export function InventoryTab({
   } | null>(null)
   const [newInventoryId, setNewInventoryId] = useState<string | null>(null)
   const [openInventoryMenuId, setOpenInventoryMenuId] = useState<string | null>(null)
+  const [draggingInventoryId, setDraggingInventoryId] = useState<string | null>(null)
+  const [dragOverInventoryId, setDragOverInventoryId] = useState<string | null>(null)
+  const [dragOverInventoryEdge, setDragOverInventoryEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const editingInventoryCategory =
     editingInventoryId !== null
@@ -106,6 +111,86 @@ export function InventoryTab({
     setEditingInventoryId(null)
     setNewInventoryId(null)
     setInventoryEditSnapshot(null)
+  }
+
+  const resetInventoryDragState = () => {
+    setDraggingInventoryId(null)
+    setDragOverInventoryId(null)
+    setDragOverInventoryEdge(null)
+    clearDragPreview()
+  }
+
+  const reorderInventoryCategory = (
+    category: ItemCategory,
+    fromIndex: number,
+    targetIndex: number,
+    edge: 'top' | 'bottom' | null
+  ) => {
+    if (fromIndex === targetIndex) return
+    const categoryIndices = inventory
+      .map((item, idx) => (item.category === category ? idx : -1))
+      .filter((idx) => idx >= 0)
+    const fromCategoryIndex = categoryIndices.indexOf(fromIndex)
+    const toCategoryIndex = categoryIndices.indexOf(targetIndex)
+    if (fromCategoryIndex < 0 || toCategoryIndex < 0) return
+    const categoryItems = categoryIndices.map((idx) => inventory[idx]!)
+    const [moved] = categoryItems.splice(fromCategoryIndex, 1)
+    if (!moved) return
+    const baseInsertIndex = edge === 'bottom' ? toCategoryIndex + 1 : toCategoryIndex
+    const insertIndex =
+      fromCategoryIndex < baseInsertIndex
+        ? Math.max(0, baseInsertIndex - 1)
+        : baseInsertIndex
+    categoryItems.splice(insertIndex, 0, moved)
+    const next = [...inventory]
+    categoryIndices.forEach((idx, i) => {
+      next[idx] = categoryItems[i]!
+    })
+    onInventoryChange(next)
+  }
+
+  const handleInventoryDragStart =
+    (itemId: string) => (event: DragEvent<HTMLElement>) => {
+      if (editingInventoryId !== null) return
+      setDraggingInventoryId(itemId)
+      setDragOverInventoryId(null)
+      setDragOverInventoryEdge(null)
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('text/plain', itemId)
+      const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+      setDragPreview(event, previewTarget)
+    }
+
+  const handleInventoryDragOver = (itemId: string) => (event: DragEvent<HTMLElement>) => {
+    if (draggingInventoryId === null || draggingInventoryId === itemId) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const isTop = event.clientY - rect.top < rect.height / 2
+    setDragOverInventoryId(itemId)
+    setDragOverInventoryEdge(isTop ? 'top' : 'bottom')
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleInventoryDrop = (itemId: string) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    if (draggingInventoryId === null || draggingInventoryId === itemId) {
+      resetInventoryDragState()
+      return
+    }
+    const fromIndex = inventory.findIndex((item) => item.id === draggingInventoryId)
+    const targetIndex = inventory.findIndex((item) => item.id === itemId)
+    if (fromIndex < 0 || targetIndex < 0) {
+      resetInventoryDragState()
+      return
+    }
+    const fromItem = inventory[fromIndex]
+    const targetItem = inventory[targetIndex]
+    if (!fromItem || !targetItem || fromItem.category !== targetItem.category) {
+      resetInventoryDragState()
+      return
+    }
+    reorderInventoryCategory(fromItem.category, fromIndex, targetIndex, dragOverInventoryEdge)
+    resetInventoryDragState()
   }
 
   const updateGoldQuantity = (nextQuantity: string) => {
@@ -186,10 +271,29 @@ export function InventoryTab({
                   if (item.category !== section.key) return null
                   const isEditingItem = editingInventoryId === item.id
                   return (
-                    <div key={item.id} className="mb-1">
+                    <div
+                      key={item.id}
+                      data-drag-preview
+                      className={`mb-1 ${
+                        dragOverInventoryId === item.id && dragOverInventoryEdge === 'top'
+                          ? 'border-t-2 border-t-[#7a4b36]'
+                          : dragOverInventoryId === item.id && dragOverInventoryEdge === 'bottom'
+                            ? 'border-b-2 border-b-[#7a4b36]'
+                            : ''
+                      } ${draggingInventoryId === item.id ? 'opacity-60' : ''}`}
+                      onDragOver={handleInventoryDragOver(item.id)}
+                      onDrop={handleInventoryDrop(item.id)}
+                      onDragLeave={() => {
+                        if (dragOverInventoryId === item.id) {
+                          setDragOverInventoryId(null)
+                          setDragOverInventoryEdge(null)
+                        }
+                      }}
+                    >
                       {isEditingItem ? (
                         <>
-                          <div className="grid grid-cols-[1.4fr_0.4fr_auto] gap-1 items-center">
+                          <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
+                            <span className="text-xs text-[#7a4b36] select-none">⋮⋮</span>
                             <Box>
                               <input
                                 type="text"
@@ -239,7 +343,17 @@ export function InventoryTab({
                         </>
                       ) : (
                         <>
-                          <div className="grid grid-cols-[1.4fr_0.4fr_auto] gap-1 items-center">
+                          <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
+                            <span
+                              role="button"
+                              aria-label="Réordonner l'objet"
+                              draggable={editingInventoryId === null}
+                              onDragStart={handleInventoryDragStart(item.id)}
+                              onDragEnd={resetInventoryDragState}
+                              className="text-xs text-[#7a4b36] cursor-grab select-none"
+                            >
+                              ⋮⋮
+                            </span>
                             <Box>
                               <button
                                 type="button"

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { DragEvent } from 'react'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import {
   AutoResizeTextarea,
   Box,
@@ -70,6 +70,7 @@ export function PcClassTab({
   const [draggingSpellIndex, setDraggingSpellIndex] = useState<number | null>(null)
   const [dragOverSpellIndex, setDragOverSpellIndex] = useState<number | null>(null)
   const [dragOverSpellEdge, setDragOverSpellEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const classData = CLASSES_2024[className]
   const levelIndex = Math.max(1, Math.min(20, level)) - 1
@@ -108,6 +109,7 @@ export function PcClassTab({
     setDraggingSpellIndex(null)
     setDragOverSpellIndex(null)
     setDragOverSpellEdge(null)
+    clearDragPreview()
   }
 
   const handleSpellDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
@@ -117,6 +119,8 @@ export function PcClassTab({
     setDragOverSpellEdge(null)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', spells[index]?.id ?? String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
   }
 
   const handleSpellDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
@@ -536,6 +540,7 @@ export function PcClassTab({
         ) : (
           <>
             <div
+              data-drag-preview
               className={`grid items-center gap-3 text-[10px] ${
                 includeLevel
                   ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_0.6fr_1fr]'

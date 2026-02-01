@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, SectionHeader, Select } from '@/components/ui'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import { calculateAbilityModifier } from '@/types/abilities'
 import type { Attack } from '@/types/character'
 import type { Abilities } from '@/types/abilities'
@@ -51,6 +51,7 @@ export function AttacksSection({
   const [draggingAttackIndex, setDraggingAttackIndex] = useState<number | null>(null)
   const [dragOverAttackIndex, setDragOverAttackIndex] = useState<number | null>(null)
   const [dragOverAttackEdge, setDragOverAttackEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   useOutsideClick({
     isActive: Boolean(openAttackMenuId),
@@ -161,6 +162,7 @@ export function AttacksSection({
     setDraggingAttackIndex(null)
     setDragOverAttackIndex(null)
     setDragOverAttackEdge(null)
+    clearDragPreview()
   }
 
   const reorderAttacks = (fromIndex: number, toIndex: number) => {
@@ -180,6 +182,8 @@ export function AttacksSection({
     setDragOverAttackEdge(null)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', attacks[index]?.id ?? String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
   }
 
   const handleAttackDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
@@ -224,6 +228,7 @@ export function AttacksSection({
         {attacks.map((attack, idx) => (
           <div
             key={attack.id}
+            data-drag-preview
             className={`mb-1 border border-[#c9b89c] bg-white/40 p-1.5 ${
               dragOverAttackIndex === idx && dragOverAttackEdge === 'top'
                 ? 'border-t-2 border-t-[#7a4b36]'

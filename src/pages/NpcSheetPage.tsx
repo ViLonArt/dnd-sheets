@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import type { DragEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { useNpcForm, useExportToImage } from '@/hooks'
+import { useDragPreview, useNpcForm, useExportToImage } from '@/hooks'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthButton } from '@/components/auth/AuthButton'
 import { getSheet, createSheet, updateSheet, uploadImage, dataURLtoFile } from '@/services/sheetService'
@@ -45,6 +45,7 @@ export default function NpcSheetPage() {
   const [draggingActionIndex, setDraggingActionIndex] = useState<number | null>(null)
   const [dragOverActionIndex, setDragOverActionIndex] = useState<number | null>(null)
   const [dragOverActionEdge, setDragOverActionEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
   
   // Determine if this is a new sheet
   const isNew = !id || id === 'new'
@@ -219,17 +220,20 @@ export default function NpcSheetPage() {
       setDraggingSkillIndex(null)
       setDragOverSkillIndex(null)
       setDragOverSkillEdge(null)
+      clearDragPreview()
       return
     }
     if (field === 'special') {
       setDraggingSpecialIndex(null)
       setDragOverSpecialIndex(null)
       setDragOverSpecialEdge(null)
+      clearDragPreview()
       return
     }
     setDraggingActionIndex(null)
     setDragOverActionIndex(null)
     setDragOverActionEdge(null)
+    clearDragPreview()
   }
 
   const reorderNpcList = (
@@ -264,6 +268,8 @@ export default function NpcSheetPage() {
       }
       event.dataTransfer.effectAllowed = 'move'
       event.dataTransfer.setData('text/plain', `${field}-${index}`)
+      const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+      setDragPreview(event, previewTarget)
     }
 
   const handleNpcDragOver =
@@ -569,6 +575,7 @@ export default function NpcSheetPage() {
             {npc.skills.map((skill, idx) => (
               <div
                 key={idx}
+                data-drag-preview
                 className={`flex items-start gap-1.5 mb-1.5 ${
                   dragOverSkillIndex === idx && dragOverSkillEdge === 'top'
                     ? 'border-t-2 border-t-[#7a4b36]'
@@ -620,6 +627,7 @@ export default function NpcSheetPage() {
             {npc.special.map((ability, idx) => (
               <div
                 key={idx}
+                data-drag-preview
                 className={`flex items-start gap-1.5 mb-1.5 ${
                   dragOverSpecialIndex === idx && dragOverSpecialEdge === 'top'
                     ? 'border-t-2 border-t-[#7a4b36]'
@@ -670,6 +678,7 @@ export default function NpcSheetPage() {
             {npc.actions.map((action, idx) => (
               <div
                 key={idx}
+                data-drag-preview
                 className={`flex items-start gap-1.5 mb-1.5 ${
                   dragOverActionIndex === idx && dragOverActionEdge === 'top'
                     ? 'border-t-2 border-t-[#7a4b36]'

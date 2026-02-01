@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, SectionHeader } from '@/components/ui'
+import { useDragPreview } from '@/hooks'
 import type { Feat, SpeciesTrait } from '@/types/character'
 
 type TraitsFeatsSectionProps = {
@@ -22,17 +23,20 @@ export function TraitsFeatsSection({
   const [draggingFeatIndex, setDraggingFeatIndex] = useState<number | null>(null)
   const [dragOverFeatIndex, setDragOverFeatIndex] = useState<number | null>(null)
   const [dragOverFeatEdge, setDragOverFeatEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const resetTraitDragState = () => {
     setDraggingTraitIndex(null)
     setDragOverTraitIndex(null)
     setDragOverTraitEdge(null)
+    clearDragPreview()
   }
 
   const resetFeatDragState = () => {
     setDraggingFeatIndex(null)
     setDragOverFeatIndex(null)
     setDragOverFeatEdge(null)
+    clearDragPreview()
   }
 
   const reorderSpeciesTraits = (fromIndex: number, toIndex: number) => {
@@ -61,6 +65,8 @@ export function TraitsFeatsSection({
     setDragOverTraitEdge(null)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
   }
 
   const handleTraitDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
@@ -90,6 +96,8 @@ export function TraitsFeatsSection({
     setDragOverFeatEdge(null)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
   }
 
   const handleFeatDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
@@ -159,6 +167,7 @@ export function TraitsFeatsSection({
             {speciesTraits.map((trait, idx) => (
               <div
                 key={`species-${idx}`}
+                data-drag-preview
                 className={`grid grid-cols-[auto_1fr_1.4fr_auto] gap-1 items-start mb-1 ${
                   dragOverTraitIndex === idx && dragOverTraitEdge === 'top'
                     ? 'border-t-2 border-t-[#7a4b36]'
@@ -217,6 +226,7 @@ export function TraitsFeatsSection({
             {feats.map((feat, idx) => (
               <div
                 key={`feat-${idx}`}
+                data-drag-preview
                 className={`grid grid-cols-[auto_1fr_1.4fr_auto] gap-1 items-start mb-1 ${
                   dragOverFeatIndex === idx && dragOverFeatEdge === 'top'
                     ? 'border-t-2 border-t-[#7a4b36]'

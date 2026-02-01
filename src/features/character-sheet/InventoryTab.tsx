@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, PaperContainer, SectionHeader } from '@/components/ui'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import type { InventoryItem, ItemCategory } from '@/types/character'
 
 type InventoryTabProps = {
@@ -45,6 +45,7 @@ export function InventoryTab({
   const [draggingInventoryId, setDraggingInventoryId] = useState<string | null>(null)
   const [dragOverInventoryId, setDragOverInventoryId] = useState<string | null>(null)
   const [dragOverInventoryEdge, setDragOverInventoryEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const editingInventoryCategory =
     editingInventoryId !== null
@@ -116,6 +117,7 @@ export function InventoryTab({
     setDraggingInventoryId(null)
     setDragOverInventoryId(null)
     setDragOverInventoryEdge(null)
+    clearDragPreview()
   }
 
   const reorderInventoryCategory = (
@@ -155,6 +157,8 @@ export function InventoryTab({
       setDragOverInventoryEdge(null)
       event.dataTransfer.effectAllowed = 'move'
       event.dataTransfer.setData('text/plain', itemId)
+      const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+      setDragPreview(event, previewTarget)
     }
 
   const handleInventoryDragOver = (itemId: string) => (event: DragEvent<HTMLElement>) => {
@@ -269,6 +273,7 @@ export function InventoryTab({
                   return (
                     <div
                       key={item.id}
+                      data-drag-preview
                       className={`mb-1 ${
                         dragOverInventoryId === item.id && dragOverInventoryEdge === 'top'
                           ? 'border-t-2 border-t-[#7a4b36]'

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, SectionHeader, Select } from '@/components/ui'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import { calculateAbilityModifier} from '@/types/abilities'
 import type { Abilities } from '@/types/abilities'
 import type { ClassFeature } from '@/types/character'
@@ -38,6 +38,7 @@ export function ClassFeaturesSection({
   const [dragOverFeatureId, setDragOverFeatureId] = useState<string | null>(null)
   const [dragOverFeatureEdge, setDragOverFeatureEdge] = useState<'top' | 'bottom' | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<FeatureColumnKey | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   useOutsideClick({
     isActive: Boolean(openFeatureMenuId),
@@ -348,6 +349,7 @@ export function ClassFeaturesSection({
     setDragOverFeatureId(null)
     setDragOverFeatureEdge(null)
     setDragOverColumn(null)
+    clearDragPreview()
   }
 
   const moveManualFeature = (
@@ -410,6 +412,8 @@ export function ClassFeaturesSection({
     setDragOverFeatureEdge(null)
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', featureId)
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
   }
 
   const handleFeatureDragOver =
@@ -427,6 +431,7 @@ export function ClassFeaturesSection({
   const handleFeatureDrop =
     (featureId: string, column: FeatureColumnKey) => (event: DragEvent<HTMLElement>) => {
       event.preventDefault()
+      event.stopPropagation()
       if (!draggingFeatureId || draggingFeatureId === featureId) {
         resetFeatureDragState()
         return
@@ -439,6 +444,10 @@ export function ClassFeaturesSection({
     (column: FeatureColumnKey) => (event: DragEvent<HTMLElement>) => {
       if (!draggingFeatureId) return
       event.preventDefault()
+      const target = event.target as HTMLElement | null
+      if (target?.closest('[data-drag-preview]')) {
+        return
+      }
       setDragOverColumn(column)
       setDragOverFeatureId(null)
       setDragOverFeatureEdge(null)
@@ -447,6 +456,10 @@ export function ClassFeaturesSection({
 
   const handleColumnDrop = (column: FeatureColumnKey) => (event: DragEvent<HTMLElement>) => {
     event.preventDefault()
+    const target = event.target as HTMLElement | null
+    if (target?.closest('[data-drag-preview]')) {
+      return
+    }
     if (!draggingFeatureId) {
       resetFeatureDragState()
       return
@@ -610,6 +623,7 @@ export function ClassFeaturesSection({
     return (
       <div
         key={feature.id}
+        data-drag-preview
         className={`${options?.noMargin ? 'mb-0' : 'mb-2'} border border-[#c9b89c] bg-white/40 p-1.5 cursor-pointer ${dragIndicator} ${
           isDragging ? 'opacity-60' : ''
         } ${options?.highlight ? 'border-2 border-[#7a4b36] bg-[#fff7ea] shadow-md' : ''}`}

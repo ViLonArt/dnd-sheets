@@ -169,6 +169,15 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
         valueAbilitySource && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(valueAbilitySource)
           ? (valueAbilitySource as 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha')
           : undefined
+      const actionTypeSource =
+        typeof dataSource.actionType === 'string' ? dataSource.actionType : undefined
+      const normalizedActionType =
+        actionTypeSource === 'bonus' ? 'action bonus' : actionTypeSource
+      const actionType =
+        normalizedActionType &&
+        ['action', 'action bonus', 'reaction', 'passive', 'free'].includes(normalizedActionType)
+          ? (normalizedActionType as 'action' | 'action bonus' | 'reaction' | 'passive' | 'free')
+          : undefined
       const legacyNotes = typeof entry.level === 'string' ? entry.level : ''
       const legacyUsesCurrent = typeof entry.usesCurrent === 'number' ? entry.usesCurrent : undefined
       const legacyUsesMax = typeof entry.usesMax === 'number' ? entry.usesMax : undefined
@@ -197,10 +206,7 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
           ritual: typeof activeFieldsSource.ritual === 'boolean' ? activeFieldsSource.ritual : false,
         },
         data: {
-          actionType:
-            typeof dataSource.actionType === 'string'
-              ? (dataSource.actionType as 'action' | 'bonus' | 'reaction' | 'passive' | 'free')
-              : undefined,
+          actionType,
           range: typeof dataSource.range === 'string' ? dataSource.range : undefined,
           value: typeof dataSource.value === 'string' ? dataSource.value : undefined,
           valueDiceCount:
@@ -364,6 +370,7 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
           : typeof attackData.damage === 'string'
           ? attackData.damage
           : '',
+        damageType: typeof attackData.damageType === 'string' ? attackData.damageType : '',
         notes: typeof attackData.notes === 'string' ? attackData.notes : '',
         property: typeof attackData.property === 'string' ? attackData.property : '',
         special: typeof attackData.special === 'string' ? attackData.special : '',
@@ -417,9 +424,11 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
         diceDie: typeof spellData.diceDie === 'string' ? spellData.diceDie : '',
         diceMod: typeof spellData.diceMod === 'string' ? spellData.diceMod : '',
         diceCustom: diceCustomSource,
+        damageType: typeof spellData.damageType === 'string' ? spellData.damageType : '',
         concentration: Boolean(spellData.concentration),
         ritual: Boolean(spellData.ritual),
         saveThrow: Boolean(spellData.saveThrow),
+        prepared: Boolean(spellData.prepared),
         saveThrowAbility:
           typeof spellData.saveThrowAbility === 'string'
             ? (spellData.saveThrowAbility as 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA')

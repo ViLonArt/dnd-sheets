@@ -23,7 +23,7 @@ export interface ClassFeature {
     ritual: boolean
   }
   data: {
-    actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
+    actionType?: 'action' | 'action bonus' | 'reaction' | 'passive' | 'free'
     range?: string
     value?: string
     valueDiceCount?: number

@@ -11,6 +11,7 @@ export interface Attack {
   name: string
   damageDiceCount: number
   damageDie: string
+  damageType?: string
   ability: AbilityKey
   magicMod: string
   proficiencyLevel: 0 | 1 | 2
@@ -53,7 +54,7 @@ export interface ClassFeature {
     ritual: boolean
   }
   data: {
-    actionType?: 'action' | 'bonus' | 'reaction' | 'passive' | 'free'
+    actionType?: 'action' | 'action bonus' | 'reaction' | 'passive' | 'free'
     range?: string
     value?: string
     valueDiceCount?: number
@@ -119,8 +120,10 @@ export interface Spell {
   diceDie?: string
   diceMod?: string
   diceCustom?: string
+  damageType?: string
   concentration?: boolean
   ritual?: boolean
+  prepared?: boolean
   saveThrow?: boolean
   saveThrowAbility?: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
   description?: string
@@ -225,6 +228,7 @@ export const AttackSchema = z.object({
   name: z.string(),
   damageDiceCount: z.number().int().min(1),
   damageDie: z.string(),
+  damageType: z.string().optional(),
   ability: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
   magicMod: z.string(),
   proficiencyLevel: z.number().int().min(0).max(2),
@@ -267,7 +271,7 @@ export const ClassFeatureSchema = z.object({
     ritual: z.boolean(),
   }),
   data: z.object({
-    actionType: z.enum(['action', 'bonus', 'reaction', 'passive', 'free']).optional(),
+    actionType: z.enum(['action', 'action bonus', 'reaction', 'passive', 'free']).optional(),
     range: z.string().optional(),
     value: z.string().optional(),
     valueDiceCount: z.number().int().min(1).optional(),
@@ -335,8 +339,10 @@ export const SpellSchema = z.object({
   diceDie: z.string().optional(),
   diceMod: z.string().optional(),
   diceCustom: z.string().optional(),
+  damageType: z.string().optional(),
   concentration: z.boolean().optional(),
   ritual: z.boolean().optional(),
+  prepared: z.boolean().optional(),
   saveThrow: z.boolean().optional(),
   saveThrowAbility: z.enum(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']).optional(),
   description: z.string().optional(),

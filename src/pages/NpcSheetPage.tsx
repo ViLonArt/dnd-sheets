@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
+import type { DragEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { useNpcForm, useExportToImage } from '@/hooks'
+import { useDragPreview, useNpcForm, useExportToImage } from '@/hooks'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthButton } from '@/components/auth/AuthButton'
 import { getSheet, createSheet, updateSheet, uploadImage, dataURLtoFile } from '@/services/sheetService'
@@ -35,6 +36,16 @@ export default function NpcSheetPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [initialNpcData, setInitialNpcData] = useState<Npc | undefined>(undefined)
+  const [draggingSkillIndex, setDraggingSkillIndex] = useState<number | null>(null)
+  const [dragOverSkillIndex, setDragOverSkillIndex] = useState<number | null>(null)
+  const [dragOverSkillEdge, setDragOverSkillEdge] = useState<'top' | 'bottom' | null>(null)
+  const [draggingSpecialIndex, setDraggingSpecialIndex] = useState<number | null>(null)
+  const [dragOverSpecialIndex, setDragOverSpecialIndex] = useState<number | null>(null)
+  const [dragOverSpecialEdge, setDragOverSpecialEdge] = useState<'top' | 'bottom' | null>(null)
+  const [draggingActionIndex, setDraggingActionIndex] = useState<number | null>(null)
+  const [dragOverActionIndex, setDragOverActionIndex] = useState<number | null>(null)
+  const [dragOverActionEdge, setDragOverActionEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
   
   // Determine if this is a new sheet
   const isNew = !id || id === 'new'
@@ -203,6 +214,114 @@ export default function NpcSheetPage() {
   const removeListItem = (field: 'skills' | 'special' | 'actions', index: number) => {
     updateField(field, npc[field].filter((_, i) => i !== index))
   }
+
+  const resetNpcDragState = (field: 'skills' | 'special' | 'actions') => {
+    if (field === 'skills') {
+      setDraggingSkillIndex(null)
+      setDragOverSkillIndex(null)
+      setDragOverSkillEdge(null)
+      clearDragPreview()
+      return
+    }
+    if (field === 'special') {
+      setDraggingSpecialIndex(null)
+      setDragOverSpecialIndex(null)
+      setDragOverSpecialEdge(null)
+      clearDragPreview()
+      return
+    }
+    setDraggingActionIndex(null)
+    setDragOverActionIndex(null)
+    setDragOverActionEdge(null)
+    clearDragPreview()
+  }
+
+  const reorderNpcList = (
+    field: 'skills' | 'special' | 'actions',
+    fromIndex: number,
+    toIndex: number
+  ) => {
+    if (fromIndex === toIndex) return
+    const next = [...npc[field]]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+    const insertIndex = fromIndex < toIndex ? Math.max(0, toIndex - 1) : toIndex
+    next.splice(insertIndex, 0, moved)
+    updateField(field, next)
+  }
+
+  const handleNpcDragStart =
+    (field: 'skills' | 'special' | 'actions', index: number) =>
+    (event: DragEvent<HTMLElement>) => {
+      if (field === 'skills') {
+        setDraggingSkillIndex(index)
+        setDragOverSkillIndex(null)
+        setDragOverSkillEdge(null)
+      } else if (field === 'special') {
+        setDraggingSpecialIndex(index)
+        setDragOverSpecialIndex(null)
+        setDragOverSpecialEdge(null)
+      } else {
+        setDraggingActionIndex(index)
+        setDragOverActionIndex(null)
+        setDragOverActionEdge(null)
+      }
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('text/plain', `${field}-${index}`)
+      const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+      setDragPreview(event, previewTarget)
+    }
+
+  const handleNpcDragOver =
+    (field: 'skills' | 'special' | 'actions', index: number) =>
+    (event: DragEvent<HTMLElement>) => {
+      const draggingIndex =
+        field === 'skills'
+          ? draggingSkillIndex
+          : field === 'special'
+          ? draggingSpecialIndex
+          : draggingActionIndex
+      if (draggingIndex === null || draggingIndex === index) return
+      event.preventDefault()
+      const rect = event.currentTarget.getBoundingClientRect()
+      const isTop = event.clientY - rect.top < rect.height / 2
+      if (field === 'skills') {
+        setDragOverSkillIndex(index)
+        setDragOverSkillEdge(isTop ? 'top' : 'bottom')
+      } else if (field === 'special') {
+        setDragOverSpecialIndex(index)
+        setDragOverSpecialEdge(isTop ? 'top' : 'bottom')
+      } else {
+        setDragOverActionIndex(index)
+        setDragOverActionEdge(isTop ? 'top' : 'bottom')
+      }
+      event.dataTransfer.dropEffect = 'move'
+    }
+
+  const handleNpcDrop =
+    (field: 'skills' | 'special' | 'actions', index: number) =>
+    (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      const draggingIndex =
+        field === 'skills'
+          ? draggingSkillIndex
+          : field === 'special'
+          ? draggingSpecialIndex
+          : draggingActionIndex
+      const edge =
+        field === 'skills'
+          ? dragOverSkillEdge
+          : field === 'special'
+          ? dragOverSpecialEdge
+          : dragOverActionEdge
+      if (draggingIndex === null || draggingIndex === index) {
+        resetNpcDragState(field)
+        return
+      }
+      const insertIndex = edge === 'bottom' ? index + 1 : index
+      reorderNpcList(field, draggingIndex, insertIndex)
+      resetNpcDragState(field)
+    }
 
   // Export handlers
   const handleExportClick = () => {
@@ -454,7 +573,35 @@ export default function NpcSheetPage() {
           <SectionHeader className="mt-3">Compétences / JS / Résistances</SectionHeader>
           <div className="mt-1.5">
             {npc.skills.map((skill, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 mb-1.5">
+              <div
+                key={idx}
+                data-drag-preview
+                className={`flex items-start gap-1.5 mb-1.5 ${
+                  dragOverSkillIndex === idx && dragOverSkillEdge === 'top'
+                    ? 'border-t-2 border-t-[#7a4b36]'
+                    : dragOverSkillIndex === idx && dragOverSkillEdge === 'bottom'
+                      ? 'border-b-2 border-b-[#7a4b36]'
+                      : ''
+                } ${draggingSkillIndex === idx ? 'opacity-60' : ''}`}
+                onDragOver={handleNpcDragOver('skills', idx)}
+                onDrop={handleNpcDrop('skills', idx)}
+                onDragLeave={() => {
+                  if (dragOverSkillIndex === idx) {
+                    setDragOverSkillIndex(null)
+                    setDragOverSkillEdge(null)
+                  }
+                }}
+              >
+                <span
+                  role="button"
+                  aria-label="Réordonner la compétence"
+                  draggable
+                  onDragStart={handleNpcDragStart('skills', idx)}
+                  onDragEnd={() => resetNpcDragState('skills')}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none mt-1"
+                >
+                  ⋮⋮
+                </span>
                 <Box className="flex-1">
                   <input
                     type="text"
@@ -478,7 +625,35 @@ export default function NpcSheetPage() {
           <SectionHeader className="mt-3">Aptitudes spéciales / Comportement</SectionHeader>
           <div className="mt-1.5">
             {npc.special.map((ability, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 mb-1.5">
+              <div
+                key={idx}
+                data-drag-preview
+                className={`flex items-start gap-1.5 mb-1.5 ${
+                  dragOverSpecialIndex === idx && dragOverSpecialEdge === 'top'
+                    ? 'border-t-2 border-t-[#7a4b36]'
+                    : dragOverSpecialIndex === idx && dragOverSpecialEdge === 'bottom'
+                      ? 'border-b-2 border-b-[#7a4b36]'
+                      : ''
+                } ${draggingSpecialIndex === idx ? 'opacity-60' : ''}`}
+                onDragOver={handleNpcDragOver('special', idx)}
+                onDrop={handleNpcDrop('special', idx)}
+                onDragLeave={() => {
+                  if (dragOverSpecialIndex === idx) {
+                    setDragOverSpecialIndex(null)
+                    setDragOverSpecialEdge(null)
+                  }
+                }}
+              >
+                <span
+                  role="button"
+                  aria-label="Réordonner l'aptitude"
+                  draggable
+                  onDragStart={handleNpcDragStart('special', idx)}
+                  onDragEnd={() => resetNpcDragState('special')}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none mt-1"
+                >
+                  ⋮⋮
+                </span>
                 <Box className="flex-1">
                   <AutoResizeTextarea
                     value={ability}
@@ -501,7 +676,35 @@ export default function NpcSheetPage() {
           <SectionHeader className="mt-3">Actions</SectionHeader>
           <div className="mt-1.5">
             {npc.actions.map((action, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 mb-1.5">
+              <div
+                key={idx}
+                data-drag-preview
+                className={`flex items-start gap-1.5 mb-1.5 ${
+                  dragOverActionIndex === idx && dragOverActionEdge === 'top'
+                    ? 'border-t-2 border-t-[#7a4b36]'
+                    : dragOverActionIndex === idx && dragOverActionEdge === 'bottom'
+                      ? 'border-b-2 border-b-[#7a4b36]'
+                      : ''
+                } ${draggingActionIndex === idx ? 'opacity-60' : ''}`}
+                onDragOver={handleNpcDragOver('actions', idx)}
+                onDrop={handleNpcDrop('actions', idx)}
+                onDragLeave={() => {
+                  if (dragOverActionIndex === idx) {
+                    setDragOverActionIndex(null)
+                    setDragOverActionEdge(null)
+                  }
+                }}
+              >
+                <span
+                  role="button"
+                  aria-label="Réordonner l'action"
+                  draggable
+                  onDragStart={handleNpcDragStart('actions', idx)}
+                  onDragEnd={() => resetNpcDragState('actions')}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none mt-1"
+                >
+                  ⋮⋮
+                </span>
                 <Box className="flex-1">
                   <AutoResizeTextarea
                     value={action}

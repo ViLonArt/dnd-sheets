@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
+import type { DragEvent } from 'react'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
-import { useOutsideClick } from '@/hooks'
+import { useDragPreview, useOutsideClick } from '@/hooks'
 import {
   AutoResizeTextarea,
   Box,
@@ -28,6 +29,7 @@ type PcClassTabProps = {
   onAddSpell: (level: number) => string
   onUpdateSpell: (index: number, updates: Partial<Spell>) => void
   onRemoveSpell: (index: number) => void
+  onReorderSpells: (fromIndex: number, toIndex: number) => void
 }
 
 const SUBCLASS_CASTERS = new Set([
@@ -53,6 +55,7 @@ export function PcClassTab({
   onAddSpell,
   onUpdateSpell,
   onRemoveSpell,
+  onReorderSpells,
 }: PcClassTabProps) {
   const [allowSlotOverrides, setAllowSlotOverrides] = useState(false)
   const [editingSpellId, setEditingSpellId] = useState<string | null>(null)
@@ -64,6 +67,10 @@ export function PcClassTab({
   const [expandedSpellDescriptionIndices, setExpandedSpellDescriptionIndices] = useState<
     Set<number>
   >(() => new Set())
+  const [draggingSpellIndex, setDraggingSpellIndex] = useState<number | null>(null)
+  const [dragOverSpellIndex, setDragOverSpellIndex] = useState<number | null>(null)
+  const [dragOverSpellEdge, setDragOverSpellEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const classData = CLASSES_2024[className]
   const levelIndex = Math.max(1, Math.min(20, level)) - 1
@@ -98,6 +105,55 @@ export function PcClassTab({
 
   const formatSigned = (value: number) => (value >= 0 ? `+${value}` : `${value}`)
 
+  const resetSpellDragState = () => {
+    setDraggingSpellIndex(null)
+    setDragOverSpellIndex(null)
+    setDragOverSpellEdge(null)
+    clearDragPreview()
+  }
+
+  const handleSpellDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (editingSpellId !== null) return
+    setDraggingSpellIndex(index)
+    setDragOverSpellIndex(null)
+    setDragOverSpellEdge(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', spells[index]?.id ?? String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
+  }
+
+  const handleSpellDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (draggingSpellIndex === null || draggingSpellIndex === index) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const isTop = event.clientY - rect.top < rect.height / 2
+    setDragOverSpellIndex(index)
+    setDragOverSpellEdge(isTop ? 'top' : 'bottom')
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleSpellDrop = (index: number) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    if (draggingSpellIndex === null || draggingSpellIndex === index) {
+      resetSpellDragState()
+      return
+    }
+    const fromSpell = spells[draggingSpellIndex]
+    const targetSpell = spells[index]
+    if (!fromSpell || !targetSpell) {
+      resetSpellDragState()
+      return
+    }
+    if (String(fromSpell.level) !== String(targetSpell.level)) {
+      resetSpellDragState()
+      return
+    }
+    const insertIndex = dragOverSpellEdge === 'bottom' ? index + 1 : index
+    onReorderSpells(draggingSpellIndex, insertIndex)
+    resetSpellDragState()
+  }
+
   const getSpellValueDisplay = (spell: Spell) => {
     if (spell.diceMode === 'custom') {
       return spell.diceCustom ?? ''
@@ -110,6 +166,12 @@ export function PcClassTab({
     return `${count}${spell.diceDie}${formatSigned(mod)}`
   }
 
+  const formatSpellDamageValue = (spell: Spell) => {
+    const base = getSpellValueDisplay(spell)
+    if (!base) return ''
+    return spell.damageType ? `${base} ${spell.damageType}` : base
+  }
+
   useOutsideClick({
     isActive: Boolean(openSpellMenuId),
     onOutsideClick: () => setOpenSpellMenuId(null),
@@ -120,8 +182,8 @@ export function PcClassTab({
     <div
       className={`grid items-center gap-3 text-[9px] uppercase text-[#7a4b36] mb-1 ${
         includeLevel
-          ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
-          : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+          ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_0.6fr_1fr]'
+          : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_0.6fr_1fr]'
       }`}
     >
       <span className="font-semibold">Nom</span>
@@ -134,6 +196,7 @@ export function PcClassTab({
       <span>Valeur</span>
       <span>Jet de sauv.</span>
       <span>C/R</span>
+      <span>Prépa.</span>
       <span className="text-right" aria-hidden="true">
         &nbsp;
       </span>
@@ -142,6 +205,14 @@ export function PcClassTab({
 
   const renderSpellRow = (spell: Spell, globalIdx: number, includeLevel: boolean) => {
     const isEditing = editingSpellId === spell.id
+    const isDragging = draggingSpellIndex === globalIdx
+    const isDragOver = dragOverSpellIndex === globalIdx
+    const dragIndicator =
+      isDragOver && dragOverSpellEdge === 'top'
+        ? 'border-t-2 border-t-[#7a4b36]'
+        : isDragOver && dragOverSpellEdge === 'bottom'
+          ? 'border-b-2 border-b-[#7a4b36]'
+          : ''
     const showDescription = expandedSpellDescriptionIndices.has(globalIdx)
     const crTokens = [
       spell.concentration ? 'C' : null,
@@ -170,6 +241,22 @@ export function PcClassTab({
       { value: 'Action bonus', label: 'Action bonus' },
       { value: 'custom', label: 'Personnalisé' },
     ]
+    const damageTypeOptions = [
+      { value: '', label: '—' },
+      { value: 'Tranchant', label: 'Tranchant' },
+      { value: 'Perforant', label: 'Perforant' },
+      { value: 'Contondant', label: 'Contondant' },
+      { value: 'Feu', label: 'Feu' },
+      { value: 'Froid', label: 'Froid' },
+      { value: 'Foudre', label: 'Foudre' },
+      { value: 'Tonnerre', label: 'Tonnerre' },
+      { value: 'Acide', label: 'Acide' },
+      { value: 'Poison', label: 'Poison' },
+      { value: 'Psychique', label: 'Psychique' },
+      { value: 'Radiant', label: 'Radiant' },
+      { value: 'Nécrotique', label: 'Nécrotique' },
+      { value: 'Force', label: 'Force' },
+    ]
     const currentActionType =
       spell.type === 'Action' || spell.type === 'Action bonus' ? spell.type : 'custom'
     const saveThrowValue = spell.saveThrow
@@ -178,7 +265,20 @@ export function PcClassTab({
     const valueMode = spell.diceMode === 'custom' ? 'custom' : 'dice'
 
     return (
-      <div key={globalIdx} className="border border-[#c9b89c] bg-white/40 p-1.5 mb-1">
+      <div
+        key={globalIdx}
+        className={`border border-[#c9b89c] bg-white/40 p-1.5 mb-1 ${dragIndicator} ${
+          isDragging ? 'opacity-60' : ''
+        }`}
+        onDragOver={handleSpellDragOver(globalIdx)}
+        onDrop={handleSpellDrop(globalIdx)}
+        onDragLeave={() => {
+          if (dragOverSpellIndex === globalIdx) {
+            setDragOverSpellIndex(null)
+            setDragOverSpellEdge(null)
+          }
+        }}
+      >
         {isEditing ? (
           <>
             <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-1 items-start">
@@ -355,6 +455,12 @@ export function PcClassTab({
                     />
                   </div>
                 )}
+                <Select
+                  value={spell.damageType ?? ''}
+                  onChange={(e) => onUpdateSpell(globalIdx, { damageType: e.target.value })}
+                  options={damageTypeOptions}
+                  className="text-[11px] min-h-[22px] mt-1"
+                />
               </div>
             </div>
             <div className="mt-1 flex items-center gap-3 text-[10px]">
@@ -375,6 +481,15 @@ export function PcClassTab({
                   className="w-3 h-3"
                 />
                 <span>Rituel</span>
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={spell.prepared ?? false}
+                  onChange={(e) => onUpdateSpell(globalIdx, { prepared: e.target.checked })}
+                  className="w-3 h-3"
+                />
+                <span>Préparé</span>
               </label>
               <label className="flex items-center gap-1">
                 <input
@@ -425,10 +540,11 @@ export function PcClassTab({
         ) : (
           <>
             <div
+              data-drag-preview
               className={`grid items-center gap-3 text-[10px] ${
                 includeLevel
-                  ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
-                  : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_1fr]'
+                  ? 'grid-cols-[2fr_0.6fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_0.6fr_1fr]'
+                  : 'grid-cols-[2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_0.9fr_1fr_0.6fr_0.6fr_1fr]'
               } cursor-pointer`}
               onClick={() =>
                 setExpandedSpellDescriptionIndices((prev) => {
@@ -442,16 +558,42 @@ export function PcClassTab({
                 })
               }
             >
-              <span className="font-bold text-sm truncate">{spell.name || '—'}</span>
+              <div className="flex items-center gap-1 min-w-0">
+                <span
+                  role="button"
+                  aria-label="Réordonner le sort"
+                  draggable={editingSpellId === null}
+                  onDragStart={handleSpellDragStart(globalIdx)}
+                  onDragEnd={resetSpellDragState}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none"
+                >
+                  ⋮⋮
+                </span>
+                <span className="font-bold text-sm truncate">{spell.name || '—'}</span>
+              </div>
               {includeLevel && renderSpellValue(String(spell.level ?? '—'))}
               {renderSpellValue(spell.school)}
               {renderSpellValue(spell.type)}
               {renderSpellValue(spell.range)}
               {renderSpellValue(spell.duration)}
               {renderSpellValue(spell.components)}
-              {renderSpellValue(getSpellValueDisplay(spell))}
+              {renderSpellValue(formatSpellDamageValue(spell))}
               {renderSpellValue(saveThrowValue)}
               {renderSpellValue(crTokens.join(', '))}
+              <label
+                className="flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={spell.prepared ?? false}
+                  onChange={(e) => onUpdateSpell(globalIdx, { prepared: e.target.checked })}
+                  className="w-3 h-3"
+                />
+              </label>
               <span className="relative flex justify-end items-center gap-2" data-spell-menu>
                 <button
                   type="button"

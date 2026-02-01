@@ -17,6 +17,7 @@ type SpellsTabProps = {
   onAddSpell: (level: number) => string
   onUpdateSpell: (index: number, updates: Partial<Spell>) => void
   onRemoveSpell: (index: number) => void
+  onReorderSpells: (fromIndex: number, toIndex: number) => void
 }
 
 export function SpellsTab({
@@ -34,6 +35,7 @@ export function SpellsTab({
   onAddSpell,
   onUpdateSpell,
   onRemoveSpell,
+  onReorderSpells,
 }: SpellsTabProps) {
   return (
     <>
@@ -53,6 +55,7 @@ export function SpellsTab({
         onAddSpell={onAddSpell}
         onUpdateSpell={onUpdateSpell}
         onRemoveSpell={onRemoveSpell}
+        onReorderSpells={onReorderSpells}
       />
     </>
   )

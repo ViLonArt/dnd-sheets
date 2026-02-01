@@ -1,4 +1,7 @@
+import { useState } from 'react'
+import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, SectionHeader } from '@/components/ui'
+import { useDragPreview } from '@/hooks'
 import type { Feat, SpeciesTrait } from '@/types/character'
 
 type TraitsFeatsSectionProps = {
@@ -14,6 +17,109 @@ export function TraitsFeatsSection({
   onSpeciesTraitsChange,
   onFeatsChange,
 }: TraitsFeatsSectionProps) {
+  const [draggingTraitIndex, setDraggingTraitIndex] = useState<number | null>(null)
+  const [dragOverTraitIndex, setDragOverTraitIndex] = useState<number | null>(null)
+  const [dragOverTraitEdge, setDragOverTraitEdge] = useState<'top' | 'bottom' | null>(null)
+  const [draggingFeatIndex, setDraggingFeatIndex] = useState<number | null>(null)
+  const [dragOverFeatIndex, setDragOverFeatIndex] = useState<number | null>(null)
+  const [dragOverFeatEdge, setDragOverFeatEdge] = useState<'top' | 'bottom' | null>(null)
+  const { setDragPreview, clearDragPreview } = useDragPreview()
+
+  const resetTraitDragState = () => {
+    setDraggingTraitIndex(null)
+    setDragOverTraitIndex(null)
+    setDragOverTraitEdge(null)
+    clearDragPreview()
+  }
+
+  const resetFeatDragState = () => {
+    setDraggingFeatIndex(null)
+    setDragOverFeatIndex(null)
+    setDragOverFeatEdge(null)
+    clearDragPreview()
+  }
+
+  const reorderSpeciesTraits = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    const next = [...speciesTraits]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+    const insertIndex = fromIndex < toIndex ? Math.max(0, toIndex - 1) : toIndex
+    next.splice(insertIndex, 0, moved)
+    onSpeciesTraitsChange(next)
+  }
+
+  const reorderFeats = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    const next = [...feats]
+    const [moved] = next.splice(fromIndex, 1)
+    if (!moved) return
+    const insertIndex = fromIndex < toIndex ? Math.max(0, toIndex - 1) : toIndex
+    next.splice(insertIndex, 0, moved)
+    onFeatsChange(next)
+  }
+
+  const handleTraitDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
+    setDraggingTraitIndex(index)
+    setDragOverTraitIndex(null)
+    setDragOverTraitEdge(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
+  }
+
+  const handleTraitDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (draggingTraitIndex === null || draggingTraitIndex === index) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const isTop = event.clientY - rect.top < rect.height / 2
+    setDragOverTraitIndex(index)
+    setDragOverTraitEdge(isTop ? 'top' : 'bottom')
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleTraitDrop = (index: number) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    if (draggingTraitIndex === null || draggingTraitIndex === index) {
+      resetTraitDragState()
+      return
+    }
+    const insertIndex = dragOverTraitEdge === 'bottom' ? index + 1 : index
+    reorderSpeciesTraits(draggingTraitIndex, insertIndex)
+    resetTraitDragState()
+  }
+
+  const handleFeatDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
+    setDraggingFeatIndex(index)
+    setDragOverFeatIndex(null)
+    setDragOverFeatEdge(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+    const previewTarget = event.currentTarget.closest('[data-drag-preview]') as HTMLElement | null
+    setDragPreview(event, previewTarget)
+  }
+
+  const handleFeatDragOver = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (draggingFeatIndex === null || draggingFeatIndex === index) return
+    event.preventDefault()
+    const rect = event.currentTarget.getBoundingClientRect()
+    const isTop = event.clientY - rect.top < rect.height / 2
+    setDragOverFeatIndex(index)
+    setDragOverFeatEdge(isTop ? 'top' : 'bottom')
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleFeatDrop = (index: number) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    if (draggingFeatIndex === null || draggingFeatIndex === index) {
+      resetFeatDragState()
+      return
+    }
+    const insertIndex = dragOverFeatEdge === 'bottom' ? index + 1 : index
+    reorderFeats(draggingFeatIndex, insertIndex)
+    resetFeatDragState()
+  }
   const addSpeciesTrait = () => {
     onSpeciesTraitsChange([...speciesTraits, { name: '', description: '' }])
   }
@@ -61,8 +167,33 @@ export function TraitsFeatsSection({
             {speciesTraits.map((trait, idx) => (
               <div
                 key={`species-${idx}`}
-                className="grid grid-cols-[1fr_1.4fr_auto] gap-1 items-start mb-1"
+                data-drag-preview
+                className={`grid grid-cols-[auto_1fr_1.4fr_auto] gap-1 items-start mb-1 ${
+                  dragOverTraitIndex === idx && dragOverTraitEdge === 'top'
+                    ? 'border-t-2 border-t-[#7a4b36]'
+                    : dragOverTraitIndex === idx && dragOverTraitEdge === 'bottom'
+                      ? 'border-b-2 border-b-[#7a4b36]'
+                      : ''
+                } ${draggingTraitIndex === idx ? 'opacity-60' : ''}`}
+                onDragOver={handleTraitDragOver(idx)}
+                onDrop={handleTraitDrop(idx)}
+                onDragLeave={() => {
+                  if (dragOverTraitIndex === idx) {
+                    setDragOverTraitIndex(null)
+                    setDragOverTraitEdge(null)
+                  }
+                }}
               >
+                <span
+                  role="button"
+                  aria-label="Réordonner le trait"
+                  draggable
+                  onDragStart={handleTraitDragStart(idx)}
+                  onDragEnd={resetTraitDragState}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none"
+                >
+                  ⋮⋮
+                </span>
                 <Box>
                   <AutoResizeTextarea
                     value={trait.name}
@@ -95,8 +226,33 @@ export function TraitsFeatsSection({
             {feats.map((feat, idx) => (
               <div
                 key={`feat-${idx}`}
-                className="grid grid-cols-[1fr_1.4fr_auto] gap-1 items-start mb-1"
+                data-drag-preview
+                className={`grid grid-cols-[auto_1fr_1.4fr_auto] gap-1 items-start mb-1 ${
+                  dragOverFeatIndex === idx && dragOverFeatEdge === 'top'
+                    ? 'border-t-2 border-t-[#7a4b36]'
+                    : dragOverFeatIndex === idx && dragOverFeatEdge === 'bottom'
+                      ? 'border-b-2 border-b-[#7a4b36]'
+                      : ''
+                } ${draggingFeatIndex === idx ? 'opacity-60' : ''}`}
+                onDragOver={handleFeatDragOver(idx)}
+                onDrop={handleFeatDrop(idx)}
+                onDragLeave={() => {
+                  if (dragOverFeatIndex === idx) {
+                    setDragOverFeatIndex(null)
+                    setDragOverFeatEdge(null)
+                  }
+                }}
               >
+                <span
+                  role="button"
+                  aria-label="Réordonner le don"
+                  draggable
+                  onDragStart={handleFeatDragStart(idx)}
+                  onDragEnd={resetFeatDragState}
+                  className="text-xs text-[#7a4b36] cursor-grab select-none"
+                >
+                  ⋮⋮
+                </span>
                 <Box>
                   <AutoResizeTextarea
                     value={feat.name}

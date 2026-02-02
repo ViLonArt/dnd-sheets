@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import type { DragEvent } from 'react'
 import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
 import { useDragPreview, useOutsideClick } from '@/hooks'
+import { searchSrdSpells } from '@/utils/spellSearch'
 import {
   AutoResizeTextarea,
   Box,
@@ -26,7 +27,7 @@ type PcClassTabProps = {
   currentMaxSlots: Record<number, number>
   onSpellcastingAttributeChange: (value: SpellcastingAttribute) => void
   onUpdateSpellSlot: (level: number, field: 'total' | 'used', value: number) => void
-  onAddSpell: (level: number) => string
+  onAddSpell: (level: number, template?: Partial<Spell>) => string
   onUpdateSpell: (index: number, updates: Partial<Spell>) => void
   onRemoveSpell: (index: number) => void
   onReorderSpells: (fromIndex: number, toIndex: number) => void
@@ -70,6 +71,8 @@ export function PcClassTab({
   const [draggingSpellIndex, setDraggingSpellIndex] = useState<number | null>(null)
   const [dragOverSpellIndex, setDragOverSpellIndex] = useState<number | null>(null)
   const [dragOverSpellEdge, setDragOverSpellEdge] = useState<'top' | 'bottom' | null>(null)
+  const [spellSearchQueries, setSpellSearchQueries] = useState<Record<string, string>>({})
+  const deferredSpellSearchQueries = useDeferredValue(spellSearchQueries)
   const { setDragPreview, clearDragPreview } = useDragPreview()
 
   const classData = CLASSES_2024[className]
@@ -170,6 +173,114 @@ export function PcClassTab({
     const base = getSpellValueDisplay(spell)
     if (!base) return ''
     return spell.damageType ? `${base} ${spell.damageType}` : base
+  }
+
+  const setSpellSearchQuery = (key: string, value: string) => {
+    setSpellSearchQueries((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const clearSpellSearchQuery = (key: string) => {
+    setSpellSearchQueries((prev) => ({ ...prev, [key]: '' }))
+  }
+
+  const addSpellFromTemplate = (template: Spell, fallbackLevel: number, searchKey: string) => {
+    const parsedLevel =
+      typeof template.level === 'number' ? template.level : Number(template.level)
+    const resolvedLevel = Number.isNaN(parsedLevel) ? fallbackLevel : parsedLevel
+    const id = onAddSpell(resolvedLevel, template)
+    setEditingSpellId(id)
+    setNewSpellId(id)
+    setSpellEditSnapshot(null)
+    clearSpellSearchQuery(searchKey)
+  }
+
+  const addCustomSpell = (level: number, searchKey: string) => {
+    const id = onAddSpell(level)
+    setEditingSpellId(id)
+    setNewSpellId(id)
+    setSpellEditSnapshot(null)
+    clearSpellSearchQuery(searchKey)
+  }
+
+  const renderSpellSearch = ({
+    searchKey,
+    levelFilter,
+    excludeCantrips = false,
+  }: {
+    searchKey: string
+    levelFilter?: number
+    excludeCantrips?: boolean
+  }) => {
+    const rawQuery = spellSearchQueries[searchKey] ?? ''
+    const deferredQuery = deferredSpellSearchQueries[searchKey] ?? ''
+    const baseResults = deferredQuery
+      ? searchSrdSpells(deferredQuery, {
+          level: levelFilter,
+          limit: levelFilter === undefined ? 20 : 10,
+        })
+      : []
+    const filteredResults = excludeCantrips
+      ? baseResults.filter((result) => String(result.spell.level) !== '0')
+      : baseResults
+    const results = filteredResults.slice(0, 8)
+    const isDisabled = editingSpellId !== null
+    const fallbackLevel = levelFilter ?? 1
+
+    return (
+      <div className="mt-1 flex flex-col gap-2">
+        <input
+          type="text"
+          value={rawQuery}
+          onChange={(e) => setSpellSearchQuery(searchKey, e.target.value)}
+          disabled={isDisabled}
+          className="w-full bg-transparent border border-[#bda68a] rounded px-2 py-1 text-xs"
+          placeholder="Rechercher un sort SRD..."
+        />
+        {rawQuery.trim() && (
+          <div className="border border-[#c9b89c] bg-white/60 rounded text-xs">
+            {results.length === 0 ? (
+              <div className="px-2 py-1 text-[11px] text-[#7a4b36]">Aucun résultat</div>
+            ) : (
+              results.map((result) => {
+                const spellLevel =
+                  typeof result.spell.level === 'number'
+                    ? result.spell.level
+                    : Number(result.spell.level)
+                const levelLabel =
+                  Number.isNaN(spellLevel) || spellLevel === 0
+                    ? 'Tour de magie'
+                    : `Niv. ${spellLevel}`
+                return (
+                  <button
+                    key={result.spell.id}
+                    type="button"
+                    onClick={() => addSpellFromTemplate(result.spell, fallbackLevel, searchKey)}
+                    disabled={isDisabled}
+                    className="w-full text-left px-2 py-1 border-b border-[#eadfcf] last:border-b-0 hover:bg-[#f6efe4]"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-[11px]">{result.spell.name}</span>
+                      <span className="text-[9px] text-[#7a4b36]">{levelLabel}</span>
+                    </div>
+                    <div className="text-[9px] text-[#7a4b36]">
+                      {result.spell.school}
+                      {result.spell.type ? ` • ${result.spell.type}` : ''}
+                    </div>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        )}
+        <Button
+          variant="small"
+          onClick={() => addCustomSpell(fallbackLevel, searchKey)}
+          disabled={isDisabled}
+        >
+          + Ajouter sort perso
+        </Button>
+      </div>
+    )
   }
 
   useOutsideClick({
@@ -847,19 +958,10 @@ export function PcClassTab({
                   })}
                 </div>
 
-                <div className="mt-1 flex items-center gap-2">
-                  <Button
-                    variant="small"
-                    onClick={() => {
-                      const id = onAddSpell(slotLevel)
-                      setEditingSpellId(id)
-                      setNewSpellId(id)
-                    }}
-                    disabled={editingSpellId !== null}
-                  >
-                    + Ajouter sort
-                  </Button>
-                </div>
+                {renderSpellSearch({
+                  searchKey: `standard-${slotLevel}`,
+                  levelFilter: slotLevel,
+                })}
               </div>
             )
           })}
@@ -879,19 +981,10 @@ export function PcClassTab({
                 return renderSpellRow(spell, globalIdx, false)
               })}
             </div>
-            <div className="mt-1 flex items-center gap-2">
-              <Button
-                variant="small"
-                onClick={() => {
-                  const id = onAddSpell(0)
-                  setEditingSpellId(id)
-                  setNewSpellId(id)
-                }}
-                disabled={editingSpellId !== null}
-              >
-                + Ajouter sort
-              </Button>
-            </div>
+            {renderSpellSearch({
+              searchKey: 'pact-cantrips',
+              levelFilter: 0,
+            })}
           </div>
           <div className="mb-3 border border-[#c9b89c] p-2 bg-white/40">
             <SectionHeader as="h4" className="text-sm mb-1.5">
@@ -906,19 +999,10 @@ export function PcClassTab({
                   return renderSpellRow(spell, globalIdx, true)
                 })}
             </div>
-            <div className="mt-1 flex items-center gap-2">
-              <Button
-                variant="small"
-                onClick={() => {
-                  const id = onAddSpell(1)
-                  setEditingSpellId(id)
-                  setNewSpellId(id)
-                }}
-                disabled={editingSpellId !== null}
-              >
-                + Ajouter sort
-              </Button>
-            </div>
+            {renderSpellSearch({
+              searchKey: 'pact-spells',
+              excludeCantrips: true,
+            })}
           </div>
         </div>
       )}
@@ -942,19 +1026,10 @@ export function PcClassTab({
                   return renderSpellRow(spell, globalIdx, false)
                 })}
               </div>
-              <div className="mt-1 flex items-center gap-2">
-                <Button
-                  variant="small"
-                  onClick={() => {
-                    const id = onAddSpell(slotLevel)
-                    setEditingSpellId(id)
-                    setNewSpellId(id)
-                  }}
-                  disabled={editingSpellId !== null}
-                >
-                  + Ajouter sort
-                </Button>
-              </div>
+              {renderSpellSearch({
+                searchKey: `misc-${slotLevel}`,
+                levelFilter: slotLevel,
+              })}
             </div>
           ))}
         </div>

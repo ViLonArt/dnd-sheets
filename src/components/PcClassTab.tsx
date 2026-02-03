@@ -4,6 +4,8 @@ import { CLASSES_2024 } from '@/data/classTables2024'
 import type { Spell, SpellSlots, SpellcastingAttribute } from '@/types/character'
 import { useDragPreview, useOutsideClick } from '@/hooks'
 import { searchSrdSpells } from '@/utils/spellSearch'
+import type { SpellLocale } from '@/utils/spellLocale'
+import { getCanonicalSourceId } from '@/utils/spellTranslation'
 import {
   AutoResizeTextarea,
   Box,
@@ -21,6 +23,7 @@ type PcClassTabProps = {
   level: number
   spellSlots: SpellSlots
   spells: Spell[]
+  spellLocale: SpellLocale
   spellcastingAttribute: SpellcastingAttribute
   spellDC: number | string
   spellAttackBonus: number | string
@@ -47,6 +50,7 @@ export function PcClassTab({
   level,
   spellSlots,
   spells,
+  spellLocale,
   spellcastingAttribute,
   spellDC,
   spellAttackBonus,
@@ -187,7 +191,12 @@ export function PcClassTab({
     const parsedLevel =
       typeof template.level === 'number' ? template.level : Number(template.level)
     const resolvedLevel = Number.isNaN(parsedLevel) ? fallbackLevel : parsedLevel
-    const id = onAddSpell(resolvedLevel, template)
+    const sourceId = getCanonicalSourceId(template.id)
+    const localizedTemplate = {
+      ...template,
+      ...(sourceId ? { sourceId } : {}),
+    }
+    const id = onAddSpell(resolvedLevel, localizedTemplate)
     setEditingSpellId(id)
     setNewSpellId(id)
     setSpellEditSnapshot(null)
@@ -217,6 +226,7 @@ export function PcClassTab({
       ? searchSrdSpells(deferredQuery, {
           level: levelFilter,
           limit: levelFilter === undefined ? 20 : 10,
+          locale: spellLocale,
         })
       : []
     const filteredResults = excludeCantrips
@@ -226,6 +236,8 @@ export function PcClassTab({
     const isDisabled = editingSpellId !== null
     const fallbackLevel = levelFilter ?? 1
 
+    const isEnglish = spellLocale === 'en'
+
     return (
       <div className="mt-1 flex flex-col gap-2">
         <input
@@ -234,22 +246,29 @@ export function PcClassTab({
           onChange={(e) => setSpellSearchQuery(searchKey, e.target.value)}
           disabled={isDisabled}
           className="w-full bg-transparent border border-[#bda68a] rounded px-2 py-1 text-xs"
-          placeholder="Rechercher un sort SRD..."
+          placeholder={isEnglish ? 'Search SRD spell...' : 'Rechercher un sort SRD...'}
         />
         {rawQuery.trim() && (
           <div className="border border-[#c9b89c] bg-white/60 rounded text-xs">
             {results.length === 0 ? (
-              <div className="px-2 py-1 text-[11px] text-[#7a4b36]">Aucun résultat</div>
+              <div className="px-2 py-1 text-[11px] text-[#7a4b36]">
+                {isEnglish ? 'No results' : 'Aucun résultat'}
+              </div>
             ) : (
               results.map((result) => {
+                const displaySpell = result.spell
                 const spellLevel =
                   typeof result.spell.level === 'number'
                     ? result.spell.level
                     : Number(result.spell.level)
                 const levelLabel =
                   Number.isNaN(spellLevel) || spellLevel === 0
-                    ? 'Tour de magie'
-                    : `Niv. ${spellLevel}`
+                    ? isEnglish
+                      ? 'Cantrip'
+                      : 'Tour de magie'
+                    : isEnglish
+                      ? `Level ${spellLevel}`
+                      : `Niv. ${spellLevel}`
                 return (
                   <button
                     key={result.spell.id}
@@ -259,12 +278,12 @@ export function PcClassTab({
                     className="w-full text-left px-2 py-1 border-b border-[#eadfcf] last:border-b-0 hover:bg-[#f6efe4]"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-[11px]">{result.spell.name}</span>
+                      <span className="font-semibold text-[11px]">{displaySpell.name}</span>
                       <span className="text-[9px] text-[#7a4b36]">{levelLabel}</span>
                     </div>
                     <div className="text-[9px] text-[#7a4b36]">
-                      {result.spell.school}
-                      {result.spell.type ? ` • ${result.spell.type}` : ''}
+                      {displaySpell.school}
+                      {displaySpell.type ? ` • ${displaySpell.type}` : ''}
                     </div>
                   </button>
                 )
@@ -277,7 +296,7 @@ export function PcClassTab({
           onClick={() => addCustomSpell(fallbackLevel, searchKey)}
           disabled={isDisabled}
         >
-          + Ajouter sort perso
+          {isEnglish ? '+ Add custom spell' : '+ Ajouter sort perso'}
         </Button>
       </div>
     )
@@ -348,8 +367,9 @@ export function PcClassTab({
       'Transmutation',
     ]
     const actionTypeOptions = [
-      { value: 'Action', label: 'Action' },
-      { value: 'Action bonus', label: 'Action bonus' },
+      { value: 'action', label: 'Action' },
+      { value: 'bonus', label: spellLocale === 'en' ? 'Bonus action' : 'Action bonus' },
+      { value: 'reaction', label: spellLocale === 'en' ? 'Reaction' : 'Réaction' },
       { value: 'custom', label: 'Personnalisé' },
     ]
     const damageTypeOptions = [
@@ -368,8 +388,12 @@ export function PcClassTab({
       { value: 'Nécrotique', label: 'Nécrotique' },
       { value: 'Force', label: 'Force' },
     ]
-    const currentActionType =
-      spell.type === 'Action' || spell.type === 'Action bonus' ? spell.type : 'custom'
+    const currentActionType = (() => {
+      if (spell.type === 'Action') return 'action'
+      if (spell.type === 'Bonus action' || spell.type === 'Action bonus') return 'bonus'
+      if (spell.type === 'Reaction' || spell.type === 'Réaction') return 'reaction'
+      return 'custom'
+    })()
     const saveThrowValue = spell.saveThrow
       ? abilityLabels[spell.saveThrowAbility ?? 'STR'] ?? 'STR'
       : ''
@@ -460,7 +484,18 @@ export function PcClassTab({
                   value={currentActionType}
                   onChange={(e) =>
                     onUpdateSpell(globalIdx, {
-                      type: e.target.value === 'custom' ? '' : e.target.value,
+                      type:
+                        e.target.value === 'action'
+                          ? 'Action'
+                          : e.target.value === 'bonus'
+                            ? spellLocale === 'en'
+                              ? 'Bonus action'
+                              : 'Action bonus'
+                            : e.target.value === 'reaction'
+                              ? spellLocale === 'en'
+                                ? 'Reaction'
+                                : 'Réaction'
+                              : '',
                     })
                   }
                   options={actionTypeOptions}

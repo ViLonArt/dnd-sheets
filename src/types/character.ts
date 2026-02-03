@@ -107,6 +107,7 @@ export interface Feat {
  */
 export interface Spell {
   id: string
+  sourceId?: string
   name: string
   level: string | number
   school: string
@@ -326,6 +327,7 @@ export const FeatSchema = z.object({
  */
 export const SpellSchema = z.object({
   id: z.string(),
+  sourceId: z.string().optional(),
   name: z.string(),
   level: z.union([z.string(), z.number()]),
   school: z.string(),

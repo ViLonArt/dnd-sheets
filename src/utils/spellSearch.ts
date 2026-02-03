@@ -1,5 +1,7 @@
 import type { Spell } from '@/types/character'
 import { SRD_SPELLS } from '@/data/spellsSrd'
+import { SRD_SPELLS_FR } from '@/data/spellsSrdFr'
+import type { SpellLocale } from '@/utils/spellLocale'
 
 export type SpellSearchIndexEntry = {
   spell: Spell
@@ -13,6 +15,7 @@ export type SpellSearchOptions = {
   level?: number
   school?: string
   limit?: number
+  locale?: SpellLocale
 }
 
 export type SpellSearchResult = {
@@ -28,34 +31,38 @@ const normalizeText = (value: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-const buildSearchText = (spell: Spell) =>
-  normalizeText(
-    [
-      spell.name,
-      String(spell.level),
-      spell.school,
-      spell.type,
-      spell.range,
-      spell.duration,
-      spell.components,
-      spell.description ?? '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-  )
+const buildSearchText = (spell: Spell) => {
+  const base = [
+    spell.name,
+    String(spell.level),
+    spell.school,
+    spell.type,
+    spell.range,
+    spell.duration,
+    spell.components,
+    spell.description ?? '',
+  ]
+  return normalizeText(base.filter(Boolean).join(' '))
+}
 
 const toLevelNumber = (value: Spell['level']) => {
   const parsed = typeof value === 'number' ? value : Number(value)
   return Number.isNaN(parsed) ? 0 : parsed
 }
 
-export const SRD_SPELL_INDEX: SpellSearchIndexEntry[] = SRD_SPELLS.map((spell) => ({
-  spell,
-  nameText: normalizeText(spell.name),
-  searchText: buildSearchText(spell),
-  level: toLevelNumber(spell.level),
-  schoolText: normalizeText(spell.school),
-}))
+const buildIndexForLocale = (spells: Spell[]): SpellSearchIndexEntry[] =>
+  spells.map((spell) => ({
+    spell,
+    nameText: normalizeText(spell.name),
+    searchText: buildSearchText(spell),
+    level: toLevelNumber(spell.level),
+    schoolText: normalizeText(spell.school),
+  }))
+
+const SRD_SPELL_INDEX: Record<SpellLocale, SpellSearchIndexEntry[]> = {
+  en: buildIndexForLocale(SRD_SPELLS),
+  fr: buildIndexForLocale(SRD_SPELLS_FR),
+}
 
 export const searchSrdSpells = (query: string, options: SpellSearchOptions = {}): SpellSearchResult[] => {
   const normalizedQuery = normalizeText(query)
@@ -63,10 +70,12 @@ export const searchSrdSpells = (query: string, options: SpellSearchOptions = {})
   const tokens = normalizedQuery.split(' ').filter(Boolean)
   const limit = options.limit ?? 30
   const normalizedSchool = options.school ? normalizeText(options.school) : ''
+  const locale: SpellLocale = options.locale ?? 'en'
+  const index = SRD_SPELL_INDEX[locale] ?? SRD_SPELL_INDEX.en
 
   const results: SpellSearchResult[] = []
 
-  for (const entry of SRD_SPELL_INDEX) {
+  for (const entry of index) {
     if (options.level !== undefined && entry.level !== options.level) continue
     if (normalizedSchool && entry.schoolText !== normalizedSchool) continue
 

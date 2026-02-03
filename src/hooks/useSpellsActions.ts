@@ -69,6 +69,7 @@ export function useSpellsActions({
       if (!current) return
       newSpells[index] = {
         id: current.id,
+        sourceId: updates.sourceId ?? current.sourceId,
         name: updates.name ?? current.name,
         level: updates.level ?? current.level,
         school: updates.school ?? current.school,
@@ -144,5 +145,12 @@ export function useSpellsActions({
     ]
   )
 
-  return { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells }
+  const replaceSpells = useCallback(
+    (nextSpells: Spell[]) => {
+      updateField('spells', nextSpells)
+    },
+    [updateField]
+  )
+
+  return { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells, replaceSpells }
 }

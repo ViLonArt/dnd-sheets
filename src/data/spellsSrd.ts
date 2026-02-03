@@ -14,14 +14,14 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-acid-arrow",
     "name": "Acid Arrow",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "90 feet",
     "duration": "Instantaneous",
     "components": "V, S, M (powdered rhubarb leaf and an adder’s stomach)",
     "description": "A shimmering green arrow streaks toward a target within range and bursts in a spray of acid. Make a ranged spell attack against the target. On a hit, the target takes 4d4 acid damage immediately and 2d4 acid damage at the end of its next turn. On a miss, the arrow splashes the target with acid for half as much of the initial damage and no damage at the end of its next turn.\n\nAt Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, the damage (both initial and later) increases by 1d4 for each slot level above 2nd.",
     "dice": "4d4",
-    "damageType": "Acide"
+    "damageType": "Acid"
   },
   {
     "id": "srd-acid-splash",
@@ -36,7 +36,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "1d6",
-    "damageType": "Acide"
+    "damageType": "Acid"
   },
   {
     "id": "srd-aid",
@@ -77,7 +77,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-animal-friendship",
     "name": "Animal Friendship",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "24 hours",
@@ -90,7 +90,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-animal-messenger",
     "name": "Animal Messenger",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "24 hours",
@@ -114,7 +114,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-animate-dead",
     "name": "Animate Dead",
     "level": 3,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 minute",
     "range": "10 feet",
     "duration": "Instantaneous",
@@ -161,7 +161,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-antipathy-sympathy",
     "name": "Antipathy/Sympathy",
     "level": 8,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "1 hour",
     "range": "60 feet",
     "duration": "10 days",
@@ -186,7 +186,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-arcane-hand",
     "name": "Arcane Hand",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 1 minute",
@@ -211,7 +211,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-arcane-sword",
     "name": "Arcane Sword",
     "level": 7,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
@@ -236,7 +236,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-astral-projection",
     "name": "Astral Projection",
     "level": 9,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 hour",
     "range": "10 feet",
     "duration": "Special",
@@ -270,7 +270,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-bane",
     "name": "Bane",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -320,7 +320,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-bestow-curse",
     "name": "Bestow Curse",
     "level": 3,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Touch",
     "duration": "Concentration, up to 1 minute",
@@ -330,7 +330,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "1d8",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-black-tentacles",
@@ -346,13 +346,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "3d6",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-blade-barrier",
     "name": "Blade Barrier",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "90 feet",
     "duration": "Concentration, up to 10 minutes",
@@ -362,13 +362,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "6d10",
-    "damageType": "Tranchant"
+    "damageType": "Slashing"
   },
   {
     "id": "srd-bless",
     "name": "Bless",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -380,7 +380,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-blight",
     "name": "Blight",
     "level": 4,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "30 feet",
     "duration": "Instantaneous",
@@ -389,13 +389,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "8d8",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-blindness-deafness",
     "name": "Blindness/Deafness",
     "level": 2,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "30 feet",
     "duration": "1 minute",
@@ -431,8 +431,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-branding-smite",
     "name": "Branding Smite",
     "level": 2,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "Self",
     "duration": "Concentration, up to 1 minute",
     "components": "V",
@@ -445,7 +445,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-burning-hands",
     "name": "Burning Hands",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (15-foot cone)",
     "duration": "Instantaneous",
@@ -454,7 +454,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "3d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-call-lightning",
@@ -470,13 +470,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "3d10",
-    "damageType": "Foudre"
+    "damageType": "Lightning"
   },
   {
     "id": "srd-calm-emotions",
     "name": "Calm Emotions",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
@@ -490,7 +490,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-chain-lightning",
     "name": "Chain Lightning",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -499,13 +499,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "10d8",
-    "damageType": "Foudre"
+    "damageType": "Lightning"
   },
   {
     "id": "srd-charm-person",
     "name": "Charm Person",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "1 hour",
@@ -518,20 +518,20 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-chill-touch",
     "name": "Chill Touch",
     "level": 0,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "120 feet",
     "duration": "1 round",
     "components": "V, S",
     "description": "You create a ghostly, skeletal hand in the space of a creature within range. Make a ranged spell attack against the creature to assail it with the chill of the grave. On a hit, the target takes 1d8 necrotic damage, and it can’t regain hit points until the start of your next turn. Until then, the hand clings to the target. If you hit an undead target, it also has disadvantage on attack rolls against you until the end of your next turn. This spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "dice": "1d8",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-circle-of-death",
     "name": "Circle of Death",
     "level": 6,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -540,7 +540,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "8d6",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-clairvoyance",
@@ -558,7 +558,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-clone",
     "name": "Clone",
     "level": 8,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 hour",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -596,7 +596,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-command",
     "name": "Command",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "1 round",
@@ -645,7 +645,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-compulsion",
     "name": "Compulsion",
     "level": 4,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -659,7 +659,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-cone-of-cold",
     "name": "Cone of Cold",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (60-foot cone)",
     "duration": "Instantaneous",
@@ -668,13 +668,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "8d8",
-    "damageType": "Froid"
+    "damageType": "Cold"
   },
   {
     "id": "srd-confusion",
     "name": "Confusion",
     "level": 4,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "90 feet",
     "duration": "Concentration, up to 1 minute",
@@ -706,18 +706,7 @@ export const SRD_SPELLS: Spell[] = [
     "duration": "Concentration, up to 1 hour",
     "components": "V, S",
     "concentration": true,
-    "description": "You summon a celestial of challenge rating 4 or lower, which appears in an unoccupied space that you can see within range. The celestial disappears when it drops to 0 hit points or when the spell ends. The celestial is friendly to you and your companions for the duration. Roll initiative for the celestial, which has its own turns. It obeys any verbal commands that you issue to it (no action required by you), as long as they don’t violate its alignment. If you don’t issue any commands to the celestial, it defends itself from hostile creatures but otherwise takes no actions. The GM has the celestial’s statistics."
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-using-a",
-    "name": "At Higher Levels. When you cast this spell using a",
-    "level": 9,
-    "school": "spell slot, you summon a celestial of",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "challenge rating 5 or lower."
+    "description": "You summon a celestial of challenge rating 4 or lower, which appears in an unoccupied space that you can see within range. The celestial disappears when it drops to 0 hit points or when the spell ends. The celestial is friendly to you and your companions for the duration. Roll initiative for the celestial, which has its own turns. It obeys any verbal commands that you issue to it (no action required by you), as long as they don’t violate its alignment. If you don’t issue any commands to the celestial, it defends itself from hostile creatures but otherwise takes no actions. The GM has the celestial’s statistics.\n\nAt Higher Levels. When you cast this spell using a spell slot of 8th level or higher, you summon a celestial of challenge rating 5 or lower."
   },
   {
     "id": "srd-conjure-elemental",
@@ -781,17 +770,17 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "INT",
     "dice": "6d6",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-contagion",
     "name": "Contagion",
     "level": 5,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
-    "range": "Touch Component: V, S",
+    "range": "Touch",
     "duration": "7 days",
-    "components": "",
+    "components": "V, S",
     "description": "Your touch inflicts disease. Make a melee spell attack against a creature within your reach. On a hit, you afflict the creature with a disease of your choice from any of the ones described below. At the end of each of the target’s turns, it must make a Constitution saving throw. After failing three of these saving throws, the disease’s effects last for the duration, and the creature stops making these saves. After succeeding on three of these saving throws, the creature recovers from the disease, and the spell ends. Since this spell induces a natural disease in its target, any effect that removes a disease or otherwise ameliorates a disease’s effects apply to it. Blinding Sickness. Pain grips the creature’s mind, and its eyes turn milky white. The creature has disadvantage on Wisdom checks and Wisdom saving throws and is blinded. Filth Fever. A raging fever sweeps through the creature’s body. The creature has disadvantage on Strength checks, Strength saving throws, and attack rolls that use Strength. Flesh Rot. The creature’s flesh decays. The creature has disadvantage on Charisma checks and vulnerability to all damage. Mindfire. The creature’s mind becomes feverish. The creature has disadvantage on Intelligence checks and Intelligence saving throws, and the creature behaves as if under the effects of the confusion spell during combat. Seizure. The creature is overcome with shaking. The creature has disadvantage on Dexterity checks, Dexterity saving throws, and attack rolls that use Dexterity. Slimy Doom. The creature begins to bleed uncontrollably. The creature has disadvantage on Constitution checks and Constitution saving throws. In addition, whenever the creature takes damage, it is stunned until the end of its next turn.",
     "saveThrow": true,
     "saveThrowAbility": "CON"
@@ -800,7 +789,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-contingency",
     "name": "Contingency",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "10 minutes",
     "range": "Self",
     "duration": "10 days",
@@ -811,7 +800,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-continual-flame",
     "name": "Continual Flame",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Touch",
     "duration": "Until dispelled",
@@ -832,7 +821,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "STR",
     "dice": "2d8",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-control-weather",
@@ -883,23 +872,12 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-create-undead",
     "name": "Create Undead",
     "level": 6,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 minute",
     "range": "10 feet",
     "duration": "Instantaneous",
     "components": "V, S, M (one clay pot filled with grave dirt, one clay pot filled with brackish water, and one 150 gp black onyx stone for each corpse)",
-    "description": "You can cast this spell only at night. Choose up to three corpses of Medium or Small humanoids within range. Each corpse becomes a ghoul under your control. (The GM has game statistics for these creatures.) As a bonus action on each of your turns, you can mentally command any creature you animated with this spell if the creature is within 120 feet of you (if you control multiple creatures, you can command any or all of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move during its next turn, or you can issue a general command, such as to guard a particular chamber or corridor. If you issue no commands, the creature only defends itself against hostile creatures. Once given an order, the creature continues to follow it until its task is complete. The creature is under your control for 24 hours, after which it stops obeying any command you have given it. To maintain control of the creature for another 24 hours, you must cast this spell on the creature before the current 24-hour period ends. This use of the spell reasserts your control over up to three creatures you have animated with this spell, rather than animating new ones."
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-using-a",
-    "name": "At Higher Levels. When you cast this spell using a",
-    "level": 7,
-    "school": "spell slot, you can animate or reassert",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "control over four ghouls. When you cast this spell using an 8th-level spell slot, you can animate or reassert control over five ghouls or two ghasts or wights. When you cast this spell using a 9th-level spell slot, you can animate or reassert control over six ghouls, three ghasts or wights, or two mummies."
+    "description": "You can cast this spell only at night. Choose up to three corpses of Medium or Small humanoids within range. Each corpse becomes a ghoul under your control. (The GM has game statistics for these creatures.) As a bonus action on each of your turns, you can mentally command any creature you animated with this spell if the creature is within 120 feet of you (if you control multiple creatures, you can command any or all of them at the same time, issuing the same command to each one). You decide what action the creature will take and where it will move during its next turn, or you can issue a general command, such as to guard a particular chamber or corridor. If you issue no commands, the creature only defends itself against hostile creatures. Once given an order, the creature continues to follow it until its task is complete. The creature is under your control for 24 hours, after which it stops obeying any command you have given it. To maintain control of the creature for another 24 hours, you must cast this spell on the creature again before the current 24-hour period ends. This use of the spell reasserts your control over up to three creatures you have animated with this spell, rather than animating new ones.\n\nAt Higher Levels. When you cast this spell using a spell slot of 7th level or higher, you can animate or reassert control over four ghouls. When you cast this spell using an 8th-level spell slot, you can animate or reassert control over five ghouls or two ghasts or wights. When you cast this spell using a 9th-level spell slot, you can animate or reassert control over six ghouls, three ghasts or wights, or two mummies."
   },
   {
     "id": "srd-creation",
@@ -916,7 +894,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-cure-wounds",
     "name": "Cure Wounds",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -927,7 +905,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-dancing-lights",
     "name": "Dancing Lights",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 1 minute",
@@ -939,7 +917,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-darkness",
     "name": "Darkness",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 10 minutes",
@@ -962,7 +940,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-daylight",
     "name": "Daylight",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "1 hour",
@@ -984,7 +962,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-delayed-blast-fireball",
     "name": "Delayed Blast Fireball",
     "level": 7,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "150 feet",
     "duration": "Concentration, up to 1 minute",
@@ -1137,8 +1115,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-divine-favor",
     "name": "Divine Favor",
     "level": 1,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "Self",
     "duration": "Concentration, up to 1 minute",
     "components": "V, S",
@@ -1151,8 +1129,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-divine-word",
     "name": "Divine Word",
     "level": 7,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "30 feet",
     "duration": "Instantaneous",
     "components": "V",
@@ -1164,76 +1142,43 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-dominate-beast",
     "name": "Dominate Beast",
     "level": 4,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
     "components": "V, S",
     "concentration": true,
-    "description": "You attempt to beguile a beast that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the beast is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time, you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.",
+    "description": "You attempt to beguile a beast that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the beast is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time, you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.\n\nAt Higher Levels. When you cast this spell with a 5th-level spell slot, the duration is concentration, up to 10 minutes. When you use a 6th-level spell slot, the duration is concentration, up to 1 hour. When you use a spell slot of 7th level or higher, the duration is concentration, up to 8 hours.",
     "saveThrow": true,
     "saveThrowAbility": "WIS"
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-with-a",
-    "name": "At Higher Levels. When you cast this spell with a",
-    "level": 5,
-    "school": "spell slot, the duration is concentration, up",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "to 10 minutes. When you use a 6th-level spell slot, the duration is concentration, up to 1 hour. When you use a spell slot of 7th level or higher, the duration is concentration, up to 8 hours."
   },
   {
     "id": "srd-dominate-monster",
     "name": "Dominate Monster",
     "level": 8,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 hour",
     "components": "V, S",
     "concentration": true,
-    "description": "You attempt to beguile a creature that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the creature is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time, you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.",
+    "description": "You attempt to beguile a creature that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the creature is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time, you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.\n\nAt Higher Levels. When you cast this spell with a 9th-level spell slot, the duration is concentration, up to 8 hours.",
     "saveThrow": true,
     "saveThrowAbility": "WIS"
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-with-a",
-    "name": "At Higher Levels. When you cast this spell with a",
-    "level": 9,
-    "school": "spell slot, the duration is concentration, up",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "to 8 hours."
   },
   {
     "id": "srd-dominate-person",
     "name": "Dominate Person",
     "level": 5,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
     "components": "V, S",
     "concentration": true,
-    "description": "You attempt to beguile a humanoid that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the target is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.",
+    "description": "You attempt to beguile a humanoid that you can see within range. It must succeed on a Wisdom saving throw or be charmed by you for the duration. If you or creatures that are friendly to you are fighting it, it has advantage on the saving throw. While the target is charmed, you have a telepathic link with it as long as the two of you are on the same plane of existence. You can use this telepathic link to issue commands to the creature while you are conscious (no action required), which it does its best to obey. You can specify a simple and general course of action, such as “Attack that creature,” “Run over there,” or “Fetch that object.” If the creature completes the order and doesn’t receive further direction from you, it defends and preserves itself to the best of its ability. You can use your action to take total and precise control of the target. Until the end of your next turn, the creature takes only the actions you choose, and doesn’t do anything that you don’t allow it to do. During this time you can also cause the creature to use a reaction, but this requires you to use your own reaction as well. Each time the target takes damage, it makes a new Wisdom saving throw against the spell. If the saving throw succeeds, the spell ends.\n\nAt Higher Levels. When you cast this spell using a spell slot of 6th level or higher, the duration is concentration, up to 10 minutes. When you use a 7th-level spell slot, the duration is concentration, up to 1 hour. When you use a spell slot of 8th level or higher, the duration is concentration, up to 8 hours.",
     "saveThrow": true,
     "saveThrowAbility": "WIS"
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-using-a",
-    "name": "At Higher Levels. When you cast this spell using a",
-    "level": 6,
-    "school": "spell slot, the duration is concentration, up",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "to 10 minutes. When you use a 7th-level spell slot, the duration is concentration, up to 1 hour. When you use a spell slot of 8th level or higher, the duration is concentration, up to 8 hours."
   },
   {
     "id": "srd-dream",
@@ -1248,7 +1193,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "3d6",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-druidcraft",
@@ -1265,7 +1210,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-earthquake",
     "name": "Earthquake",
     "level": 8,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "500 feet",
     "duration": "Concentration, up to 1 minute",
@@ -1275,13 +1220,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "5d6",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-eldritch-blast",
     "name": "Eldritch Blast",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Instantaneous",
@@ -1334,7 +1279,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-enthrall",
     "name": "Enthrall",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "1 minute",
@@ -1359,7 +1304,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Expeditious Retreat",
     "level": 1,
     "school": "Transmutation",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "Self",
     "duration": "Concentration, up to 10 minutes",
     "components": "V, S",
@@ -1370,7 +1315,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-eyebite",
     "name": "Eyebite",
     "level": 6,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Self",
     "duration": "Concentration, up to 1 minute",
@@ -1395,7 +1340,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-faerie-fire",
     "name": "Faerie Fire",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
@@ -1416,13 +1361,13 @@ export const SRD_SPELLS: Spell[] = [
     "components": "V, S, M (a tiny silver whistle, a piece of bone, and a thread)",
     "description": "You conjure a phantom watchdog in an unoccupied space that you can see within range, where it remains for the duration, until you dismiss it as an action, or until you move more than 100 feet away from it. The hound is invisible to all creatures except you and can’t be harmed. When a Small or larger creature comes within 30 feet of it without first speaking the password that you specify when you cast this spell, the hound starts barking loudly. The hound sees invisible creatures and can see into the Ethereal Plane. It ignores illusions. At the start of each of your turns, the hound attempts to bite one creature within 5 feet of it that is hostile to you. The hound’s attack bonus is equal to your spellcasting ability modifier + your proficiency bonus. On a hit, it deals 4d8 piercing damage.",
     "dice": "4d8",
-    "damageType": "Perforant"
+    "damageType": "Piercing"
   },
   {
     "id": "srd-false-life",
     "name": "False Life",
     "level": 1,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Self",
     "duration": "1 hour",
@@ -1458,7 +1403,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-feeblemind",
     "name": "Feeblemind",
     "level": 8,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -1467,7 +1412,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "INT",
     "dice": "4d6",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-find-familiar",
@@ -1519,7 +1464,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-finger-of-death",
     "name": "Finger of Death",
     "level": 7,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -1528,13 +1473,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "7d8+30",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-fireball",
     "name": "Fireball",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -1543,39 +1488,39 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "8d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-fire-bolt",
     "name": "Fire Bolt",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Instantaneous",
     "components": "V, S",
     "description": "You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage. A flammable object hit by this spell ignites if it isn't being worn or carried. This spell's damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).",
     "dice": "1d10",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-fire-shield",
     "name": "Fire Shield",
     "level": 4,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self",
     "duration": "10 minutes",
     "components": "V, S, M (a bit of phosphorus or a firefly)",
     "description": "Thin and wispy flames wreathe your body for the duration, shedding bright light in a 10-foot radius and dim light for an additional 10 feet. You can end the spell early by using an action to dismiss it. The flames provide you with a warm shield or a chill shield, as you choose. The warm shield grants you resistance to cold damage, and the chill shield grants you resistance to fire damage. In addition, whenever a creature within 5 feet of you hits you with a melee attack, the shield erupts with flame. The attacker takes 2d8 fire damage from a warm shield, or 2d8 cold damage from a cold shield.",
     "dice": "2d8",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-fire-storm",
     "name": "Fire Storm",
     "level": 7,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -1584,27 +1529,27 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "7d10",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-flame-blade",
     "name": "Flame Blade",
     "level": 2,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "Self",
     "duration": "Concentration, up to 10 minutes",
     "components": "V, S, M (leaf of sumac)",
     "concentration": true,
     "description": "You evoke a fiery blade in your free hand. The blade is similar in size and shape to a scimitar, and it lasts for the duration. If you let go of the blade, it disappears, but you can evoke the blade again as a bonus action. You can use your action to make a melee spell attack with the fiery blade. On a hit, the target takes 3d6 fire damage. The flaming blade sheds bright light in a 10-foot radius and dim light for an additional 10 feet.\n\nAt Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for every two slot levels above 2nd.",
     "dice": "3d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-flame-strike",
     "name": "Flame Strike",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -1613,7 +1558,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "4d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-flaming-sphere",
@@ -1629,7 +1574,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "2d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-flesh-to-stone",
@@ -1697,7 +1642,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-forcecage",
     "name": "Forcecage",
     "level": 7,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "100 feet",
     "duration": "1 hour",
@@ -1732,7 +1677,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-freezing-sphere",
     "name": "Freezing Sphere",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "300 feet",
     "duration": "Instantaneous",
@@ -1741,7 +1686,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "10d6",
-    "damageType": "Froid"
+    "damageType": "Cold"
   },
   {
     "id": "srd-gaseous-form",
@@ -1771,7 +1716,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-geas",
     "name": "Geas",
     "level": 5,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "1 minute",
     "range": "60 feet",
     "duration": "30 days",
@@ -1780,13 +1725,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "5d10",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-gentle-repose",
     "name": "Gentle Repose",
     "level": 2,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Touch",
     "duration": "10 days",
@@ -1929,7 +1874,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-guiding-bolt",
     "name": "Guiding Bolt",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "1 round",
@@ -1942,7 +1887,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-gust-of-wind",
     "name": "Gust of Wind",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (60-foot line)",
     "duration": "Concentration, up to 1 minute",
@@ -1956,7 +1901,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-hallow",
     "name": "Hallow",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "24 hours",
     "range": "Touch",
     "duration": "Until dispelled",
@@ -1980,7 +1925,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-harm",
     "name": "Harm",
     "level": 6,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -1989,7 +1934,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "14d6",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-haste",
@@ -2007,7 +1952,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-heal",
     "name": "Heal",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2018,8 +1963,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-healing-word",
     "name": "Healing Word",
     "level": 1,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "60 feet",
     "duration": "Instantaneous",
     "components": "V",
@@ -2039,13 +1984,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "2d8",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-hellish-rebuke",
     "name": "Hellish Rebuke",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "1 reaction, which you take in response to being damaged by a creature within 60 feet of you that you can see",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2054,7 +1999,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "2d10",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-heroes-feast",
@@ -2071,7 +2016,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-heroism",
     "name": "Heroism",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "Touch",
     "duration": "Concentration, up to 1 minute",
@@ -2083,7 +2028,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-hideous-laughter",
     "name": "Hideous Laughter",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2097,7 +2042,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-hold-monster",
     "name": "Hold Monster",
     "level": 5,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "90 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2111,7 +2056,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-hold-person",
     "name": "Hold Person",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2140,7 +2085,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Hunter’s Mark",
     "level": 1,
     "school": "Divination",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "90 feet",
     "duration": "Concentration, up to 1 hour",
     "components": "V",
@@ -2165,7 +2110,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-ice-storm",
     "name": "Ice Storm",
     "level": 4,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "300 feet",
     "duration": "Instantaneous",
@@ -2174,7 +2119,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "2d8",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-identify",
@@ -2227,20 +2172,20 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "10d8",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-inflict-wounds",
     "name": "Inflict Wounds",
     "level": 1,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Touch",
     "duration": "Instantaneous",
     "components": "V, S",
     "description": "Make a melee spell attack against a creature you can reach. On a hit, the target takes 3d10 necrotic damage.\n\nAt Higher Levels. When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st.",
     "dice": "3d10",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-insect-plague",
@@ -2256,7 +2201,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "4d10",
-    "damageType": "Perforant"
+    "damageType": "Piercing"
   },
   {
     "id": "srd-instant-summons",
@@ -2286,7 +2231,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-irresistible-dance",
     "name": "Irresistible Dance",
     "level": 6,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2358,7 +2303,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-light",
     "name": "Light",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Touch",
     "duration": "1 hour",
@@ -2371,7 +2316,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-lightning-bolt",
     "name": "Lightning Bolt",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (100-foot line)",
     "duration": "Instantaneous",
@@ -2380,7 +2325,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "8d6",
-    "damageType": "Foudre"
+    "damageType": "Lightning"
   },
   {
     "id": "srd-locate-animals-or-plants",
@@ -2468,7 +2413,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-magic-jar",
     "name": "Magic Jar",
     "level": 6,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 minute",
     "range": "Self",
     "duration": "Until dispelled",
@@ -2481,7 +2426,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-magic-missile",
     "name": "Magic Missile",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Instantaneous",
@@ -2507,7 +2452,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Magic Weapon",
     "level": 2,
     "school": "Transmutation",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "Touch",
     "duration": "Concentration, up to 1 hour",
     "components": "V, S",
@@ -2541,7 +2486,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-mass-cure-wounds",
     "name": "Mass Cure Wounds",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2552,7 +2497,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-mass-heal",
     "name": "Mass Heal",
     "level": 9,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2563,8 +2508,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-mass-healing-word",
     "name": "Mass Healing Word",
     "level": 3,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "60 feet",
     "duration": "Instantaneous",
     "components": "V",
@@ -2574,25 +2519,14 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-mass-suggestion",
     "name": "Mass Suggestion",
     "level": 6,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "24 hours",
     "components": "V, M (a snake’s tongue and either a bit of honeycomb or a drop of sweet oil)",
-    "description": "You suggest a course of activity (limited to a sentence or two) and magically influence up to twelve creatures of your choice that you can see within range and that can hear and understand you. Creatures that can’t be charmed are immune to this effect. The suggestion must be worded in such a manner as to make the course of action sound reasonable. Asking the creature to stab itself, throw itself onto a spear, immolate itself, or do some other obviously harmful act automatically negates the effect of the spell. Each target must make a Wisdom saving throw. On a failed save, it pursues the course of action you described to the best of its ability. The suggested course of action can continue for the entire duration. If the suggested activity can be completed in a shorter time, the spell ends when the subject finishes what it was asked to do. You can also specify conditions that will trigger a special activity during the duration. For example, you might suggest that a group of soldiers give all their money to the first beggar they meet. If the condition isn’t met before the spell ends, the activity isn’t performed. If you or any of your companions damage a creature affected by this spell, the spell ends for that creature.",
+    "description": "You suggest a course of activity (limited to a sentence or two) and magically influence up to twelve creatures of your choice that you can see within range and that can hear and understand you. Creatures that can’t be charmed are immune to this effect. The suggestion must be worded in such a manner as to make the course of action sound reasonable. Asking the creature to stab itself, throw itself onto a spear, immolate itself, or do some other obviously harmful act automatically negates the effect of the spell. Each target must make a Wisdom saving throw. On a failed save, it pursues the course of action you described to the best of its ability. The suggested course of action can continue for the entire duration. If the suggested activity can be completed in a shorter time, the spell ends when the subject finishes what it was asked to do. You can also specify conditions that will trigger a special activity during the duration. For example, you might suggest that a group of soldiers give all their money to the first beggar they meet. If the condition isn’t met before the spell ends, the activity isn’t performed. If you or any of your companions damage a creature affected by this spell, the spell ends for that creature.\n\nAt Higher Levels. When you cast this spell using a spell slot of 7th level, the duration is 10 days. When you use an 8th-level spell slot, the duration is 30 days. When you use a 9th-level spell slot, the duration is a year and a day.",
     "saveThrow": true,
     "saveThrowAbility": "WIS"
-  },
-  {
-    "id": "srd-at-higher-levels-when-you-cast-this-spell-using-a",
-    "name": "At Higher Levels. When you cast this spell using a",
-    "level": 7,
-    "school": "spell slot, the duration is 10 days. when",
-    "type": "",
-    "range": "",
-    "duration": "",
-    "components": "",
-    "description": "you use an 8th-level spell slot, the duration is 30 days. When you use a 9th-level spell slot, the duration is a year and a day."
   },
   {
     "id": "srd-maze",
@@ -2618,7 +2552,7 @@ export const SRD_SPELLS: Spell[] = [
     "ritual": true,
     "description": "You step into a stone object or surface large enough to fully contain your body, melding yourself and all the equipment you carry with the stone for the duration. Using your movement, you step into the stone at a point you can touch. Nothing of your presence remains visible or otherwise detectable by nonmagical senses. While merged with the stone, you can’t see what occurs outside it, and any Wisdom (Perception) checks you make to hear sounds outside it are made with disadvantage. You remain aware of the passage of time and can cast spells on yourself while merged in the stone. You can use your movement to leave the stone where you entered it, which ends the spell. You otherwise can’t move. Minor physical damage to the stone doesn’t harm you, but its partial destruction or a change in its shape (to the extent that you no longer fit within it) expels you and deals 6d6 bludgeoning damage to you. The stone’s complete destruction (or transmutation into a different substance) expels you and deals 50 bludgeoning damage to you. If expelled, you fall prone in an unoccupied space closest to where you first entered.",
     "dice": "6d6",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-mending",
@@ -2646,7 +2580,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-meteor-swarm",
     "name": "Meteor Swarm",
     "level": 9,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "1 mile",
     "duration": "Instantaneous",
@@ -2655,7 +2589,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "20d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-mind-blank",
@@ -2718,7 +2652,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Misty Step",
     "level": 2,
     "school": "Conjuration",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "Self",
     "duration": "Instantaneous",
     "components": "V",
@@ -2728,7 +2662,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-modify-memory",
     "name": "Modify Memory",
     "level": 5,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2742,7 +2676,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-moonbeam",
     "name": "Moonbeam",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 1 minute",
@@ -2814,7 +2748,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "4d10",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-phantom-steed",
@@ -2909,7 +2843,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-power-word-kill",
     "name": "Power Word Kill",
     "level": 9,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2920,7 +2854,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-power-word-stun",
     "name": "Power Word Stun",
     "level": 8,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -2933,7 +2867,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-prayer-of-healing",
     "name": "Prayer of Healing",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "10 minutes",
     "range": "30 feet",
     "duration": "Instantaneous",
@@ -2955,7 +2889,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-prismatic-spray",
     "name": "Prismatic Spray",
     "level": 7,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (60-foot cone)",
     "duration": "Instantaneous",
@@ -2964,7 +2898,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "10d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-prismatic-wall",
@@ -2979,7 +2913,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "10d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-private-sanctum",
@@ -3003,7 +2937,7 @@ export const SRD_SPELLS: Spell[] = [
     "components": "V, S",
     "description": "A flickering flame appears in your hand. The flame remains there for the duration and harms neither you nor your equipment. The flame sheds bright light in a 10-foot radius and dim light for an additional 10 feet. The spell ends if you dismiss it as an action or if you cast it again. You can also attack with the flame, although doing so ends the spell. When you cast this spell, or as an action on a later turn, you can hurl the flame at a creature within 30 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 fire damage. This spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "dice": "1d8",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-programmed-illusion",
@@ -3079,7 +3013,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-raise-dead",
     "name": "Raise Dead",
     "level": 5,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 hour",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -3090,7 +3024,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-ray-of-enfeeblement",
     "name": "Ray of Enfeeblement",
     "level": 2,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "60 feet",
     "duration": "Concentration, up to 1 minute",
@@ -3104,14 +3038,14 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-ray-of-frost",
     "name": "Ray of Frost",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
     "components": "V, S",
     "description": "A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn. The spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "dice": "1d8",
-    "damageType": "Froid"
+    "damageType": "Cold"
   },
   {
     "id": "srd-regenerate",
@@ -3150,7 +3084,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-resilient-sphere",
     "name": "Resilient Sphere",
     "level": 4,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 1 minute",
@@ -3176,7 +3110,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-resurrection",
     "name": "Resurrection",
     "level": 7,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 hour",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -3201,7 +3135,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-revivify",
     "name": "Revivify",
     "level": 3,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -3223,7 +3157,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-sacred-flame",
     "name": "Sacred Flame",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -3239,7 +3173,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Sanctuary",
     "level": 1,
     "school": "Abjuration",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "30 feet",
     "duration": "1 minute",
     "components": "V, S, M (a small silver mirror)",
@@ -3251,14 +3185,14 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-scorching-ray",
     "name": "Scorching Ray",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Instantaneous",
     "components": "V, S",
     "description": "You create three rays of fire and hurl them at targets within range. You can hurl them at one target or several. Make a ranged spell attack for each ray. On a hit, the target takes 2d6 fire damage.\n\nAt Higher Levels. When you cast this spell using a spell slot of 3rd level or higher, you create one additional ray for each slot level above 2nd.",
     "dice": "2d6",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-scrying",
@@ -3313,7 +3247,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-sending",
     "name": "Sending",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Unlimited",
     "duration": "1 round",
@@ -3347,7 +3281,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-shatter",
     "name": "Shatter",
     "level": 2,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -3356,7 +3290,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "3d8",
-    "damageType": "Tonnerre"
+    "damageType": "Thunder"
   },
   {
     "id": "srd-shield",
@@ -3374,7 +3308,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Shield of Faith",
     "level": 1,
     "school": "Abjuration",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "60 feet",
     "duration": "Concentration, up to 10 minutes",
     "components": "V, S, M (a small parchment with a bit of holy text written on it)",
@@ -3386,7 +3320,7 @@ export const SRD_SPELLS: Spell[] = [
     "name": "Shillelagh",
     "level": 0,
     "school": "Transmutation",
-    "type": "Action bonus",
+    "type": "Bonus action",
     "range": "Touch",
     "duration": "1 minute",
     "components": "V, S, M (mistletoe, a shamrock leaf, and a club or quarterstaff)",
@@ -3396,14 +3330,14 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-shocking-grasp",
     "name": "Shocking Grasp",
     "level": 0,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Touch",
     "duration": "Instantaneous",
     "components": "V, S",
     "description": "Lightning springs from your hand to deliver a shock to a creature you try to touch. Make a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can’t take reactions until the start of its next turn. The spell’s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).",
     "dice": "1d8",
-    "damageType": "Foudre"
+    "damageType": "Lightning"
   },
   {
     "id": "srd-silence",
@@ -3445,7 +3379,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-sleep",
     "name": "Sleep",
     "level": 1,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "90 feet",
     "duration": "1 minute",
@@ -3484,7 +3418,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-spare-the-dying",
     "name": "Spare the Dying",
     "level": 0,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -3507,7 +3441,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-speak-with-dead",
     "name": "Speak with Dead",
     "level": 3,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "10 feet",
     "duration": "10 minutes",
@@ -3549,7 +3483,7 @@ export const SRD_SPELLS: Spell[] = [
     "concentration": true,
     "description": "The ground in a 20-foot radius centered on a point within range twists and sprouts hard spikes and thorns. The area becomes difficult terrain for the duration. When a creature moves into or within the area, it takes 2d4 piercing damage for every 5 feet it travels. The transformation of the ground is camouflaged to look natural. Any creature that can’t see the area at the time the spell is cast must make a Wisdom (Perception) check against your spell save DC to recognize the terrain as hazardous before entering it.",
     "dice": "2d4",
-    "damageType": "Perforant"
+    "damageType": "Piercing"
   },
   {
     "id": "srd-spirit-guardians",
@@ -3571,8 +3505,8 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-spiritual-weapon",
     "name": "Spiritual Weapon",
     "level": 2,
-    "school": "Évocation",
-    "type": "Action bonus",
+    "school": "Evocation",
+    "type": "Bonus action",
     "range": "60 feet",
     "duration": "1 minute",
     "components": "V, S",
@@ -3629,13 +3563,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "2d6",
-    "damageType": "Tonnerre"
+    "damageType": "Thunder"
   },
   {
     "id": "srd-suggestion",
     "name": "Suggestion",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "30 feet",
     "duration": "Concentration, up to 8 hours",
@@ -3649,7 +3583,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-sunbeam",
     "name": "Sunbeam",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (60-foot line)",
     "duration": "Concentration, up to 1 minute",
@@ -3665,7 +3599,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-sunburst",
     "name": "Sunburst",
     "level": 8,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "150 feet",
     "duration": "Instantaneous",
@@ -3689,7 +3623,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "10d10",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-telekinesis",
@@ -3754,7 +3688,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-thunderwave",
     "name": "Thunderwave",
     "level": 1,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "Self (15-foot cube)",
     "duration": "Instantaneous",
@@ -3763,7 +3697,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CON",
     "dice": "2d8",
-    "damageType": "Tonnerre"
+    "damageType": "Thunder"
   },
   {
     "id": "srd-time-stop",
@@ -3780,7 +3714,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-tiny-hut",
     "name": "Tiny Hut",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "1 minute",
     "range": "Self (10-foot-radius hemisphere)",
     "duration": "8 hours",
@@ -3840,7 +3774,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-true-resurrection",
     "name": "True Resurrection",
     "level": 9,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "1 hour",
     "range": "Touch",
     "duration": "Instantaneous",
@@ -3886,7 +3820,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-vampiric-touch",
     "name": "Vampiric Touch",
     "level": 3,
-    "school": "Nécromancie",
+    "school": "Necromancy",
     "type": "Action",
     "range": "Self",
     "duration": "Concentration, up to 1 minute",
@@ -3894,13 +3828,13 @@ export const SRD_SPELLS: Spell[] = [
     "concentration": true,
     "description": "The touch of your shadow-wreathed hand can siphon life force from others to heal your wounds. Make a melee spell attack against a creature within your reach. On a hit, the target takes 3d6 necrotic damage, and you regain hit points equal to half the amount of necrotic damage dealt. Until the spell ends, you can make the attack again on each of your turns as an action.\n\nAt Higher Levels. When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.",
     "dice": "3d6",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-vicious-mockery",
     "name": "Vicious Mockery",
     "level": 0,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "Instantaneous",
@@ -3909,13 +3843,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "1d4",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-wall-of-fire",
     "name": "Wall of Fire",
     "level": 4,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 1 minute",
@@ -3925,13 +3859,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "5d8",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-wall-of-force",
     "name": "Wall of Force",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 10 minutes",
@@ -3943,7 +3877,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-wall-of-ice",
     "name": "Wall of Ice",
     "level": 6,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 10 minutes",
@@ -3953,13 +3887,13 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "10d6",
-    "damageType": "Froid"
+    "damageType": "Cold"
   },
   {
     "id": "srd-wall-of-stone",
     "name": "Wall of Stone",
     "level": 5,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 10 minutes",
@@ -3983,7 +3917,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "7d8",
-    "damageType": "Perforant"
+    "damageType": "Piercing"
   },
   {
     "id": "srd-warding-bond",
@@ -4034,7 +3968,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "DEX",
     "dice": "2d4",
-    "damageType": "Feu"
+    "damageType": "Fire"
   },
   {
     "id": "srd-weird",
@@ -4050,7 +3984,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "WIS",
     "dice": "4d10",
-    "damageType": "Psychique"
+    "damageType": "Psychic"
   },
   {
     "id": "srd-wind-walk",
@@ -4067,7 +4001,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-wind-wall",
     "name": "Wind Wall",
     "level": 3,
-    "school": "Évocation",
+    "school": "Evocation",
     "type": "Action",
     "range": "120 feet",
     "duration": "Concentration, up to 1 minute",
@@ -4077,7 +4011,7 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "STR",
     "dice": "3d8",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   },
   {
     "id": "srd-wish",
@@ -4090,7 +4024,7 @@ export const SRD_SPELLS: Spell[] = [
     "components": "V",
     "description": "Wish is the mightiest spell a mortal creature can cast. By simply speaking aloud, you can alter the very foundations of reality in accord with your desires. The basic use of this spell is to duplicate any other spell of 8th level or lower. You don’t need to meet any requirements in that spell, including costly components. The spell simply takes effect. Alternatively, you can create one of the following effects of your choice: • You create one object of up to 25,000 gp in value that isn’t a magic item. The object can be no more than 300 feet in any dimension, and it appears in an unoccupied space you can see on the ground. • You allow up to twenty creatures that you can see to regain all hit points, and you end all effects on them described in the greater restoration spell. • You grant up to ten creatures that you can see resistance to a damage type you choose. • You grant up to ten creatures you can see immunity to a single spell or other magical effect for 8 hours. For instance, you could make yourself and all your companions immune to a lich’s life drain attack. • You undo a single recent event by forcing a reroll of any roll made within the last round (including your last turn). Reality reshapes itself to accommodate the new result. For example, a wish spell could undo an opponent’s successful save, a foe’s critical hit, or a friend’s failed save. You can force the reroll to be made with advantage or disadvantage, and you can choose whether to use the reroll or the original roll. You might be able to achieve something beyond the scope of the above examples. State your wish to the GM as precisely as possible. The GM has great latitude in ruling what occurs in such an instance; the greater the wish, the greater the likelihood that something goes wrong. This spell might simply fail, the effect you desire might only be partly achieved, or you might suffer some unforeseen consequence as a result of how you worded the wish. For example, wishing that a villain were dead might propel you forward in time to a period when that villain is no longer alive, effectively removing you from the game. Similarly, wishing for a legendary magic item or artifact might instantly transport you to the presence of the item’s current owner. The stress of casting this spell to produce any effect other than duplicating another spell weakens you. After enduring that stress, each time you cast a spell until you finish a long rest, you take 1d10 necrotic damage per level of that spell. This damage can’t be reduced or prevented in any way. In addition, your Strength drops to 3, if it isn’t 3 or lower already, for 2d4 days. For each of those days that you spend resting and doing nothing more than light activity, your remaining recovery time decreases by 2 days. Finally, there is a 33 percent chance that you are unable to cast wish ever again if you suffer this stress.",
     "dice": "1d10",
-    "damageType": "Nécrotique"
+    "damageType": "Necrotic"
   },
   {
     "id": "srd-word-of-recall",
@@ -4107,7 +4041,7 @@ export const SRD_SPELLS: Spell[] = [
     "id": "srd-zone-of-truth",
     "name": "Zone of Truth",
     "level": 2,
-    "school": "Enchantement",
+    "school": "Enchantment",
     "type": "Action",
     "range": "60 feet",
     "duration": "10 minutes",
@@ -4116,6 +4050,6 @@ export const SRD_SPELLS: Spell[] = [
     "saveThrow": true,
     "saveThrowAbility": "CHA",
     "dice": "2d6",
-    "damageType": "Contondant"
+    "damageType": "Bludgeoning"
   }
 ]

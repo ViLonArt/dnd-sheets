@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import type { DragEvent } from 'react'
-import type { DragEvent } from 'react'
 import { AutoResizeTextarea, Box, Button, FieldLabel, PaperContainer, SectionHeader } from '@/components/ui'
-import { useDragPreview, useOutsideClick } from '@/hooks'
 import { useDragPreview, useOutsideClick } from '@/hooks'
 import type { InventoryItem, ItemCategory } from '@/types/character'
 
@@ -44,10 +42,6 @@ export function InventoryTab({
   } | null>(null)
   const [newInventoryId, setNewInventoryId] = useState<string | null>(null)
   const [openInventoryMenuId, setOpenInventoryMenuId] = useState<string | null>(null)
-  const [draggingInventoryId, setDraggingInventoryId] = useState<string | null>(null)
-  const [dragOverInventoryId, setDragOverInventoryId] = useState<string | null>(null)
-  const [dragOverInventoryEdge, setDragOverInventoryEdge] = useState<'top' | 'bottom' | null>(null)
-  const { setDragPreview, clearDragPreview } = useDragPreview()
   const [draggingInventoryId, setDraggingInventoryId] = useState<string | null>(null)
   const [dragOverInventoryId, setDragOverInventoryId] = useState<string | null>(null)
   const [dragOverInventoryEdge, setDragOverInventoryEdge] = useState<'top' | 'bottom' | null>(null)
@@ -296,29 +290,8 @@ export function InventoryTab({
                         }
                       }}
                     >
-                    <div
-                      key={item.id}
-                      data-drag-preview
-                      className={`mb-1 ${
-                        dragOverInventoryId === item.id && dragOverInventoryEdge === 'top'
-                          ? 'border-t-2 border-t-[#7a4b36]'
-                          : dragOverInventoryId === item.id && dragOverInventoryEdge === 'bottom'
-                            ? 'border-b-2 border-b-[#7a4b36]'
-                            : ''
-                      } ${draggingInventoryId === item.id ? 'opacity-60' : ''}`}
-                      onDragOver={handleInventoryDragOver(item.id)}
-                      onDrop={handleInventoryDrop(item.id)}
-                      onDragLeave={() => {
-                        if (dragOverInventoryId === item.id) {
-                          setDragOverInventoryId(null)
-                          setDragOverInventoryEdge(null)
-                        }
-                      }}
-                    >
                       {isEditingItem ? (
                         <>
-                          <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
-                            <span className="text-xs text-[#7a4b36] select-none">⋮⋮</span>
                           <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
                             <span className="text-xs text-[#7a4b36] select-none">⋮⋮</span>
                             <Box>
@@ -370,17 +343,6 @@ export function InventoryTab({
                         </>
                       ) : (
                         <>
-                          <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
-                            <span
-                              role="button"
-                              aria-label="Réordonner l'objet"
-                              draggable={editingInventoryId === null}
-                              onDragStart={handleInventoryDragStart(item.id)}
-                              onDragEnd={resetInventoryDragState}
-                              className="text-xs text-[#7a4b36] cursor-grab select-none"
-                            >
-                              ⋮⋮
-                            </span>
                           <div className="grid grid-cols-[auto_1.4fr_0.4fr_auto] gap-1 items-center">
                             <span
                               role="button"

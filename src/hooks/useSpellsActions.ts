@@ -19,37 +19,44 @@ export function useSpellsActions({
   baseSlotTotals,
 }: UseSpellsActionsParams) {
   const addSpell = useCallback(
-    (level: number) => {
+    (level: number, template: Partial<Spell> = {}) => {
       const id =
         typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : `spell-${Date.now()}`
-      updateField('spells', [
-        ...character.spells,
-        {
-          id,
-          name: '',
-          level: level.toString(),
-          school: '',
-          type: '',
-          range: '',
-          duration: '',
-          components: '',
-          dice: '',
-          diceMode: 'dice',
-          diceCount: 1,
-          diceDie: '',
-          diceMod: '',
-          diceCustom: '',
+      const baseSpell: Spell = {
+        id,
+        name: '',
+        level: level.toString(),
+        school: '',
+        type: '',
+        range: '',
+        duration: '',
+        components: '',
+        dice: '',
+        diceMode: 'dice',
+        diceCount: 1,
+        diceDie: '',
+        diceMod: '',
+        diceCustom: '',
         damageType: '',
-          concentration: false,
-          ritual: false,
+        concentration: false,
+        ritual: false,
         prepared: false,
-          saveThrow: false,
-          saveThrowAbility: 'STR',
-          description: '',
-        },
-      ])
+        saveThrow: false,
+        saveThrowAbility: 'STR',
+        description: '',
+      }
+      const nextSpell: Spell = {
+        ...baseSpell,
+        ...template,
+        id,
+        level: template.level ?? baseSpell.level,
+      }
+      if (nextSpell.saveThrow && !nextSpell.saveThrowAbility) {
+        nextSpell.saveThrowAbility = 'STR'
+      }
+      updateField('spells', [...character.spells, nextSpell])
       return id
     },
     [character.spells, updateField]
@@ -62,6 +69,7 @@ export function useSpellsActions({
       if (!current) return
       newSpells[index] = {
         id: current.id,
+        sourceId: updates.sourceId ?? current.sourceId,
         name: updates.name ?? current.name,
         level: updates.level ?? current.level,
         school: updates.school ?? current.school,
@@ -137,5 +145,12 @@ export function useSpellsActions({
     ]
   )
 
-  return { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells }
+  const replaceSpells = useCallback(
+    (nextSpells: Spell[]) => {
+      updateField('spells', nextSpells)
+    },
+    [updateField]
+  )
+
+  return { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells, replaceSpells }
 }

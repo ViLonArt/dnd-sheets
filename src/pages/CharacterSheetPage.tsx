@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   useCharacterForm,
@@ -27,6 +27,10 @@ import { PortraitCropper } from '@/features/character-sheet/PortraitCropper'
 import { SpellsTab } from '@/features/character-sheet/SpellsTab'
 import { ErrorBanner, PaperContainer } from '@/components/ui'
 import type { Character } from '@/types/character'
+import type { SpellLocale } from '@/utils/spellLocale'
+import { translateSpellToLocale } from '@/utils/spellTranslation'
+
+const SPELL_LOCALE_STORAGE_KEY = 'dnd-sheets:spell-locale'
 
 export default function CharacterSheetPage() {
   const { id } = useParams<{ id: string }>()
@@ -38,6 +42,7 @@ export default function CharacterSheetPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [spellLocale, setSpellLocale] = useState<SpellLocale>('en')
   const { character, updateField, updateCharacter, handleExport, handleImport, reset } =
     useCharacterForm(initialCharacterData)
   const { exportToPdf, exportToPng, isExporting } = useExportToImage()
@@ -100,13 +105,60 @@ export default function CharacterSheetPage() {
     effectiveHpMax,
   })
 
-  const { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells } = useSpellsActions({
+  const { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells, replaceSpells } =
+    useSpellsActions({
     character,
     updateField,
     updateCharacter,
     currentMaxSlots,
     baseSlotTotals,
-  })
+    })
+
+  const applySpellLocale = useCallback(
+    (nextLocale: SpellLocale, spellList: Character['spells']) => {
+      let hasChanges = false
+      const nextSpells = spellList.map((spell) => {
+        const translated = translateSpellToLocale(spell, nextLocale)
+        if (translated) {
+          hasChanges = true
+          return translated
+        }
+        return spell
+      })
+      if (hasChanges) {
+        replaceSpells(nextSpells)
+      }
+    },
+    [replaceSpells]
+  )
+
+  const handleSpellLocaleChange = useCallback(
+    (nextLocale: SpellLocale) => {
+      setSpellLocale(nextLocale)
+      applySpellLocale(nextLocale, character.spells)
+    },
+    [applySpellLocale, character.spells]
+  )
+
+  useEffect(() => {
+    const stored =
+      typeof window !== 'undefined'
+        ? window.localStorage.getItem(SPELL_LOCALE_STORAGE_KEY)
+        : null
+    if (stored === 'en' || stored === 'fr') {
+      setSpellLocale(stored)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(SPELL_LOCALE_STORAGE_KEY, spellLocale)
+    }
+  }, [spellLocale])
+
+  useEffect(() => {
+    applySpellLocale(spellLocale, character.spells)
+  }, [spellLocale, character.spells, applySpellLocale])
 
   useEffect(() => {
     const loadSheet = async () => {
@@ -197,6 +249,8 @@ export default function CharacterSheetPage() {
         <CharacterToolbar
           isExporting={isExporting}
           isSaving={isSaving}
+            spellLocale={spellLocale}
+            onSpellLocaleChange={handleSpellLocaleChange}
           onExport={handleExportClick}
           onImportFile={handleFileChange}
           onReset={handleReset}
@@ -263,6 +317,7 @@ export default function CharacterSheetPage() {
               level={character.level}
               spellSlots={character.spellSlots}
               spells={character.spells}
+              spellLocale={spellLocale}
               spellcastingAttribute={character.spellcastingAttribute}
               spellDC={spellDC}
               spellAttackBonus={spellAttackBonus}

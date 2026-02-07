@@ -1,11 +1,14 @@
 import { useRef, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthButton } from '@/components/auth/AuthButton'
-import { Button, Toolbar } from '@/components/ui'
+import { Button, Select, Toolbar } from '@/components/ui'
+import { SPELL_LOCALE_OPTIONS, type SpellLocale } from '@/utils/spellLocale'
 
 type CharacterToolbarProps = {
   isExporting: boolean
   isSaving: boolean
+  spellLocale: SpellLocale
+  onSpellLocaleChange: (value: SpellLocale) => void
   onExport: () => void
   onImportFile: (event: ChangeEvent<HTMLInputElement>) => void
   onReset: () => void
@@ -17,6 +20,8 @@ type CharacterToolbarProps = {
 export function CharacterToolbar({
   isExporting,
   isSaving,
+  spellLocale,
+  onSpellLocaleChange,
   onExport,
   onImportFile,
   onReset,
@@ -36,6 +41,15 @@ export function CharacterToolbar({
       right={
         <>
           <AuthButton />
+          <div className="opacity-80">
+            <Select
+              value={spellLocale}
+              onChange={(e) => onSpellLocaleChange(e.target.value as SpellLocale)}
+              options={SPELL_LOCALE_OPTIONS}
+              className="text-[10px] min-h-[20px] w-[140px]"
+              aria-label="Langue des sorts"
+            />
+          </div>
           <Button onClick={onSave} disabled={isSaving}>
             {isSaving ? 'Enregistrement...' : 'Enregistrer'}
           </Button>

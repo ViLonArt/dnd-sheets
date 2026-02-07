@@ -405,6 +405,7 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
           : ''
       return {
         id: typeof spellData.id === 'string' ? spellData.id : `spell-${index}`,
+        sourceId: typeof spellData.sourceId === 'string' ? spellData.sourceId : undefined,
         name: typeof spellData.name === 'string' ? spellData.name : '',
         level:
           typeof spellData.level === 'number' || typeof spellData.level === 'string'

@@ -6,10 +6,12 @@ import { SRD_SPELL_TRANSLATIONS } from '@/data/spellTranslationMap'
 
 const EN_BY_ID = new Map(SRD_SPELLS.map((spell) => [spell.id, spell]))
 const FR_BY_ID = new Map(SRD_SPELLS_FR.map((spell) => [spell.id, spell]))
+const FR_TO_EN: Record<string, string> = SRD_SPELL_TRANSLATIONS.frToEn
+const EN_TO_FR: Record<string, string> = SRD_SPELL_TRANSLATIONS.enToFr
 
 const getEnglishId = (id: string) => {
   if (EN_BY_ID.has(id)) return id
-  const mapped = SRD_SPELL_TRANSLATIONS.frToEn[id]
+  const mapped = FR_TO_EN[id]
   if (mapped && EN_BY_ID.has(mapped)) return mapped
   return null
 }
@@ -20,8 +22,8 @@ export const translateSpellToLocale = (spell: Spell, locale: SpellLocale): Spell
   const englishId = getEnglishId(spell.sourceId ?? spell.id)
   if (!englishId) return null
 
-  const targetId =
-    locale === 'fr' ? SRD_SPELL_TRANSLATIONS.enToFr[englishId] : englishId
+  const targetId = locale === 'fr' ? EN_TO_FR[englishId] : englishId
+  if (!targetId) return null
   const targetSpell =
     locale === 'fr' ? FR_BY_ID.get(targetId) : EN_BY_ID.get(targetId)
 

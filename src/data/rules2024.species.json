@@ -1,0 +1,284 @@
+{
+  "species": [
+    {
+      "id": "aasimar",
+      "nameKey": "species.aasimar.name",
+      "traits": [
+        { "id": "aasimar-resistance", "level": 1, "nameKey": "species.aasimar.trait.resistance.name", "descriptionKey": "species.aasimar.trait.resistance.desc" },
+        { "id": "aasimar-darkvision", "level": 1, "nameKey": "species.aasimar.trait.darkvision.name", "descriptionKey": "species.aasimar.trait.darkvision.desc" },
+        { "id": "aasimar-light-bearer", "level": 1, "nameKey": "species.aasimar.trait.lightBearer.name", "descriptionKey": "species.aasimar.trait.lightBearer.desc" },
+        { "id": "aasimar-healing-hands", "level": 1, "nameKey": "species.aasimar.trait.healingHands.name", "descriptionKey": "species.aasimar.trait.healingHands.desc" },
+        { "id": "aasimar-celestial-revelation", "level": 3, "nameKey": "species.aasimar.trait.celestialRevelation.name", "descriptionKey": "species.aasimar.trait.celestialRevelation.desc" }
+      ],
+      "choices": []
+    },
+    {
+      "id": "dragonborn",
+      "nameKey": "species.dragonborn.name",
+      "traits": [
+        { "id": "dragonborn-breath-weapon", "level": 1, "nameKey": "species.dragonborn.trait.breathWeapon.name", "descriptionKey": "species.dragonborn.trait.breathWeapon.desc" },
+        { "id": "dragonborn-damage-resistance", "level": 1, "nameKey": "species.dragonborn.trait.damageResistance.name", "descriptionKey": "species.dragonborn.trait.damageResistance.desc" },
+        { "id": "dragonborn-draconic-flight", "level": 5, "nameKey": "species.dragonborn.trait.draconicFlight.name", "descriptionKey": "species.dragonborn.trait.draconicFlight.desc" }
+      ],
+      "choices": [
+        {
+          "id": "dragonborn-ancestry",
+          "level": 1,
+          "nameKey": "species.dragonborn.choice.ancestry.name",
+          "options": [
+            {
+              "id": "chromatic",
+              "nameKey": "species.dragonborn.choice.ancestry.chromatic",
+              "description": {
+                "en": "Chromatic ancestry (black, blue, green, red, white) determines your breath weapon element and damage resistance.",
+                "fr": "Ascendance chromatique (noir, bleu, vert, rouge, blanc) qui détermine l'element du souffle et la resistance associee."
+              }
+            },
+            {
+              "id": "metallic",
+              "nameKey": "species.dragonborn.choice.ancestry.metallic",
+              "description": {
+                "en": "Metallic ancestry (brass, bronze, copper, gold, silver) determines your breath weapon element and damage resistance.",
+                "fr": "Ascendance metallique (laiton, bronze, cuivre, or, argent) qui détermine l'element du souffle et la resistance associee."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dwarf",
+      "nameKey": "species.dwarf.name",
+      "traits": [
+        { "id": "dwarf-darkvision", "level": 1, "nameKey": "species.dwarf.trait.darkvision.name", "descriptionKey": "species.dwarf.trait.darkvision.desc" },
+        { "id": "dwarf-resilience", "level": 1, "nameKey": "species.dwarf.trait.resilience.name", "descriptionKey": "species.dwarf.trait.resilience.desc" },
+        { "id": "dwarf-stonecunning", "level": 1, "nameKey": "species.dwarf.trait.stonecunning.name", "descriptionKey": "species.dwarf.trait.stonecunning.desc" },
+        { "id": "dwarf-toughness", "level": 1, "nameKey": "species.dwarf.trait.toughness.name", "descriptionKey": "species.dwarf.trait.toughness.desc" }
+      ],
+      "choices": []
+    },
+    {
+      "id": "elf",
+      "nameKey": "species.elf.name",
+      "traits": [
+        { "id": "elf-darkvision", "level": 1, "nameKey": "species.elf.trait.darkvision.name", "descriptionKey": "species.elf.trait.darkvision.desc" },
+        { "id": "elf-fey-ancestry", "level": 1, "nameKey": "species.elf.trait.feyAncestry.name", "descriptionKey": "species.elf.trait.feyAncestry.desc" },
+        { "id": "elf-keen-senses", "level": 1, "nameKey": "species.elf.trait.keenSenses.name", "descriptionKey": "species.elf.trait.keenSenses.desc" },
+        { "id": "elf-trance", "level": 1, "nameKey": "species.elf.trait.trance.name", "descriptionKey": "species.elf.trait.trance.desc" }
+      ],
+      "choices": [
+        {
+          "id": "elf-lineage",
+          "level": 1,
+          "nameKey": "species.elf.choice.lineage.name",
+          "options": [
+            {
+              "id": "drow",
+              "nameKey": "species.elf.choice.lineage.drow",
+              "description": {
+                "en": "Darkvision 120 ft, Dancing Lights; Faerie Fire at level 3 and Darkness at level 5.",
+                "fr": "Adaptes aux tenebres de l'Outreterre, ils possedent une magie innee d'ombre et de lumiere."
+              }
+            },
+            {
+              "id": "high",
+              "nameKey": "species.elf.choice.lineage.high",
+              "description": {
+                "en": "Prestidigitation, Detect Magic at level 3, and Misty Step at level 5.",
+                "fr": "Impregnes de la magie du Feywild, ils maitrisent les arcanes et la teleportation mineure."
+              }
+            },
+            {
+              "id": "wood",
+              "nameKey": "species.elf.choice.lineage.wood",
+              "description": {
+                "en": "Speed 35 ft, Druidcraft; Longstrider at level 3 and Pass Without Trace at level 5.",
+                "fr": "Rapides et silencieux, ils sont les gardiens des forets anciennes et se deplacent invisiblement."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "half-elf",
+      "nameKey": "species.halfElf.name",
+      "traits": [
+        { "id": "half-elf-darkvision", "level": 1, "nameKey": "species.halfElf.trait.darkvision.name", "descriptionKey": "species.halfElf.trait.darkvision.desc" },
+        { "id": "half-elf-fey-ancestry", "level": 1, "nameKey": "species.halfElf.trait.feyAncestry.name", "descriptionKey": "species.halfElf.trait.feyAncestry.desc" },
+        { "id": "half-elf-skill-versatility", "level": 1, "nameKey": "species.halfElf.trait.skillVersatility.name", "descriptionKey": "species.halfElf.trait.skillVersatility.desc" }
+      ],
+      "choices": [
+        { "id": "half-elf-skill1", "level": 1, "nameKey": "species.halfElf.choice.skillVersatility1.name", "optionsFrom": "allSkills" },
+        { "id": "half-elf-skill2", "level": 1, "nameKey": "species.halfElf.choice.skillVersatility2.name", "optionsFrom": "allSkills" }
+      ]
+    },
+    {
+      "id": "gnome",
+      "nameKey": "species.gnome.name",
+      "traits": [
+        { "id": "gnome-darkvision", "level": 1, "nameKey": "species.gnome.trait.darkvision.name", "descriptionKey": "species.gnome.trait.darkvision.desc" },
+        { "id": "gnome-cunning", "level": 1, "nameKey": "species.gnome.trait.cunning.name", "descriptionKey": "species.gnome.trait.cunning.desc" }
+      ],
+      "choices": [
+        {
+          "id": "gnome-lineage",
+          "level": 1,
+          "nameKey": "species.gnome.choice.lineage.name",
+          "options": [
+            {
+              "id": "forest",
+              "nameKey": "species.gnome.choice.lineage.forest",
+              "description": {
+                "en": "Minor Illusion and Speak with Animals (always prepared, PB free casts).",
+                "fr": "Amis des betes et maitres des petites illusions, ils vivent en harmonie avec la foret."
+              }
+            },
+            {
+              "id": "rock",
+              "nameKey": "species.gnome.choice.lineage.rock",
+              "description": {
+                "en": "Mending and Prestidigitation; create tiny clockwork devices.",
+                "fr": "Inventeurs nes, ils creent de petits dispositifs mecaniques alimentes par une magie mineure."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "goliath",
+      "nameKey": "species.goliath.name",
+      "traits": [
+        { "id": "goliath-powerful-build", "level": 1, "nameKey": "species.goliath.trait.powerfulBuild.name", "descriptionKey": "species.goliath.trait.powerfulBuild.desc" },
+        { "id": "goliath-speed", "level": 1, "nameKey": "species.goliath.trait.speed.name", "descriptionKey": "species.goliath.trait.speed.desc" },
+        { "id": "goliath-large-form", "level": 5, "nameKey": "species.goliath.trait.largeForm.name", "descriptionKey": "species.goliath.trait.largeForm.desc" }
+      ],
+      "choices": [
+        {
+          "id": "goliath-ancestry",
+          "level": 1,
+          "nameKey": "species.goliath.choice.ancestry.name",
+          "options": [
+            {
+              "id": "cloud",
+              "nameKey": "species.goliath.choice.ancestry.cloud",
+              "description": {
+                "en": "Teleport 30 feet as a bonus action.",
+                "fr": "Vous vous teleportez comme la brume, disparaissant pour reapparaitre plus loin."
+              }
+            },
+            {
+              "id": "fire",
+              "nameKey": "species.goliath.choice.ancestry.fire",
+              "description": {
+                "en": "Add 1d10 fire damage on a hit.",
+                "fr": "Vos coups brulent de la fureur des geants du feu."
+              }
+            },
+            {
+              "id": "frost",
+              "nameKey": "species.goliath.choice.ancestry.frost",
+              "description": {
+                "en": "Add 1d6 cold damage and slow target by 10 feet.",
+                "fr": "Votre toucher glacial engourdit et ralentit vos ennemis."
+              }
+            },
+            {
+              "id": "hill",
+              "nameKey": "species.goliath.choice.ancestry.hill",
+              "description": {
+                "en": "Knock target prone on hit (no save).",
+                "fr": "Vous frappez avec une force brute capable de renverser un geant."
+              }
+            },
+            {
+              "id": "stone",
+              "nameKey": "species.goliath.choice.ancestry.stone",
+              "description": {
+                "en": "Reaction: reduce damage by 1d12 + Con.",
+                "fr": "Votre peau devient dure comme la roche pour absorber les chocs."
+              }
+            },
+            {
+              "id": "storm",
+              "nameKey": "species.goliath.choice.ancestry.storm",
+              "description": {
+                "en": "Reaction: deal 1d8 thunder damage to attacker.",
+                "fr": "Vous ripostez avec le tonnerre contre ceux qui osent vous frapper."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "human",
+      "nameKey": "species.human.name",
+      "traits": [
+        { "id": "human-resourceful", "level": 1, "nameKey": "species.human.trait.resourceful.name", "descriptionKey": "species.human.trait.resourceful.desc" },
+        { "id": "human-skillful", "level": 1, "nameKey": "species.human.trait.skillful.name", "descriptionKey": "species.human.trait.skillful.desc" },
+        { "id": "human-versatile", "level": 1, "nameKey": "species.human.trait.versatile.name", "descriptionKey": "species.human.trait.versatile.desc" }
+      ],
+      "choices": [
+        {
+          "id": "human-origin-feat",
+          "level": 1,
+          "nameKey": "species.human.choice.originFeat.name",
+          "optionsFrom": "originFeats"
+        }
+      ]
+    },
+    {
+      "id": "orc",
+      "nameKey": "species.orc.name",
+      "traits": [
+        { "id": "orc-darkvision", "level": 1, "nameKey": "species.orc.trait.darkvision.name", "descriptionKey": "species.orc.trait.darkvision.desc" },
+        { "id": "orc-adrenaline-rush", "level": 1, "nameKey": "species.orc.trait.adrenalineRush.name", "descriptionKey": "species.orc.trait.adrenalineRush.desc" },
+        { "id": "orc-relentless-endurance", "level": 1, "nameKey": "species.orc.trait.relentlessEndurance.name", "descriptionKey": "species.orc.trait.relentlessEndurance.desc" }
+      ],
+      "choices": []
+    },
+    {
+      "id": "tiefling",
+      "nameKey": "species.tiefling.name",
+      "traits": [
+        { "id": "tiefling-darkvision", "level": 1, "nameKey": "species.tiefling.trait.darkvision.name", "descriptionKey": "species.tiefling.trait.darkvision.desc" },
+        { "id": "tiefling-presence", "level": 1, "nameKey": "species.tiefling.trait.presence.name", "descriptionKey": "species.tiefling.trait.presence.desc" }
+      ],
+      "choices": [
+        {
+          "id": "tiefling-legacy",
+          "level": 1,
+          "nameKey": "species.tiefling.choice.legacy.name",
+          "options": [
+            {
+              "id": "abyssal",
+              "nameKey": "species.tiefling.choice.legacy.abyssal",
+              "description": {
+                "en": "Poison resistance, Poison Spray; Ray of Sickness at level 3, Hold Person at level 5.",
+                "fr": "Lies aux abysses, leur sang porte la corruption et la maladie."
+              }
+            },
+            {
+              "id": "chthonic",
+              "nameKey": "species.tiefling.choice.legacy.chthonic",
+              "description": {
+                "en": "Necrotic resistance, Chill Touch; False Life at level 3, Ray of Enfeeblement at level 5.",
+                "fr": "Une lignee liee a la mort et aux plans neutres, resistante a la necromancie."
+              }
+            },
+            {
+              "id": "infernal",
+              "nameKey": "species.tiefling.choice.legacy.infernal",
+              "description": {
+                "en": "Fire resistance, Fire Bolt; Hellish Rebuke at level 3, Darkness at level 5.",
+                "fr": "La lignee classique des Neuf Enfers, maniant le feu et les tenebres."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

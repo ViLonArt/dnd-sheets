@@ -154,6 +154,24 @@ export type SpellSlotOverrides = SlotOverrides
 export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
 
 /**
+ * Advancement state for 2024 rules engine
+ */
+export interface AdvancementState {
+  classes: Array<{
+    classId: string
+    level: number
+    subclassId?: string
+  }>
+  feats: string[]
+  weaponMasteries: string[]
+  weaponProficiencies: string[]
+  speciesId?: string
+  backgroundId?: string
+  choices: Record<string, string[]>
+  advancementMode?: 'xp' | 'milestone'
+}
+
+/**
  * Inventory item categories
  */
 export type ItemCategory = 'weapons' | 'consumables' | 'currency' | 'other'
@@ -219,6 +237,7 @@ export interface Character {
   spells: Spell[]
   spellSlots: SpellSlots
   slotOverrides: SpellSlotOverrides
+  advancement?: AdvancementState
 }
 
 /**
@@ -415,6 +434,26 @@ export const SkillProficienciesSchema = z.record(
 export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
 
 /**
+ * Zod schema for AdvancementState
+ */
+export const AdvancementStateSchema = z.object({
+  classes: z.array(
+    z.object({
+      classId: z.string(),
+      level: z.number().int().min(1).max(20),
+      subclassId: z.string().optional(),
+    })
+  ),
+  feats: z.array(z.string()),
+  weaponMasteries: z.array(z.string()),
+  weaponProficiencies: z.array(z.string()),
+  speciesId: z.string().optional(),
+  backgroundId: z.string().optional(),
+  choices: z.record(z.string(), z.array(z.string())),
+  advancementMode: z.enum(['xp', 'milestone']).optional(),
+})
+
+/**
  * Zod schema for InventoryItem
  */
 export const ItemCategorySchema = z.enum(['weapons', 'consumables', 'currency', 'other'])
@@ -475,6 +514,7 @@ export const CharacterSchema = z.object({
   spells: z.array(SpellSchema),
   spellSlots: SpellSlotsSchema,
   slotOverrides: SpellSlotOverridesSchema,
+  advancement: AdvancementStateSchema.optional(),
 })
 
 /**
@@ -570,6 +610,14 @@ export function createEmptyCharacter(): Character {
     spells: [],
     spellSlots: {},
     slotOverrides: {},
+    advancement: {
+      classes: [],
+      feats: [],
+      weaponMasteries: [],
+      weaponProficiencies: [],
+      choices: {},
+      advancementMode: 'xp',
+    },
   }
 }
 

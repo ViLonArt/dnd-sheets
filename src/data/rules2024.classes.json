@@ -1,0 +1,161 @@
+{
+  "classes": [
+    {
+      "id": "barbarian",
+      "nameKey": "class.barbarian.name",
+      "subclassKey": "class.barbarian.subclass",
+      "hitDie": 12,
+      "spellcasting": "none",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [
+        { "level": 1, "count": 2, "filters": ["melee"] },
+        { "level": 4, "count": 1, "filters": ["melee"] },
+        { "level": 10, "count": 1, "filters": ["melee"] }
+      ],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "skillChoiceLevels": [3],
+      "skillChoicePool": [
+        "animalHandling",
+        "athletics",
+        "intimidation",
+        "nature",
+        "perception",
+        "survival"
+      ],
+      "multiclassPrerequisites": { "all": ["str"], "any": [] }
+    },
+    {
+      "id": "bard",
+      "nameKey": "class.bard.name",
+      "subclassKey": "class.bard.subclass",
+      "hitDie": 8,
+      "spellcasting": "full",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["cha"], "any": [] }
+    },
+    {
+      "id": "cleric",
+      "nameKey": "class.cleric.name",
+      "subclassKey": "class.cleric.subclass",
+      "hitDie": 8,
+      "spellcasting": "full",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["wis"], "any": [] }
+    },
+    {
+      "id": "druid",
+      "nameKey": "class.druid.name",
+      "subclassKey": "class.druid.subclass",
+      "hitDie": 8,
+      "spellcasting": "full",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["wis"], "any": [] }
+    },
+    {
+      "id": "fighter",
+      "nameKey": "class.fighter.name",
+      "subclassKey": "class.fighter.subclass",
+      "hitDie": 10,
+      "spellcasting": "none",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [1],
+      "weaponMastery": [{ "level": 1, "count": 3, "filters": ["any"] }],
+      "asiLevels": [4, 6, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": [], "any": ["str", "dex"] }
+    },
+    {
+      "id": "monk",
+      "nameKey": "class.monk.name",
+      "subclassKey": "class.monk.subclass",
+      "hitDie": 8,
+      "spellcasting": "none",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["dex", "wis"], "any": [] }
+    },
+    {
+      "id": "paladin",
+      "nameKey": "class.paladin.name",
+      "subclassKey": "class.paladin.subclass",
+      "hitDie": 10,
+      "spellcasting": "half",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [2],
+      "weaponMastery": [{ "level": 1, "count": 2, "filters": ["any"] }],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["str", "cha"], "any": [] }
+    },
+    {
+      "id": "ranger",
+      "nameKey": "class.ranger.name",
+      "subclassKey": "class.ranger.subclass",
+      "hitDie": 10,
+      "spellcasting": "half",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [2],
+      "weaponMastery": [{ "level": 1, "count": 2, "filters": ["any"] }],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["dex", "wis"], "any": [] }
+    },
+    {
+      "id": "rogue",
+      "nameKey": "class.rogue.name",
+      "subclassKey": "class.rogue.subclass",
+      "hitDie": 8,
+      "spellcasting": "none",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [{ "level": 1, "count": 2, "filters": ["finesse", "light"] }],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["dex"], "any": [] }
+    },
+    {
+      "id": "sorcerer",
+      "nameKey": "class.sorcerer.name",
+      "subclassKey": "class.sorcerer.subclass",
+      "hitDie": 6,
+      "spellcasting": "full",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["cha"], "any": [] }
+    },
+    {
+      "id": "warlock",
+      "nameKey": "class.warlock.name",
+      "subclassKey": "class.warlock.subclass",
+      "hitDie": 8,
+      "spellcasting": "pact",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["cha"], "any": [] }
+    },
+    {
+      "id": "wizard",
+      "nameKey": "class.wizard.name",
+      "subclassKey": "class.wizard.subclass",
+      "hitDie": 6,
+      "spellcasting": "full",
+      "subclassLevel": 3,
+      "fightingStyleLevels": [],
+      "weaponMastery": [],
+      "asiLevels": [4, 8, 12, 16, 19],
+      "multiclassPrerequisites": { "all": ["int"], "any": [] }
+    }
+  ]
+}

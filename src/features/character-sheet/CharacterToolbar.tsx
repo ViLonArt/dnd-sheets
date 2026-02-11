@@ -15,6 +15,7 @@ type CharacterToolbarProps = {
   onDownloadPdf: () => void
   onDownloadPng: () => void
   onSave: () => void
+  onCreateWithWizard?: () => void
 }
 
 export function CharacterToolbar({
@@ -28,6 +29,7 @@ export function CharacterToolbar({
   onDownloadPdf,
   onDownloadPng,
   onSave,
+  onCreateWithWizard,
 }: CharacterToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -64,6 +66,11 @@ export function CharacterToolbar({
             onChange={onImportFile}
             className="hidden"
           />
+          {onCreateWithWizard && (
+            <Button onClick={onCreateWithWizard} variant="small">
+              Assistant de création 2024
+            </Button>
+          )}
           <Button onClick={onReset} variant="small">
             Reset
           </Button>

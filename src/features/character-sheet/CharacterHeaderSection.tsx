@@ -34,6 +34,8 @@ type CharacterHeaderSectionProps = {
   onLongRest: () => void
   onPortraitSelected: (dataUrl: string) => void
   onPortraitDelete: () => void
+  onLevelUp?: () => void
+  levelUpLabel?: string
 }
 
 export function CharacterHeaderSection({
@@ -61,6 +63,8 @@ export function CharacterHeaderSection({
   onLongRest,
   onPortraitSelected,
   onPortraitDelete,
+  onLevelUp,
+  levelUpLabel = 'Monter de niveau',
 }: CharacterHeaderSectionProps) {
   const portraitInputRef = useRef<HTMLInputElement>(null)
   const [openPortraitMenu, setOpenPortraitMenu] = useState(false)
@@ -224,6 +228,11 @@ export function CharacterHeaderSection({
           <Button variant="small" onClick={onLongRest}>
             Repos long
           </Button>
+          {onLevelUp && (
+            <Button variant="small" onClick={onLevelUp}>
+              {levelUpLabel}
+            </Button>
+          )}
         </div>
       </div>
     </header>

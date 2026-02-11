@@ -1,5 +1,12 @@
 import { parseAbilityScore } from '@/types/abilities'
 import { CLASSES_2024 } from '@/data/classTables2024'
+import {
+  resolveBackgroundId,
+  resolveClassId,
+  resolveFeatId,
+  resolveSpeciesId,
+  resolveSubclassId,
+} from '@/utils/advancementMapper'
 
 const getBaseSlotsFrom2024 = (className: string, level: number) => {
   const classData = CLASSES_2024[className]
@@ -469,6 +476,94 @@ export function normalizeCharacterData(data: Record<string, unknown>): Record<st
       cleaned[level] = value
     }
     data.slotOverrides = cleaned
+  }
+
+  const className = typeof data.class === 'string' ? data.class : ''
+  const subclassName = typeof data.subclass === 'string' ? data.subclass : ''
+  const speciesName = typeof data.race === 'string' ? data.race : ''
+  const backgroundName = typeof data.background === 'string' ? data.background : ''
+  const resolvedClassId = resolveClassId(className)
+  const resolvedSubclassId = resolveSubclassId(subclassName, resolvedClassId)
+  const resolvedSpeciesId = resolveSpeciesId(speciesName)
+  const resolvedBackgroundId = resolveBackgroundId(backgroundName)
+  const featsFromSheet =
+    Array.isArray(data.feats) && data.feats.length > 0
+      ? (data.feats as Array<Record<string, unknown>>)
+          .map((feat) => (typeof feat?.name === 'string' ? resolveFeatId(feat.name) : undefined))
+          .filter((featId): featId is string => Boolean(featId))
+      : []
+
+  if (!('advancement' in data) || !data.advancement || typeof data.advancement !== 'object') {
+    data.advancement = {
+      classes: resolvedClassId
+        ? [
+            {
+              classId: resolvedClassId,
+              level: typeof data.level === 'number' ? data.level : 1,
+              ...(resolvedSubclassId ? { subclassId: resolvedSubclassId } : {}),
+            },
+          ]
+        : [],
+      feats: featsFromSheet,
+      weaponMasteries: [],
+      weaponProficiencies: [],
+      speciesId: resolvedSpeciesId,
+      backgroundId: resolvedBackgroundId,
+      choices: {},
+      advancementMode: 'xp',
+    }
+  } else {
+    const advancement = data.advancement as Record<string, unknown>
+    const classEntries = Array.isArray(advancement.classes) ? advancement.classes : []
+    const classes = classEntries
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') return null
+        const classEntry = entry as Record<string, unknown>
+        const classId = typeof classEntry.classId === 'string' ? classEntry.classId : resolvedClassId
+        if (!classId) return null
+        const subclassId =
+          typeof classEntry.subclassId === 'string'
+            ? classEntry.subclassId
+            : resolvedSubclassId
+        return {
+          classId,
+          level:
+            typeof classEntry.level === 'number'
+              ? Math.max(1, Math.min(20, Math.floor(classEntry.level)))
+              : typeof data.level === 'number'
+              ? data.level
+              : 1,
+          ...(subclassId ? { subclassId } : {}),
+        }
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+
+    data.advancement = {
+      classes: classes.length > 0 ? classes : resolvedClassId ? [{ classId: resolvedClassId, level: data.level as number }] : [],
+      feats:
+        Array.isArray(advancement.feats) && advancement.feats.length > 0
+          ? advancement.feats.filter((feat) => typeof feat === 'string')
+          : featsFromSheet,
+      weaponMasteries: Array.isArray(advancement.weaponMasteries)
+        ? advancement.weaponMasteries.filter((item) => typeof item === 'string')
+        : [],
+      weaponProficiencies: Array.isArray(advancement.weaponProficiencies)
+        ? advancement.weaponProficiencies.filter((item) => typeof item === 'string')
+        : [],
+      speciesId: typeof advancement.speciesId === 'string' ? advancement.speciesId : resolvedSpeciesId,
+      backgroundId:
+        typeof advancement.backgroundId === 'string' ? advancement.backgroundId : resolvedBackgroundId,
+      choices:
+        advancement.choices && typeof advancement.choices === 'object'
+          ? Object.fromEntries(
+              Object.entries(advancement.choices).map(([key, value]) => [
+                key,
+                Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [],
+              ])
+            )
+          : {},
+      advancementMode: advancement.advancementMode === 'milestone' ? 'milestone' : 'xp',
+    }
   }
 
   return data

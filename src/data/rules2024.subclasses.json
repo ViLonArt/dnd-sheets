@@ -1,0 +1,73 @@
+{
+  "subclasses": [
+    { "id": "berserker", "classId": "barbarian", "nameKey": "subclass.barbarian.berserker.name" },
+    { "id": "wild-heart", "classId": "barbarian", "nameKey": "subclass.barbarian.wildHeart.name" },
+    { "id": "world-tree", "classId": "barbarian", "nameKey": "subclass.barbarian.worldTree.name" },
+    { "id": "zealot", "classId": "barbarian", "nameKey": "subclass.barbarian.zealot.name" },
+
+    { "id": "college-of-dance", "classId": "bard", "nameKey": "subclass.bard.dance.name" },
+    { "id": "college-of-glamour", "classId": "bard", "nameKey": "subclass.bard.glamour.name" },
+    { "id": "college-of-lore", "classId": "bard", "nameKey": "subclass.bard.lore.name" },
+    { "id": "college-of-valor", "classId": "bard", "nameKey": "subclass.bard.valor.name" },
+
+    { "id": "life", "classId": "cleric", "nameKey": "subclass.cleric.life.name" },
+    { "id": "light", "classId": "cleric", "nameKey": "subclass.cleric.light.name" },
+    { "id": "trickery", "classId": "cleric", "nameKey": "subclass.cleric.trickery.name" },
+    { "id": "war", "classId": "cleric", "nameKey": "subclass.cleric.war.name" },
+
+    { "id": "land", "classId": "druid", "nameKey": "subclass.druid.land.name" },
+    { "id": "moon", "classId": "druid", "nameKey": "subclass.druid.moon.name" },
+    { "id": "sea", "classId": "druid", "nameKey": "subclass.druid.sea.name" },
+    { "id": "stars", "classId": "druid", "nameKey": "subclass.druid.stars.name" },
+
+    { "id": "battle-master", "classId": "fighter", "nameKey": "subclass.fighter.battleMaster.name" },
+    { "id": "champion", "classId": "fighter", "nameKey": "subclass.fighter.champion.name" },
+    {
+      "id": "eldritch-knight",
+      "classId": "fighter",
+      "nameKey": "subclass.fighter.eldritchKnight.name",
+      "spellcasting": "third"
+    },
+    { "id": "psi-warrior", "classId": "fighter", "nameKey": "subclass.fighter.psiWarrior.name" },
+
+    { "id": "mercy", "classId": "monk", "nameKey": "subclass.monk.mercy.name" },
+    { "id": "shadow", "classId": "monk", "nameKey": "subclass.monk.shadow.name" },
+    { "id": "elements", "classId": "monk", "nameKey": "subclass.monk.elements.name" },
+    { "id": "open-hand", "classId": "monk", "nameKey": "subclass.monk.openHand.name" },
+
+    { "id": "devotion", "classId": "paladin", "nameKey": "subclass.paladin.devotion.name" },
+    { "id": "glory", "classId": "paladin", "nameKey": "subclass.paladin.glory.name" },
+    { "id": "ancients", "classId": "paladin", "nameKey": "subclass.paladin.ancients.name" },
+    { "id": "vengeance", "classId": "paladin", "nameKey": "subclass.paladin.vengeance.name" },
+
+    { "id": "beast-master", "classId": "ranger", "nameKey": "subclass.ranger.beastMaster.name" },
+    { "id": "fey-wanderer", "classId": "ranger", "nameKey": "subclass.ranger.feyWanderer.name" },
+    { "id": "gloom-stalker", "classId": "ranger", "nameKey": "subclass.ranger.gloomStalker.name" },
+    { "id": "hunter", "classId": "ranger", "nameKey": "subclass.ranger.hunter.name" },
+
+    {
+      "id": "arcane-trickster",
+      "classId": "rogue",
+      "nameKey": "subclass.rogue.arcaneTrickster.name",
+      "spellcasting": "third"
+    },
+    { "id": "assassin", "classId": "rogue", "nameKey": "subclass.rogue.assassin.name" },
+    { "id": "soulknife", "classId": "rogue", "nameKey": "subclass.rogue.soulknife.name" },
+    { "id": "thief", "classId": "rogue", "nameKey": "subclass.rogue.thief.name" },
+
+    { "id": "aberrant", "classId": "sorcerer", "nameKey": "subclass.sorcerer.aberrant.name" },
+    { "id": "clockwork", "classId": "sorcerer", "nameKey": "subclass.sorcerer.clockwork.name" },
+    { "id": "draconic", "classId": "sorcerer", "nameKey": "subclass.sorcerer.draconic.name" },
+    { "id": "wild-magic", "classId": "sorcerer", "nameKey": "subclass.sorcerer.wildMagic.name" },
+
+    { "id": "archfey", "classId": "warlock", "nameKey": "subclass.warlock.archfey.name" },
+    { "id": "celestial", "classId": "warlock", "nameKey": "subclass.warlock.celestial.name" },
+    { "id": "fiend", "classId": "warlock", "nameKey": "subclass.warlock.fiend.name" },
+    { "id": "great-old-one", "classId": "warlock", "nameKey": "subclass.warlock.greatOldOne.name" },
+
+    { "id": "abjurer", "classId": "wizard", "nameKey": "subclass.wizard.abjurer.name" },
+    { "id": "diviner", "classId": "wizard", "nameKey": "subclass.wizard.diviner.name" },
+    { "id": "evoker", "classId": "wizard", "nameKey": "subclass.wizard.evoker.name" },
+    { "id": "illusionist", "classId": "wizard", "nameKey": "subclass.wizard.illusionist.name" }
+  ]
+}

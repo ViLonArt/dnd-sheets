@@ -23,12 +23,15 @@ import { CharacterTabs } from '@/features/character-sheet/CharacterTabs'
 import { CharacterToolbar } from '@/features/character-sheet/CharacterToolbar'
 import { CoreTab } from '@/features/character-sheet/CoreTab'
 import { InventoryTab } from '@/features/character-sheet/InventoryTab'
+import { LevelUpWizard } from '@/features/character-sheet/LevelUpWizard'
+import { CharacterCreationWizard } from '@/features/character-sheet/CharacterCreationWizard'
 import { PortraitCropper } from '@/features/character-sheet/PortraitCropper'
 import { SpellsTab } from '@/features/character-sheet/SpellsTab'
 import { ErrorBanner, PaperContainer } from '@/components/ui'
 import type { Character } from '@/types/character'
 import type { SpellLocale } from '@/utils/spellLocale'
 import { translateSpellToLocale } from '@/utils/spellTranslation'
+import { t } from '@/utils'
 
 const SPELL_LOCALE_STORAGE_KEY = 'dnd-sheets:spell-locale'
 
@@ -43,6 +46,8 @@ export default function CharacterSheetPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [spellLocale, setSpellLocale] = useState<SpellLocale>('en')
+  const [isLevelUpOpen, setIsLevelUpOpen] = useState(false)
+  const [isCreationWizardOpen, setIsCreationWizardOpen] = useState(false)
   const { character, updateField, updateCharacter, handleExport, handleImport, reset } =
     useCharacterForm(initialCharacterData)
   const { exportToPdf, exportToPng, isExporting } = useExportToImage()
@@ -138,6 +143,23 @@ export default function CharacterSheetPage() {
       applySpellLocale(nextLocale, character.spells)
     },
     [applySpellLocale, character.spells]
+  )
+
+  const uiLocale = 'fr'
+
+  const handleApplyLevelUp = useCallback(
+    (nextCharacter: Character) => {
+      updateCharacter(nextCharacter)
+    },
+    [updateCharacter]
+  )
+
+  const handleCreationWizardComplete = useCallback(
+    (nextCharacter: Character) => {
+      updateCharacter(nextCharacter)
+      setIsCreationWizardOpen(false)
+    },
+    [updateCharacter]
   )
 
   useEffect(() => {
@@ -249,14 +271,15 @@ export default function CharacterSheetPage() {
         <CharacterToolbar
           isExporting={isExporting}
           isSaving={isSaving}
-            spellLocale={spellLocale}
-            onSpellLocaleChange={handleSpellLocaleChange}
+          spellLocale={spellLocale}
+          onSpellLocaleChange={handleSpellLocaleChange}
           onExport={handleExportClick}
           onImportFile={handleFileChange}
           onReset={handleReset}
           onDownloadPdf={handleDownloadPdf}
           onDownloadPng={handleDownloadPng}
           onSave={handleSave}
+          onCreateWithWizard={isNew ? () => setIsCreationWizardOpen(true) : undefined}
         />
 
         {combinedError && <ErrorBanner message={combinedError} />}
@@ -294,6 +317,8 @@ export default function CharacterSheetPage() {
             onLongRest={handleLongRest}
             onPortraitSelected={handlePortraitSelected}
             onPortraitDelete={handlePortraitDelete}
+            onLevelUp={() => setIsLevelUpOpen(true)}
+            levelUpLabel={t('ui.levelUp.title', uiLocale)}
           />
 
           <CharacterTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -351,6 +376,20 @@ export default function CharacterSheetPage() {
           onClose={handleCropperClose}
           onSave={handleCropperSave}
           aspectRatio={PORTRAIT_ASPECT_RATIO}
+        />
+
+        <LevelUpWizard
+          isOpen={isLevelUpOpen}
+          character={character}
+          locale={uiLocale}
+          onApply={handleApplyLevelUp}
+          onClose={() => setIsLevelUpOpen(false)}
+        />
+        <CharacterCreationWizard
+          isOpen={isCreationWizardOpen}
+          locale={uiLocale}
+          onComplete={handleCreationWizardComplete}
+          onClose={() => setIsCreationWizardOpen(false)}
         />
       </div>
     </div>

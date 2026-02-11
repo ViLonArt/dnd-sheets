@@ -1,0 +1,279 @@
+{
+  "backgrounds": [
+    {
+      "id": "acolyte",
+      "nameKey": "background.acolyte.name",
+      "descriptionKey": "background.acolyte.desc",
+      "name": { "en": "Acolyte", "fr": "Acolyte" },
+      "description": {
+        "en": "You devoted your life to serving a temple, learning sacred rites far from worldly turmoil. Your faith is your shield, and your religious knowledge lights your path.",
+        "fr": "Vous avez consacré votre vie au service d'un temple, vous éloignant de l'agitation du monde pour apprendre les rites sacrés. Votre foi est votre bouclier, et vos connaissances religieuses éclairent votre chemin."
+      },
+      "abilityChoices": ["int", "wis", "cha"],
+      "abilityOptions": ["int", "wis", "cha"],
+      "originFeatId": "magic-initiate",
+      "originFeatList": "cleric",
+      "skills": ["insight", "religion"],
+      "skillChoices": [["insight"], ["religion"]],
+      "tool": { "en": "Calligrapher's Supplies", "fr": "Materiel de calligraphe" },
+      "toolProficiency": "Calligrapher's Supplies"
+    },
+    {
+      "id": "artisan",
+      "nameKey": "background.artisan.name",
+      "descriptionKey": "background.artisan.desc",
+      "name": { "en": "Artisan", "fr": "Artisan" },
+      "description": {
+        "en": "You apprenticed under a master from a young age. Your hands craft objects of beauty and value, and your eye catches flaws others overlook.",
+        "fr": "Vous avez commencé votre apprentissage auprès d'un maître dès votre plus jeune âge. Vos mains sont habiles, capables de créer des objets de beauté et de valeur, et votre oeil repère les défauts que d'autres ignorent."
+      },
+      "abilityChoices": ["str", "dex", "int"],
+      "abilityOptions": ["str", "dex", "int"],
+      "originFeatId": "crafter",
+      "skills": ["investigation", "persuasion"],
+      "skillChoices": [["investigation"], ["persuasion"]],
+      "tool": { "en": "Artisan's Tools (choose one)", "fr": "Outils d'artisan (un type au choix)" },
+      "toolProficiency": "Artisan's Tools"
+    },
+    {
+      "id": "charlatan",
+      "nameKey": "background.charlatan.name",
+      "descriptionKey": "background.charlatan.desc",
+      "name": { "en": "Charlatan", "fr": "Charlatan" },
+      "description": {
+        "en": "You read people and manipulate them. Whether grifter, spy, or storyteller, you know truth is often less useful than a good lie.",
+        "fr": "Vous savez lire les gens et les manipuler. Que vous ayez été un escroc, un espion ou un conteur, vous savez que la vérité est souvent moins utile qu'un mensonge bien construit."
+      },
+      "abilityChoices": ["dex", "con", "cha"],
+      "abilityOptions": ["dex", "con", "cha"],
+      "originFeatId": "skilled",
+      "skills": ["deception", "sleight"],
+      "skillChoices": [["deception"], ["sleight"]],
+      "tool": { "en": "Forgery Kit", "fr": "Kit de contrefacon" },
+      "toolProficiency": "Forgery Kit"
+    },
+    {
+      "id": "criminal",
+      "nameKey": "background.criminal.name",
+      "descriptionKey": "background.criminal.desc",
+      "name": { "en": "Criminal", "fr": "Criminel" },
+      "description": {
+        "en": "You have a past outside the law, surviving in society's shadows. You know the underworld's codes and how to vanish from the guard's sight.",
+        "fr": "Vous avez un passé de hors-la-loi, survivant dans les ombres de la société. Vous connaissez les codes de la pègre et savez comment passer inaperçu lorsque la garde est à vos trousses."
+      },
+      "abilityChoices": ["dex", "con", "int"],
+      "abilityOptions": ["dex", "con", "int"],
+      "originFeatId": "alert",
+      "skills": ["sleight", "stealth"],
+      "skillChoices": [["sleight"], ["stealth"]],
+      "tool": { "en": "Thieves' Tools", "fr": "Outils de voleur" },
+      "toolProficiency": "Thieves' Tools"
+    },
+    {
+      "id": "entertainer",
+      "nameKey": "background.entertainer.name",
+      "descriptionKey": "background.entertainer.desc",
+      "name": { "en": "Entertainer", "fr": "Artiste" },
+      "description": {
+        "en": "You live for the thrill of the stage. Through music, dance, or tale, you captivate crowds and inspire your companions.",
+        "fr": "Vous vivez pour le frisson de la scène. Que ce soit par la musique, la danse ou le récit, vous savez captiver un public et inspirer vos compagnons par votre art."
+      },
+      "abilityChoices": ["str", "dex", "cha"],
+      "abilityOptions": ["str", "dex", "cha"],
+      "originFeatId": "musician",
+      "skills": ["acrobatics", "performance"],
+      "skillChoices": [["acrobatics"], ["performance"]],
+      "tool": { "en": "Musical Instrument", "fr": "Instrument de musique" },
+      "toolProficiency": "Musical Instrument"
+    },
+    {
+      "id": "farmer",
+      "nameKey": "background.farmer.name",
+      "descriptionKey": "background.farmer.desc",
+      "name": { "en": "Farmer", "fr": "Fermier" },
+      "description": {
+        "en": "You grew up working the land, your endurance forged by toil and the seasons. You understand nature's cycles better than most.",
+        "fr": "Vous avez grandi en travaillant la terre, forgeant votre endurance par le labeur et les caprices des saisons. Vous comprenez les cycles de la nature mieux que quiconque."
+      },
+      "abilityChoices": ["str", "con", "wis"],
+      "abilityOptions": ["str", "con", "wis"],
+      "originFeatId": "tough",
+      "skills": ["animalHandling", "nature"],
+      "skillChoices": [["animalHandling"], ["nature"]],
+      "tool": { "en": "Carpenter's Tools", "fr": "Outils de charpentier" },
+      "toolProficiency": "Carpenter's Tools"
+    },
+    {
+      "id": "guard",
+      "nameKey": "background.guard.name",
+      "descriptionKey": "background.guard.desc",
+      "name": { "en": "Guard", "fr": "Garde" },
+      "description": {
+        "en": "You served in a militia or city watch, trained to observe, protect, and keep order. You remain vigilant even when others sleep.",
+        "fr": "Vous avez servi dans une milice ou une garde urbaine, entraîné à surveiller, protéger et maintenir l'ordre. Vous restez vigilant même lorsque les autres dorment."
+      },
+      "abilityChoices": ["str", "int", "wis"],
+      "abilityOptions": ["str", "int", "wis"],
+      "originFeatId": "alert",
+      "skills": ["athletics", "perception"],
+      "skillChoices": [["athletics"], ["perception"]],
+      "tool": { "en": "Gaming Set", "fr": "Jeu de societe" },
+      "toolProficiency": "Gaming Set"
+    },
+    {
+      "id": "guide",
+      "nameKey": "background.guide.name",
+      "descriptionKey": "background.guide.desc",
+      "name": { "en": "Guide", "fr": "Guide" },
+      "description": {
+        "en": "The wild is your home. You guided travelers through dangerous terrain, finding paths where others see only obstacles.",
+        "fr": "La nature sauvage est votre maison. Vous avez passé votre vie à guider les voyageurs à travers des terrains dangereux, trouvant des chemins là où d'autres ne voient que des obstacles."
+      },
+      "abilityChoices": ["dex", "con", "wis"],
+      "abilityOptions": ["dex", "con", "wis"],
+      "originFeatId": "magic-initiate",
+      "originFeatList": "druid",
+      "skills": ["stealth", "survival"],
+      "skillChoices": [["stealth"], ["survival"]],
+      "tool": { "en": "Cartographer's Tools", "fr": "Outils de cartographe" },
+      "toolProficiency": "Cartographer's Tools"
+    },
+    {
+      "id": "hermit",
+      "nameKey": "background.hermit.name",
+      "descriptionKey": "background.hermit.desc",
+      "name": { "en": "Hermit", "fr": "Ermite" },
+      "description": {
+        "en": "You lived in isolation, contemplating the multiverse's mysteries. Solitude granted you unique insight and a deep knowledge of healing.",
+        "fr": "Vous avez vécu dans l'isolement, contemplant les mystères du multivers. Cette solitude vous a offert des perspectives uniques et une connaissance profonde des soins."
+      },
+      "abilityChoices": ["con", "wis", "cha"],
+      "abilityOptions": ["con", "wis", "cha"],
+      "originFeatId": "healer",
+      "skills": ["medicine", "religion"],
+      "skillChoices": [["medicine"], ["religion"]],
+      "tool": { "en": "Herbalism Kit", "fr": "Kit d'herboriste" },
+      "toolProficiency": "Herbalism Kit"
+    },
+    {
+      "id": "merchant",
+      "nameKey": "background.merchant.name",
+      "descriptionKey": "background.merchant.desc",
+      "name": { "en": "Merchant", "fr": "Marchand" },
+      "description": {
+        "en": "You traveled to buy and sell, learning the value of everything. You know how to bargain, appraise, and when to trust your luck.",
+        "fr": "Vous avez voyagé pour acheter et vendre, apprenant la valeur de chaque chose. Vous savez négocier, estimer les biens et, surtout, quand tenter votre chance."
+      },
+      "abilityChoices": ["con", "int", "cha"],
+      "abilityOptions": ["con", "int", "cha"],
+      "originFeatId": "lucky",
+      "skills": ["animalHandling", "persuasion"],
+      "skillChoices": [["animalHandling"], ["persuasion"]],
+      "tool": { "en": "Navigator's Tools", "fr": "Outils de navigateur" },
+      "toolProficiency": "Navigator's Tools"
+    },
+    {
+      "id": "noble",
+      "nameKey": "background.noble.name",
+      "descriptionKey": "background.noble.desc",
+      "name": { "en": "Noble", "fr": "Noble" },
+      "description": {
+        "en": "Born to privilege, you are at home in courts and high society. Your name opens doors, and your education is broad and cultured.",
+        "fr": "Né dans le privilège, vous êtes habitué aux cours et à la haute société. Votre nom ouvre des portes, et votre éducation vous a donné une vaste culture."
+      },
+      "abilityChoices": ["str", "int", "cha"],
+      "abilityOptions": ["str", "int", "cha"],
+      "originFeatId": "skilled",
+      "skills": ["history", "persuasion"],
+      "skillChoices": [["history"], ["persuasion"]],
+      "tool": { "en": "Gaming Set", "fr": "Jeu de societe" },
+      "toolProficiency": "Gaming Set"
+    },
+    {
+      "id": "sage",
+      "nameKey": "background.sage.name",
+      "descriptionKey": "background.sage.desc",
+      "name": { "en": "Sage", "fr": "Sage" },
+      "description": {
+        "en": "You spent your life studying ancient scrolls and tomes, seeking the secrets of magic and the multiverse's history.",
+        "fr": "Vous avez passé votre vie à étudier les parchemins et les tomes anciens. Vous cherchez à comprendre les secrets de la magie et l'histoire du multivers."
+      },
+      "abilityChoices": ["con", "int", "wis"],
+      "abilityOptions": ["con", "int", "wis"],
+      "originFeatId": "magic-initiate",
+      "originFeatList": "wizard",
+      "skills": ["arcana", "history"],
+      "skillChoices": [["arcana"], ["history"]],
+      "tool": { "en": "Calligrapher's Supplies", "fr": "Materiel de calligraphe" },
+      "toolProficiency": "Calligrapher's Supplies"
+    },
+    {
+      "id": "sailor",
+      "nameKey": "background.sailor.name",
+      "descriptionKey": "background.sailor.desc",
+      "name": { "en": "Sailor", "fr": "Marin" },
+      "description": {
+        "en": "The sea is your mistress. You weathered storms and sea monsters, learning to fight with whatever is at hand on a rolling deck.",
+        "fr": "La mer est votre maîtresse. Vous avez affronté des tempêtes et des monstres marins, apprenant à vous battre avec tout ce qui vous tombe sous la main sur un pont mouvant."
+      },
+      "abilityChoices": ["str", "dex", "wis"],
+      "abilityOptions": ["str", "dex", "wis"],
+      "originFeatId": "tavern-brawler",
+      "skills": ["acrobatics", "perception"],
+      "skillChoices": [["acrobatics"], ["perception"]],
+      "tool": { "en": "Navigator's Tools", "fr": "Outils de navigateur" },
+      "toolProficiency": "Navigator's Tools"
+    },
+    {
+      "id": "scribe",
+      "nameKey": "background.scribe.name",
+      "descriptionKey": "background.scribe.desc",
+      "name": { "en": "Scribe", "fr": "Scribe" },
+      "description": {
+        "en": "Master of letters, you copied texts, drafted contracts, and archived knowledge. Your eye for detail is unmatched.",
+        "fr": "Maître des lettres, vous avez copié des textes, rédigé des contrats et archivé le savoir. Votre souci du détail est inégalé."
+      },
+      "abilityChoices": ["dex", "int", "wis"],
+      "abilityOptions": ["dex", "int", "wis"],
+      "originFeatId": "skilled",
+      "skills": ["investigation", "perception"],
+      "skillChoices": [["investigation"], ["perception"]],
+      "tool": { "en": "Calligrapher's Supplies", "fr": "Materiel de calligraphe" },
+      "toolProficiency": "Calligrapher's Supplies"
+    },
+    {
+      "id": "soldier",
+      "nameKey": "background.soldier.name",
+      "descriptionKey": "background.soldier.desc",
+      "name": { "en": "Soldier", "fr": "Soldat" },
+      "description": {
+        "en": "War forged your youth. You trained with weapons and military discipline, facing enemies on the battlefield.",
+        "fr": "La guerre a forgé votre jeunesse. Vous avez été entraîné au maniement des armes et à la discipline militaire, faisant face à l'ennemi sur le champ de bataille."
+      },
+      "abilityChoices": ["str", "dex", "con"],
+      "abilityOptions": ["str", "dex", "con"],
+      "originFeatId": "savage-attacker",
+      "skills": ["athletics", "intimidation"],
+      "skillChoices": [["athletics"], ["intimidation"]],
+      "tool": { "en": "Gaming Set", "fr": "Jeu de societe" },
+      "toolProficiency": "Gaming Set"
+    },
+    {
+      "id": "wayfarer",
+      "nameKey": "background.wayfarer.name",
+      "descriptionKey": "background.wayfarer.desc",
+      "name": { "en": "Wayfarer", "fr": "Voyageur" },
+      "description": {
+        "en": "You grew up on the road, traveling from town to town. You rely on charm, guile, and outrageous luck to survive far from home.",
+        "fr": "Vous avez grandi sur les routes, voyageant de ville en ville. Vous comptez sur votre charme, votre ruse et une chance insolente pour survivre loin de chez vous."
+      },
+      "abilityChoices": ["dex", "wis", "cha"],
+      "abilityOptions": ["dex", "wis", "cha"],
+      "originFeatId": "lucky",
+      "skills": ["insight", "stealth"],
+      "skillChoices": [["insight"], ["stealth"]],
+      "tool": { "en": "Thieves' Tools", "fr": "Outils de voleur" },
+      "toolProficiency": "Thieves' Tools"
+    }
+  ]
+}

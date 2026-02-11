@@ -1,0 +1,260 @@
+{
+  "feats": [
+    {
+      "id": "alert",
+      "nameKey": "feat.alert.name",
+      "descriptionKey": "feat.alert.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "crafter",
+      "nameKey": "feat.crafter.name",
+      "descriptionKey": "feat.crafter.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "healer",
+      "nameKey": "feat.healer.name",
+      "descriptionKey": "feat.healer.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "lucky",
+      "nameKey": "feat.lucky.name",
+      "descriptionKey": "feat.lucky.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "magic-initiate",
+      "nameKey": "feat.magicInitiate.name",
+      "descriptionKey": "feat.magicInitiate.desc",
+      "category": "origin",
+      "repeatable": true
+    },
+    {
+      "id": "musician",
+      "nameKey": "feat.musician.name",
+      "descriptionKey": "feat.musician.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "savage-attacker",
+      "nameKey": "feat.savageAttacker.name",
+      "descriptionKey": "feat.savageAttacker.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "skilled",
+      "nameKey": "feat.skilled.name",
+      "descriptionKey": "feat.skilled.desc",
+      "category": "origin",
+      "repeatable": true
+    },
+    {
+      "id": "tavern-brawler",
+      "nameKey": "feat.tavernBrawler.name",
+      "descriptionKey": "feat.tavernBrawler.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+    {
+      "id": "tough",
+      "nameKey": "feat.tough.name",
+      "descriptionKey": "feat.tough.desc",
+      "category": "origin",
+      "repeatable": false
+    },
+
+    {
+      "id": "ability-score-improvement",
+      "nameKey": "feat.asi.name",
+      "descriptionKey": "feat.asi.desc",
+      "category": "general",
+      "repeatable": true,
+      "tags": ["asi"]
+    },
+    {
+      "id": "crossbow-expert",
+      "nameKey": "feat.crossbowExpert.name",
+      "descriptionKey": "feat.crossbowExpert.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "elemental-adept",
+      "nameKey": "feat.elementalAdept.name",
+      "descriptionKey": "feat.elementalAdept.desc",
+      "category": "general",
+      "repeatable": true
+    },
+    {
+      "id": "fey-touched",
+      "nameKey": "feat.feyTouched.name",
+      "descriptionKey": "feat.feyTouched.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "shadow-touched",
+      "nameKey": "feat.shadowTouched.name",
+      "descriptionKey": "feat.shadowTouched.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "great-weapon-master",
+      "nameKey": "feat.greatWeaponMaster.name",
+      "descriptionKey": "feat.greatWeaponMaster.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "heavy-armor-master",
+      "nameKey": "feat.heavyArmorMaster.name",
+      "descriptionKey": "feat.heavyArmorMaster.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "polearm-master",
+      "nameKey": "feat.polearmMaster.name",
+      "descriptionKey": "feat.polearmMaster.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "sentinel",
+      "nameKey": "feat.sentinel.name",
+      "descriptionKey": "feat.sentinel.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "sharpshooter",
+      "nameKey": "feat.sharpshooter.name",
+      "descriptionKey": "feat.sharpshooter.desc",
+      "category": "general",
+      "repeatable": false
+    },
+    {
+      "id": "war-caster",
+      "nameKey": "feat.warCaster.name",
+      "descriptionKey": "feat.warCaster.desc",
+      "category": "general",
+      "repeatable": false
+    },
+
+    {
+      "id": "fighting-style-archery",
+      "nameKey": "feat.fightingStyle.archery.name",
+      "descriptionKey": "feat.fightingStyle.archery.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-blind-fighting",
+      "nameKey": "feat.fightingStyle.blindFighting.name",
+      "descriptionKey": "feat.fightingStyle.blindFighting.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-defense",
+      "nameKey": "feat.fightingStyle.defense.name",
+      "descriptionKey": "feat.fightingStyle.defense.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-dueling",
+      "nameKey": "feat.fightingStyle.dueling.name",
+      "descriptionKey": "feat.fightingStyle.dueling.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-great-weapon-fighting",
+      "nameKey": "feat.fightingStyle.greatWeaponFighting.name",
+      "descriptionKey": "feat.fightingStyle.greatWeaponFighting.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-interception",
+      "nameKey": "feat.fightingStyle.interception.name",
+      "descriptionKey": "feat.fightingStyle.interception.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-protection",
+      "nameKey": "feat.fightingStyle.protection.name",
+      "descriptionKey": "feat.fightingStyle.protection.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-thrown-weapon-fighting",
+      "nameKey": "feat.fightingStyle.thrownWeapon.name",
+      "descriptionKey": "feat.fightingStyle.thrownWeapon.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-two-weapon-fighting",
+      "nameKey": "feat.fightingStyle.twoWeapon.name",
+      "descriptionKey": "feat.fightingStyle.twoWeapon.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+    {
+      "id": "fighting-style-unarmed-fighting",
+      "nameKey": "feat.fightingStyle.unarmed.name",
+      "descriptionKey": "feat.fightingStyle.unarmed.desc",
+      "category": "fightingStyle",
+      "repeatable": false
+    },
+
+    {
+      "id": "epic-boon-combat-prowess",
+      "nameKey": "feat.epicBoon.combatProwess.name",
+      "descriptionKey": "feat.epicBoon.combatProwess.desc",
+      "category": "epicBoon",
+      "repeatable": false
+    },
+    {
+      "id": "epic-boon-dimensional-travel",
+      "nameKey": "feat.epicBoon.dimensionalTravel.name",
+      "descriptionKey": "feat.epicBoon.dimensionalTravel.desc",
+      "category": "epicBoon",
+      "repeatable": false
+    },
+    {
+      "id": "epic-boon-fate",
+      "nameKey": "feat.epicBoon.fate.name",
+      "descriptionKey": "feat.epicBoon.fate.desc",
+      "category": "epicBoon",
+      "repeatable": false
+    },
+    {
+      "id": "epic-boon-spell-recall",
+      "nameKey": "feat.epicBoon.spellRecall.name",
+      "descriptionKey": "feat.epicBoon.spellRecall.desc",
+      "category": "epicBoon",
+      "repeatable": false
+    },
+    {
+      "id": "epic-boon-truesight",
+      "nameKey": "feat.epicBoon.truesight.name",
+      "descriptionKey": "feat.epicBoon.truesight.desc",
+      "category": "epicBoon",
+      "repeatable": false
+    }
+  ]
+}

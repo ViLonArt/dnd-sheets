@@ -378,7 +378,7 @@ export const createLevelUpDraft = (
       })
     }
 
-    if (classDef.fightingStyleLevels.includes(nextClassLevel)) {
+    if (classDef.fightingStyleLevels?.includes(nextClassLevel)) {
       choices.push({
         id: `fightingStyle-${classId}-${nextClassLevel}`,
         type: 'fightingStyle',
@@ -412,7 +412,7 @@ export const createLevelUpDraft = (
       })
     }
 
-    classDef.weaponMastery
+    (classDef.weaponMastery ?? [])
       .filter((grant) => grant.level === nextClassLevel)
       .forEach((grant, index) => {
         const options = buildWeaponOptions(nextCharacter, grant.filters, rules)
@@ -775,6 +775,7 @@ export const applyLevelUpDecisions = (
 
     const decision = decisions.find((entry) => entry.choiceId === choice.id)
     if (!decision) {
+      if (choice.minSelections === 0) return
       addValidationError(errors, 'choice_missing', 'error.levelUp.choiceMissing', {
         choiceId: choice.id,
       })
@@ -790,7 +791,8 @@ export const applyLevelUpDecisions = (
       return
     }
 
-    if (choice.type !== 'featureSpell') {
+    // Spell choices (featureSpell, bardSpellLearn) get options from spell search, not choice.options
+    if (choice.type !== 'featureSpell' && choice.type !== 'bardSpellLearn') {
       const optionMap = new Map(choice.options.map((option) => [option.id, option]))
       for (const optionId of decision.optionIds) {
         if (!optionMap.has(optionId)) {

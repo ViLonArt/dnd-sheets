@@ -449,6 +449,7 @@ const applySpellChoices = (
   const index = SPELL_INDEX[locale] ?? SPELL_INDEX.en
   let next = [...spells]
 
+  const replacedIds = new Set<string>()
   for (const choiceKey of Object.keys(choices)) {
     if (!choiceKey.startsWith('class-bard-replace-remove-')) continue
     const addKey = choiceKey.replace('replace-remove-', 'replace-add-')
@@ -458,7 +459,8 @@ const applySpellChoices = (
       continue
     const removeId = removeIds[0]
     const addId = addIds[0]
-    if (!addId) continue
+    if (!removeId || !addId) continue
+    replacedIds.add(removeId)
     next = next.filter((s) => s.id !== removeId)
     const spell = index.get(addId)
     if (spell) {
@@ -472,6 +474,7 @@ const applySpellChoices = (
     if (choiceKey.startsWith('class-bard-replace-')) continue
     const source = getSpellSourceFromChoiceKey(choiceKey)
     for (const id of ids) {
+      if (replacedIds.has(id)) continue
       const spell = index.get(id)
       if (spell && !existingIds.has(id)) {
         next.push({ ...spell, sourceId: source })
@@ -560,10 +563,13 @@ export const applyAdvancementToCharacter = (
     advancement.choices
   )
 
-  const hasSpellChoices = Object.keys(advancement.choices).some(isSpellChoiceKey)
+  const hasSpellChoices =
+    Object.keys(advancement.choices).some(isSpellChoiceKey) ||
+    Object.keys(advancement.choices).some((k) => k.startsWith('class-bard-replace-'))
+  const baseSpells = character.spells ?? []
   const nextSpells = hasSpellChoices
-    ? applySpellChoices(character.spells, advancement.choices, locale)
-    : character.spells
+    ? applySpellChoices(baseSpells, advancement.choices, locale)
+    : baseSpells
 
   const toolLabels: Record<string, string> = {
     bagpipes: 'Bagpipes',

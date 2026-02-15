@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   useCharacterForm,
   useCharacterSheetActions,
   useClassSelection,
   useDerivedStats,
   useExportToImage,
+  useFeaturePropagation,
   useSpellsActions,
   useSpellcastingStats,
   useSpellSlotTotals,
@@ -24,7 +25,7 @@ import { CharacterToolbar } from '@/features/character-sheet/CharacterToolbar'
 import { CoreTab } from '@/features/character-sheet/CoreTab'
 import { InventoryTab } from '@/features/character-sheet/InventoryTab'
 import { LevelUpWizard } from '@/features/character-sheet/LevelUpWizard'
-import { CharacterCreationWizard } from '@/features/character-sheet/CharacterCreationWizard'
+import { GetStartedCard } from '@/features/character-sheet/GetStartedCard'
 import { PortraitCropper } from '@/features/character-sheet/PortraitCropper'
 import { SpellsTab } from '@/features/character-sheet/SpellsTab'
 import { ErrorBanner, PaperContainer } from '@/components/ui'
@@ -47,7 +48,8 @@ export default function CharacterSheetPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [spellLocale, setSpellLocale] = useState<SpellLocale>('en')
   const [isLevelUpOpen, setIsLevelUpOpen] = useState(false)
-  const [isCreationWizardOpen, setIsCreationWizardOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
   const { character, updateField, updateCharacter, handleExport, handleImport, reset } =
     useCharacterForm(initialCharacterData)
   const { exportToPdf, exportToPng, isExporting } = useExportToImage()
@@ -110,6 +112,14 @@ export default function CharacterSheetPage() {
     effectiveHpMax,
   })
 
+  const uiLocale = 'fr'
+
+  useFeaturePropagation({
+    character,
+    updateCharacter,
+    locale: uiLocale,
+  })
+
   const { addSpell, updateSpell, removeSpell, updateSpellSlot, reorderSpells, replaceSpells } =
     useSpellsActions({
     character,
@@ -145,8 +155,6 @@ export default function CharacterSheetPage() {
     [applySpellLocale, character.spells]
   )
 
-  const uiLocale = 'fr'
-
   const handleApplyLevelUp = useCallback(
     (nextCharacter: Character) => {
       updateCharacter(nextCharacter)
@@ -154,13 +162,6 @@ export default function CharacterSheetPage() {
     [updateCharacter]
   )
 
-  const handleCreationWizardComplete = useCallback(
-    (nextCharacter: Character) => {
-      updateCharacter(nextCharacter)
-      setIsCreationWizardOpen(false)
-    },
-    [updateCharacter]
-  )
 
   useEffect(() => {
     const stored =
@@ -182,15 +183,30 @@ export default function CharacterSheetPage() {
     applySpellLocale(spellLocale, character.spells)
   }, [spellLocale, character.spells, applySpellLocale])
 
+  const receivedCharacterFromCreation = useRef(false)
+
+  useEffect(() => {
+    const stateCharacter = (location.state as { character?: Character })?.character
+    if (stateCharacter) {
+      receivedCharacterFromCreation.current = true
+      setInitialCharacterData(stateCharacter)
+      navigate('/character', { replace: true, state: undefined })
+    }
+  }, [location.state, navigate])
+
   useEffect(() => {
     const loadSheet = async () => {
+      const hasStateCharacter = !!(location.state as { character?: Character })?.character
       if (isNew || !id) {
         setSheetId(null)
-        setInitialCharacterData(undefined)
+        if (!hasStateCharacter && !receivedCharacterFromCreation.current) {
+          setInitialCharacterData(undefined)
+        }
         setSaveError(null)
         return
       }
 
+      receivedCharacterFromCreation.current = false
       setIsLoading(true)
       setSaveError(null)
       try {
@@ -207,7 +223,7 @@ export default function CharacterSheetPage() {
     }
 
     loadSheet()
-  }, [id, isNew])
+  }, [id, isNew, location.state])
 
   const uploadPortraitIfNeeded = async (currentCharacter: Character) => {
     const portrait = currentCharacter.portrait
@@ -265,6 +281,12 @@ export default function CharacterSheetPage() {
 
   const combinedError = saveError || error
 
+  const isEmptyCharacter =
+    isNew &&
+    !character.name &&
+    (!character.advancement?.classes?.length || character.advancement.classes.length === 0) &&
+    character.class === ''
+
   return (
     <div className="min-h-screen p-5 bg-gray-200">
       <div className="max-w-[1100px] mx-auto flex flex-col gap-3">
@@ -279,10 +301,18 @@ export default function CharacterSheetPage() {
           onDownloadPdf={handleDownloadPdf}
           onDownloadPng={handleDownloadPng}
           onSave={handleSave}
-          onCreateWithWizard={isNew ? () => setIsCreationWizardOpen(true) : undefined}
+          onCreateWithWizard={isNew ? () => navigate('/character/new') : undefined}
         />
 
         {combinedError && <ErrorBanner message={combinedError} />}
+
+        {isEmptyCharacter && !isLoading && (
+          <GetStartedCard
+            onCreateNew={() => navigate('/character/new')}
+            onImportFile={handleFileChange}
+            locale={uiLocale}
+          />
+        )}
 
         {isLoading && (
           <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
@@ -290,6 +320,7 @@ export default function CharacterSheetPage() {
           </div>
         )}
 
+        {!isEmptyCharacter && (
         <div ref={sheetRef}>
           <PaperContainer>
           <CharacterHeaderSection
@@ -369,6 +400,7 @@ export default function CharacterSheetPage() {
             />
           )}
         </div>
+        )}
 
         <PortraitCropper
           isOpen={isCropperOpen}
@@ -384,12 +416,6 @@ export default function CharacterSheetPage() {
           locale={uiLocale}
           onApply={handleApplyLevelUp}
           onClose={() => setIsLevelUpOpen(false)}
-        />
-        <CharacterCreationWizard
-          isOpen={isCreationWizardOpen}
-          locale={uiLocale}
-          onComplete={handleCreationWizardComplete}
-          onClose={() => setIsCreationWizardOpen(false)}
         />
       </div>
     </div>

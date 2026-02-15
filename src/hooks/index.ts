@@ -13,4 +13,5 @@ export { useSpellsActions } from './useSpellsActions'
 export { useSpellSlotTotals } from './useSpellSlotTotals'
 export { useOutsideClick } from './useOutsideClick'
 export { useDragPreview } from './useDragPreview'
+export { useFeaturePropagation } from './useFeaturePropagation'
 

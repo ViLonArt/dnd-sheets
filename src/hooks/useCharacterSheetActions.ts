@@ -45,12 +45,13 @@ export function useCharacterSheetActions({
       const nextHp = type === 'long' ? maxHp : Math.min(maxHp, currentHp + healed)
       const nextFeatures = character.classFeatures.map((feature) => {
         if (!feature.resource) return feature
-        if (type !== 'long' && feature.resource.reset !== 'short') return feature
+        if (type === 'short' && feature.resource.reset !== 'short') return feature
+        const restored = feature.resource.max
         return {
           ...feature,
           resource: {
             ...feature.resource,
-            current: 0,
+            current: restored,
           },
         }
       })

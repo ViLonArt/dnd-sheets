@@ -24,6 +24,9 @@ import type {
   WeaponDefinition,
   BackgroundDefinition,
 } from './advancementTypes'
+import { getClassFeaturesForLevel } from '@/data/classFeatureRegistry'
+import { BARD_SUBCLASS_FEATURES } from '@/data/bardSubclassFeatures'
+import { getBardSpells } from '@/data/bardSpells2024'
 
 const DEFAULT_ASI_LEVELS = [4, 8, 12, 16, 19]
 
@@ -68,6 +71,16 @@ const getFullCasterSlots = (effectiveLevel: number): Record<number, number> => {
   return Object.fromEntries(
     Array.from({ length: 9 }, (_, slotIndex) => [slotIndex + 1, slots[slotIndex] ?? 0])
   )
+}
+
+/** Max spell level a full caster can learn at given character level (from spell slot table). */
+export const getMaxSpellLevelForFullCaster = (characterLevel: number): number => {
+  const index = Math.max(0, Math.min(19, characterLevel - 1))
+  const slots = spellSlotsData.fullCaster[index] ?? []
+  for (let i = 8; i >= 0; i--) {
+    if ((slots[i] ?? 0) > 0) return i + 1
+  }
+  return 1
 }
 
 const getPactMagicSlots = (warlockLevel: number): Record<number, number> => {
@@ -349,18 +362,19 @@ export const createLevelUpDraft = (
       classDef.skillChoicePool?.length
     ) {
       const choiceId = `class-${classId}-skill-${nextClassLevel}`
+      const count = classDef.skillChoiceCount ?? 1
       choices.push({
         id: choiceId,
         type: 'classSkill',
-        labelKey: 'choice.classSkill',
+        labelKey: count > 1 ? 'choice.bardSkills' : 'choice.classSkill',
         level: nextClassLevel,
         source: { type: 'class', id: classId },
         options: classDef.skillChoicePool.map((skillKey) => ({
           id: skillKey,
           nameKey: `skill.${skillKey}`,
         })),
-        minSelections: 1,
-        maxSelections: 1,
+        minSelections: count,
+        maxSelections: count,
       })
     }
 
@@ -374,6 +388,27 @@ export const createLevelUpDraft = (
         options: buildFeatOptions('fightingStyle', rules),
         minSelections: 1,
         maxSelections: 1,
+      })
+    }
+
+    if (
+      classDef.toolChoiceLevels?.includes(nextClassLevel) &&
+      classDef.toolChoicePool?.length
+    ) {
+      const choiceId = `class-${classId}-tool-${nextClassLevel}`
+      const count = classDef.toolChoiceCount ?? 1
+      choices.push({
+        id: choiceId,
+        type: 'backgroundTool',
+        labelKey: 'choice.bardTools',
+        level: nextClassLevel,
+        source: { type: 'class', id: classId },
+        options: classDef.toolChoicePool.map((toolId) => ({
+          id: toolId,
+          nameKey: toolId === 'pan-flute' ? 'tool.panFlute' : `tool.${toolId}`,
+        })),
+        minSelections: count,
+        maxSelections: count,
       })
     }
 
@@ -395,6 +430,172 @@ export const createLevelUpDraft = (
           })
         }
       })
+
+    // Feature choices from class/subclass features (e.g. Bard Expertise, Magical Secrets, Lore skills)
+    const hasSubclassChoiceThisLevel =
+      nextClassLevel === classDef.subclassLevel && !classEntry?.subclassId
+    const subclassChoiceId = hasSubclassChoiceThisLevel
+      ? `subclass-${classId}-${nextClassLevel}`
+      : null
+
+    if (classId === 'bard') {
+      // Base class CHOICE features (no subclass dependency)
+      const baseFeatures = getClassFeaturesForLevel(classId, nextClassLevel)
+      baseFeatures
+        .filter((f) => f.type === 'CHOICE' && f.choices)
+        .forEach((f) => {
+          const choiceId = `feature-${f.id}`
+          if (nextCharacter.choices[choiceId]) return
+          const count = f.choices!.count
+          if (f.choices!.pool === 'Skills') {
+            choices.push({
+              id: choiceId,
+              type: 'featureSkill',
+              labelKey: f.nameKey,
+              level: nextClassLevel,
+              source: { type: 'class', id: classId },
+              options: buildSkillOptions(),
+              minSelections: count,
+              maxSelections: count,
+            })
+          } else if (f.choices!.pool === 'Spells') {
+            choices.push({
+              id: choiceId,
+              type: 'featureSpell',
+              labelKey: f.nameKey,
+              level: nextClassLevel,
+              source: { type: 'class', id: classId },
+              options: [],
+              minSelections: count,
+              maxSelections: count,
+              meta: { sourcePool: 'spellsSrd' },
+            })
+          }
+        })
+
+      // Subclass CHOICE features
+      if (hasSubclassChoiceThisLevel && subclassChoiceId) {
+        Object.entries(BARD_SUBCLASS_FEATURES).forEach(([subclassId, subFeatures]) => {
+          subFeatures
+            .filter((f) => f.level === nextClassLevel && f.type === 'CHOICE' && f.choices)
+            .forEach((f) => {
+              const choiceId = `feature-${f.id}`
+              if (f.choices!.pool === 'Skills') {
+                choices.push({
+                  id: choiceId,
+                  type: 'featureSkill',
+                  labelKey: f.nameKey,
+                  level: nextClassLevel,
+                  source: { type: 'class', id: classId },
+                  options: buildSkillOptions(),
+                  minSelections: f.choices!.count,
+                  maxSelections: f.choices!.count,
+                  dependsOn: { choiceId: subclassChoiceId, value: subclassId },
+                })
+              } else if (f.choices!.pool === 'Spells') {
+                choices.push({
+                  id: choiceId,
+                  type: 'featureSpell',
+                  labelKey: f.nameKey,
+                  level: nextClassLevel,
+                  source: { type: 'class', id: classId },
+                  options: [],
+                  minSelections: f.choices!.count,
+                  maxSelections: f.choices!.count,
+                  meta: { sourcePool: 'spellsSrd' },
+                  dependsOn: { choiceId: subclassChoiceId, value: subclassId },
+                })
+              }
+            })
+        })
+      } else if (classEntry?.subclassId && nextClassLevel >= 3) {
+        const subFeatures = BARD_SUBCLASS_FEATURES[classEntry.subclassId] ?? []
+        subFeatures
+          .filter((f) => f.level === nextClassLevel && f.type === 'CHOICE' && f.choices)
+          .forEach((f) => {
+            const choiceId = `feature-${f.id}`
+            if (nextCharacter.choices[choiceId]) return
+            if (f.choices!.pool === 'Skills') {
+              choices.push({
+                id: choiceId,
+                type: 'featureSkill',
+                labelKey: f.nameKey,
+                level: nextClassLevel,
+                source: { type: 'class', id: classId },
+                options: buildSkillOptions(),
+                minSelections: f.choices!.count,
+                maxSelections: f.choices!.count,
+              })
+            } else if (f.choices!.pool === 'Spells') {
+              choices.push({
+                id: choiceId,
+                type: 'featureSpell',
+                labelKey: f.nameKey,
+                level: nextClassLevel,
+                source: { type: 'class', id: classId },
+                options: [],
+                minSelections: f.choices!.count,
+                maxSelections: f.choices!.count,
+                meta: { sourcePool: 'spellsSrd' },
+              })
+            }
+          })
+      }
+
+      // Bard spell progression: learn 1 new spell each level 2+
+      if (classDef.spellLearnLevels?.includes(nextClassLevel)) {
+        const maxSpellLevel = getMaxSpellLevelForFullCaster(targetLevel)
+        choices.push({
+          id: `class-bard-learn-${nextClassLevel}`,
+          type: 'bardSpellLearn',
+          labelKey: 'choice.bardSpellLearn',
+          level: nextClassLevel,
+          source: { type: 'class', id: classId },
+          options: [],
+          minSelections: 1,
+          maxSelections: 1,
+          meta: { maxSpellLevel: String(maxSpellLevel), sourcePool: 'spellsBard' },
+        })
+      }
+
+      // Bard spell progression: replace 1 known spell each level 2+
+      if (classDef.spellReplaceLevels?.includes(nextClassLevel)) {
+        const currentSpells = request.currentSpells ?? []
+        const bardSpellIds = new Set(getBardSpells('en').map((s) => s.id))
+        const replaceableSpells = currentSpells.filter(
+          (s) =>
+            (bardSpellIds.has(s.id) || s.sourceId === 'Bard') &&
+            (Number(s.level) ?? 0) >= 1
+        )
+        if (replaceableSpells.length > 0) {
+          const maxSpellLevel = getMaxSpellLevelForFullCaster(targetLevel)
+          const removeChoiceId = `class-bard-replace-remove-${nextClassLevel}`
+          choices.push({
+            id: removeChoiceId,
+            type: 'bardSpellReplace',
+            labelKey: 'choice.bardSpellReplaceRemove',
+            level: nextClassLevel,
+            source: { type: 'class', id: classId },
+            options: replaceableSpells.map((s) => ({ id: s.id, nameKey: s.name })),
+            minSelections: 0,
+            maxSelections: 1,
+            meta: { step: 'remove' },
+          })
+          choices.push({
+            id: `class-bard-replace-add-${nextClassLevel}`,
+            type: 'featureSpell',
+            labelKey: 'choice.bardSpellReplaceAdd',
+            level: nextClassLevel,
+            source: { type: 'class', id: classId },
+            options: [],
+            minSelections: 1,
+            maxSelections: 1,
+            meta: { maxSpellLevel: String(maxSpellLevel), sourcePool: 'spellsBard', step: 'add' },
+            showWhenChoiceFilled: removeChoiceId,
+          })
+        }
+      }
+    }
   }
 
   if (nextCharacter.speciesId) {
@@ -563,6 +764,15 @@ export const applyLevelUpDecisions = (
   }
 
   draft.choices.forEach((choice) => {
+    if (choice.dependsOn) {
+      const depDecision = decisions.find((d) => d.choiceId === choice.dependsOn!.choiceId)
+      if (depDecision?.optionIds[0] !== choice.dependsOn!.value) return
+    }
+    if (choice.showWhenChoiceFilled) {
+      const depDecision = decisions.find((d) => d.choiceId === choice.showWhenChoiceFilled)
+      if (!depDecision?.optionIds?.length || !depDecision.optionIds[0]) return
+    }
+
     const decision = decisions.find((entry) => entry.choiceId === choice.id)
     if (!decision) {
       addValidationError(errors, 'choice_missing', 'error.levelUp.choiceMissing', {
@@ -580,14 +790,16 @@ export const applyLevelUpDecisions = (
       return
     }
 
-    const optionMap = new Map(choice.options.map((option) => [option.id, option]))
-    for (const optionId of decision.optionIds) {
-      if (!optionMap.has(optionId)) {
-        addValidationError(errors, 'choice_invalid', 'error.levelUp.choiceInvalid', {
-          choiceId: choice.id,
-          optionId,
-        })
-        return
+    if (choice.type !== 'featureSpell') {
+      const optionMap = new Map(choice.options.map((option) => [option.id, option]))
+      for (const optionId of decision.optionIds) {
+        if (!optionMap.has(optionId)) {
+          addValidationError(errors, 'choice_invalid', 'error.levelUp.choiceInvalid', {
+            choiceId: choice.id,
+            optionId,
+          })
+          return
+        }
       }
     }
 
@@ -642,6 +854,16 @@ export const applyLevelUpDecisions = (
     }
 
     if (choice.type === 'backgroundSkill' || choice.type === 'backgroundTool') {
+      next.choices[choice.id] = [...decision.optionIds]
+      return
+    }
+
+    if (choice.type === 'featureSkill' || choice.type === 'featureSpell') {
+      next.choices[choice.id] = [...decision.optionIds]
+      return
+    }
+
+    if (choice.type === 'bardSpellLearn' || choice.type === 'bardSpellReplace') {
       next.choices[choice.id] = [...decision.optionIds]
       return
     }

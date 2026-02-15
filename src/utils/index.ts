@@ -29,6 +29,15 @@ export {
 export { getDictionary, t } from './i18n'
 
 export {
+  POINT_BUY_TOTAL_POINTS,
+  POINT_BUY_MIN_SCORE,
+  POINT_BUY_MAX_SCORE,
+  POINT_BUY_COST_TABLE,
+  validatePointBuy as validatePointBuyRules,
+  type PointBuyValidationResult,
+} from './pointBuyRules'
+
+export {
   getPointCost,
   getTotalPointCost,
   validatePointBuy,

@@ -156,6 +156,17 @@ export type SpellcastingAttribute = 'INT' | 'WIS' | 'CHA' | 'None'
 /**
  * Advancement state for 2024 rules engine
  */
+/** A choice that must be resolved (e.g. Weapon Mastery, Primal Knowledge) */
+export interface PendingChoice {
+  id: string
+  featureId: string
+  featureNameKey: string
+  pool: string
+  count: number
+  category?: string
+  level: number
+}
+
 export interface AdvancementState {
   classes: Array<{
     classId: string
@@ -168,6 +179,8 @@ export interface AdvancementState {
   speciesId?: string
   backgroundId?: string
   choices: Record<string, string[]>
+  /** Choices requiring user selection (e.g. Weapon Mastery at level 1) */
+  pendingChoices?: PendingChoice[]
   advancementMode?: 'xp' | 'milestone'
 }
 
@@ -436,6 +449,16 @@ export const SpellcastingAttributeSchema = z.enum(['INT', 'WIS', 'CHA', 'None'])
 /**
  * Zod schema for AdvancementState
  */
+export const PendingChoiceSchema = z.object({
+  id: z.string(),
+  featureId: z.string(),
+  featureNameKey: z.string(),
+  pool: z.string(),
+  count: z.number(),
+  category: z.string().optional(),
+  level: z.number(),
+})
+
 export const AdvancementStateSchema = z.object({
   classes: z.array(
     z.object({
@@ -450,6 +473,7 @@ export const AdvancementStateSchema = z.object({
   speciesId: z.string().optional(),
   backgroundId: z.string().optional(),
   choices: z.record(z.string(), z.array(z.string())),
+  pendingChoices: z.array(PendingChoiceSchema).optional(),
   advancementMode: z.enum(['xp', 'milestone']).optional(),
 })
 

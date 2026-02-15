@@ -84,8 +84,16 @@
               "id": "high",
               "nameKey": "species.elf.choice.lineage.high",
               "description": {
-                "en": "Prestidigitation, Detect Magic at level 3, and Misty Step at level 5.",
-                "fr": "Impregnes de la magie du Feywild, ils maitrisent les arcanes et la teleportation mineure."
+                "en": "Choose one Wizard cantrip; Detect Magic at level 3, Misty Step at level 5.",
+                "fr": "Choix d'un sort mineur de magicien ; Détection de la magie au niveau 3, Pas brumeux au niveau 5."
+              },
+              "structuredChoice": {
+                "id": "high-elf-cantrip",
+                "nameKey": "species.elf.choice.lineage.highCantrip.name",
+                "choiceType": "spell",
+                "quantity": 1,
+                "sourcePool": "spellsSrd",
+                "filters": { "spellLevel": 0 }
               }
             },
             {

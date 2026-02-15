@@ -106,6 +106,22 @@ export function CoreTab({
 
         <ClassFeaturesSection
           characterClass={character.class}
+          classId={
+            character.advancement?.classes?.length
+              ? character.advancement.classes.reduce(
+                  (best, c) => (c.level > (best?.level ?? 0) ? c : best),
+                  character.advancement.classes[0]
+                )?.classId
+              : undefined
+          }
+          subclassId={
+            character.advancement?.classes?.length
+              ? character.advancement.classes.reduce(
+                  (best, c) => (c.level > (best?.level ?? 0) ? c : best),
+                  character.advancement.classes[0]
+                )?.subclassId
+              : undefined
+          }
           subclass={character.subclass}
           level={character.level}
           abilities={character.abilities}

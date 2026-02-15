@@ -6,21 +6,26 @@ import { RULESET_2024 } from '@/utils/advancementEngine'
 import { applyAdvancementToCharacter } from '@/utils/advancementMapper'
 import type { AdvancementCharacter, Locale } from '@/utils/advancementTypes'
 import { t } from '@/utils/i18n'
-import { Button, Modal, Select, FieldLabel, Box } from '@/components/ui'
+import { Button, Modal, Select, FieldLabel, Box, ExpandableRow, FilterableList, ChoiceResolver } from '@/components/ui'
 import {
   ABILITIES_ORDER,
   ABILITY_LABELS,
   SKILL_DATA,
 } from '@/features/character-sheet/constants'
+import { MUSICAL_INSTRUMENTS } from '@/data/musicalInstruments'
+import { PointBuyStep } from '@/features/character-sheet/PointBuyStep'
+import { validatePointBuy } from '@/utils/pointBuyRules'
 import { cn } from '@/utils/cn'
-
-const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const
 const MARTIAL_CLASS_IDS = ['barbarian', 'fighter', 'monk', 'paladin', 'ranger', 'rogue']
 
 type CreationDraft = {
   classId: string
   orderId: string
   weaponMasteryIds: string[]
+  bardSkillIds: string[]
+  bardToolIds: string[]
+  bardCantripIds: string[]
+  bardSpellIds: string[]
   backgroundId: string
   abilityIncreases: Array<{ ability: AbilityKey; amount: 1 | 2 }>
   abilityMode: 'twoPlusOne' | 'threePlusOne'
@@ -31,6 +36,8 @@ type CreationDraft = {
   halfElfAbilityIncreases: [AbilityKey, AbilityKey]
   equipmentMode: 'gold' | 'package'
   baseAbilities: Record<AbilityKey, number>
+  /** Structured choice selections: choiceId -> selected option IDs */
+  structuredChoices: Record<string, string[]>
 }
 
 const DEFAULT_BASE_ABILITIES: Record<AbilityKey, number> = {
@@ -46,6 +53,10 @@ const DEFAULT_DRAFT: CreationDraft = {
   classId: '',
   orderId: '',
   weaponMasteryIds: [],
+  bardSkillIds: [],
+  bardToolIds: [],
+  bardCantripIds: [],
+  bardSpellIds: [],
   backgroundId: '',
   abilityIncreases: [],
   abilityMode: 'twoPlusOne',
@@ -56,30 +67,36 @@ const DEFAULT_DRAFT: CreationDraft = {
   halfElfAbilityIncreases: ['str', 'dex'],
   equipmentMode: 'package',
   baseAbilities: { ...DEFAULT_BASE_ABILITIES },
+  structuredChoices: {},
 }
 
 export type CharacterCreationWizardProps = {
-  isOpen: boolean
+  isOpen?: boolean
   locale: Locale
   onComplete: (character: Character) => void
   onClose: () => void
   resetRef?: React.RefObject<{ reset: () => void } | null>
+  /** When true, render as full page instead of modal */
+  asPage?: boolean
 }
 
 export function CharacterCreationWizard({
-  isOpen,
+  isOpen = true,
   locale,
   onComplete,
   onClose,
   resetRef,
+  asPage = false,
 }: CharacterCreationWizardProps) {
   const [step, setStep] = useState(1)
   const [draft, setDraft] = useState<CreationDraft>(() => ({ ...DEFAULT_DRAFT }))
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const resetKeyRef = useRef(0)
 
   const resetWizard = useCallback(() => {
     setStep(1)
     setDraft({ ...DEFAULT_DRAFT })
+    setExpandedId(null)
     resetKeyRef.current += 1
   }, [])
 
@@ -90,6 +107,7 @@ export function CharacterCreationWizard({
   const speciesDef = draft.speciesId ? RULESET_2024.species[draft.speciesId] : undefined
   const isCleric = draft.classId === 'cleric'
   const isDruid = draft.classId === 'druid'
+  const isBard = draft.classId === 'bard'
   const isMartial = MARTIAL_CLASS_IDS.includes(draft.classId)
   const isHuman = draft.speciesId === 'human'
   const isHalfElf = draft.speciesId === 'half-elf'
@@ -136,6 +154,12 @@ export function CharacterCreationWizard({
       if (!draft.classId) return false
       if (isCleric && !draft.orderId) return false
       if (isDruid && !draft.orderId) return false
+      if (isBard) {
+        if (draft.bardSkillIds.length < 3) return false
+        if (draft.bardToolIds.length < 3) return false
+        if (draft.bardCantripIds.length < 2) return false
+        if (draft.bardSpellIds.length < 4) return false
+      }
       if (isMartial) {
         const count = weaponMasteryGrants[0]?.count ?? 0
         if (draft.weaponMasteryIds.length < count) return false
@@ -146,6 +170,12 @@ export function CharacterCreationWizard({
       if (!draft.speciesId) return false
       const choice = speciesDef?.choices?.[0]
       if (choice?.options?.length && !choice.optionsFrom && !draft.lineageChoiceId) return false
+      const highOption = choice?.options?.find((o) => o.id === 'high')
+      const structuredChoice = highOption?.structuredChoice
+      if (draft.lineageChoiceId === 'high' && structuredChoice) {
+        const selected = draft.structuredChoices[structuredChoice.id] ?? []
+        if (selected.length < structuredChoice.quantity) return false
+      }
       const isHalfElf = draft.speciesId === 'half-elf'
       if (isHalfElf && draft.halfElfSkillIds.length < 2) return false
       if (isHalfElf && new Set(draft.halfElfSkillIds).size !== draft.halfElfSkillIds.length)
@@ -158,6 +188,11 @@ export function CharacterCreationWizard({
     }
     if (step === 3) {
       if (!draft.backgroundId) return false
+      const structuredChoices = backgroundDef?.structuredChoices ?? []
+      for (const sc of structuredChoices) {
+        const selected = draft.structuredChoices[sc.id] ?? []
+        if (selected.length < sc.quantity) return false
+      }
       const isHalfElf = draft.speciesId === 'half-elf'
       if (!isHalfElf) {
         const allowed = backgroundDef?.abilityChoices ?? []
@@ -171,13 +206,16 @@ export function CharacterCreationWizard({
       }
       return true
     }
-    if (step === 4) return true
+    if (step === 4) {
+      const pb = validatePointBuy(draft.baseAbilities)
+      return pb.valid
+    }
     if (step === 5) {
       if (isHuman && !draft.humanBonusFeatId) return false
       return true
     }
     return true
-  }, [step, draft, isCleric, isDruid, isMartial, backgroundDef, speciesDef, isHuman, weaponMasteryGrants])
+  }, [step, draft, isCleric, isDruid, isMartial, backgroundDef, speciesDef, isHuman, weaponMasteryGrants, locale])
 
   const handleAbilityModeChange = (mode: 'twoPlusOne' | 'threePlusOne') => {
     const allowed = backgroundDef?.abilityChoices ?? ['str', 'dex', 'con', 'int', 'wis', 'cha']
@@ -245,6 +283,19 @@ export function CharacterCreationWizard({
               : draft.lineageChoiceId
         if (selected) choices[choiceId] = [selected]
       })
+      Object.entries(draft.structuredChoices).forEach(([choiceId, ids]) => {
+        if (ids.length && choiceId.startsWith('high-elf-')) {
+          choices[`species-${speciesDef.id}-${choiceId}-1`] = ids
+        }
+      })
+    }
+    if (backgroundDef?.structuredChoices?.length) {
+      backgroundDef.structuredChoices.forEach((sc) => {
+        const ids = draft.structuredChoices[sc.id]
+        if (ids?.length) {
+          choices[`background-${backgroundDef.id}-${sc.id}`] = ids
+        }
+      })
     }
 
     if (isCleric) {
@@ -252,6 +303,12 @@ export function CharacterCreationWizard({
     }
     if (isDruid) {
       choices[`class-druid-order-1`] = [draft.orderId]
+    }
+    if (draft.classId === 'bard') {
+      if (draft.bardSkillIds.length === 3) choices['class-bard-skill-1'] = [...draft.bardSkillIds]
+      if (draft.bardToolIds.length === 3) choices['class-bard-tool-1'] = [...draft.bardToolIds]
+      if (draft.bardCantripIds.length >= 2) choices['class-bard-cantrips-1'] = [...draft.bardCantripIds]
+      if (draft.bardSpellIds.length >= 4) choices['class-bard-spells-1'] = [...draft.bardSpellIds]
     }
 
     const feats = backgroundDef?.originFeatId ? [backgroundDef.originFeatId] : []
@@ -273,37 +330,53 @@ export function CharacterCreationWizard({
     }
 
     const emptyChar = createEmptyCharacter()
-    const character = applyAdvancementToCharacter(emptyChar, advancement, locale, 'milestone')
+    const character = applyAdvancementToCharacter(emptyChar, advancement, locale, 'milestone', {
+      equipmentMode: draft.equipmentMode,
+    })
     onComplete(character)
     resetWizard()
-    onClose()
+    if (!asPage) onClose()
   }
 
   const renderStep1 = () => (
     <div className="grid gap-4">
       <FieldLabel>{t('ui.creation.selectClass', locale)}</FieldLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {Object.values(RULESET_2024.classes).map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => {
-              updateDraft({
-                classId: c.id,
-                orderId: '',
-                weaponMasteryIds: [],
-              })
-            }}
-            className={cn(
-              'border rounded p-2 text-left text-xs transition-colors',
-              draft.classId === c.id
-                ? 'border-[#7a4b36] bg-[#f3e2c8]'
-                : 'border-[#c9b89c] bg-white/60 hover:bg-white/80'
-            )}
-          >
-            {t(c.nameKey, locale)}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {Object.values(RULESET_2024.classes).map((c) => {
+          const def = RULESET_2024.classes[c.id]
+          const hitDie = def?.hitDie ?? 8
+          const spellcasting = def?.spellcasting ?? 'none'
+          return (
+            <ExpandableRow
+              key={c.id}
+              id={c.id}
+              label={t(c.nameKey, locale)}
+              isSelected={draft.classId === c.id}
+              isExpanded={expandedId === `1-${c.id}`}
+              onToggle={() => {
+                updateDraft({
+                  classId: c.id,
+                  orderId: '',
+                  weaponMasteryIds: [],
+                  bardSkillIds: c.id === 'bard' ? draft.bardSkillIds : [],
+                  bardToolIds: c.id === 'bard' ? draft.bardToolIds : [],
+                  bardCantripIds: c.id === 'bard' ? draft.bardCantripIds : [],
+                  bardSpellIds: c.id === 'bard' ? draft.bardSpellIds : [],
+                })
+                const key = `1-${c.id}`
+                setExpandedId((prev) => (prev === key ? null : key))
+              }}
+              source={`Level 1 ${t(c.nameKey, locale)}`}
+              mechanicsTags={[
+                { label: t('ui.mechanics.hitDie', locale), value: `d${hitDie}` },
+                {
+                  label: t('ui.mechanics.spellcasting', locale),
+                  value: spellcasting === 'none' ? 'None' : spellcasting === 'full' ? 'Full' : spellcasting === 'half' ? 'Half' : 'Pact',
+                },
+              ]}
+            />
+          )
+        })}
       </div>
 
       {isCleric && (
@@ -357,40 +430,96 @@ export function CharacterCreationWizard({
       {isMartial && weaponOptions.length > 0 && (
         <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
           <FieldLabel>{t('ui.creation.selectWeapons', locale)}</FieldLabel>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {weaponOptions.map((w) => (
-              <button
-                key={w.id}
-                type="button"
-                onClick={() => {
-                  const count = weaponMasteryGrants[0]?.count ?? 2
-                  const current = draft.weaponMasteryIds
-                  const idx = current.indexOf(w.id)
-                  let next: string[]
-                  if (idx >= 0) {
-                    next = current.filter((_, i) => i !== idx)
-                  } else if (current.length < count) {
-                    next = [...current, w.id]
-                  } else {
-                    next = current
-                  }
-                  updateDraft({ weaponMasteryIds: next })
-                }}
-                className={cn(
-                  'px-2 py-1 rounded text-xs border',
-                  draft.weaponMasteryIds.includes(w.id)
-                    ? 'border-[#7a4b36] bg-[#f3e2c8]'
-                    : 'border-[#c9b89c] bg-white/60'
-                )}
-              >
-                {t(w.nameKey, locale)}
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-[#7a4b36] mt-1">
-            {t('ui.creation.weaponMastery', locale)}: {draft.weaponMasteryIds.length} / {weaponMasteryGrants[0]?.count ?? 0}
-          </p>
+          <FilterableList
+            items={weaponOptions.map((w) => {
+              const prop = RULESET_2024.weaponMastery.properties[w.mastery]
+              return {
+                id: w.id,
+                label: t(w.nameKey, locale),
+                description: prop ? t(prop.descriptionKey, locale) : undefined,
+                meta: { type: w.type },
+              }
+            })}
+            selectedIds={draft.weaponMasteryIds}
+            onSelectionChange={(ids) => updateDraft({ weaponMasteryIds: ids })}
+            maxSelections={weaponMasteryGrants[0]?.count ?? 2}
+            selectionLabel={`${draft.weaponMasteryIds.length}/${weaponMasteryGrants[0]?.count ?? 0}`}
+            filters={[
+              {
+                key: 'type',
+                label: 'Type',
+                options: [
+                  { id: 'melee', label: 'Melee', value: 'melee' },
+                  { id: 'ranged', label: 'Ranged', value: 'ranged' },
+                ],
+                getItemValue: (item) => (item.meta?.type as string) ?? 'melee',
+              },
+            ]}
+          />
         </div>
+      )}
+
+      {isBard && (
+        <>
+          <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
+            <FieldLabel>{t('choice.bardSkills', locale)}</FieldLabel>
+            <FilterableList
+              items={SKILL_DATA.map((s) => ({ id: s.key, label: s.label, description: undefined }))}
+              selectedIds={draft.bardSkillIds}
+              onSelectionChange={(ids) => updateDraft({ bardSkillIds: ids })}
+              maxSelections={3}
+              selectionLabel={`${draft.bardSkillIds.length}/3`}
+            />
+          </div>
+          <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
+            <FieldLabel>{t('choice.bardTools', locale)}</FieldLabel>
+            <FilterableList
+            items={MUSICAL_INSTRUMENTS.map((inst) => ({
+              id: inst.id,
+              label: t(inst.nameKey as string, locale),
+                description: undefined,
+              }))}
+              selectedIds={draft.bardToolIds}
+              onSelectionChange={(ids) => updateDraft({ bardToolIds: ids })}
+              maxSelections={3}
+              selectionLabel={`${draft.bardToolIds.length}/3`}
+            />
+          </div>
+          <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
+            <FieldLabel>{t('ui.creation.bardCantrips', locale) || 'Choose 2 Cantrips'}</FieldLabel>
+            <ChoiceResolver
+              definition={{
+                id: 'bard-cantrips',
+                nameKey: 'ui.creation.bardCantrips',
+                choiceType: 'spell',
+                quantity: 2,
+                sourcePool: 'spellsBard',
+                filters: { spellLevel: 0 },
+              }}
+              selectedIds={draft.bardCantripIds}
+              onSelectionChange={(ids) => updateDraft({ bardCantripIds: ids })}
+              locale={locale}
+              t={t}
+            />
+          </div>
+          <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
+            <FieldLabel>{t('ui.creation.bardSpells', locale) || 'Choose 4 1st-level Spells'}</FieldLabel>
+            <ChoiceResolver
+              definition={{
+                id: 'bard-spells',
+                nameKey: 'ui.creation.bardSpells',
+                choiceType: 'spell',
+                quantity: 4,
+                sourcePool: 'spellsBard',
+                filters: { spellLevel: 1 },
+              }}
+              selectedIds={draft.bardSpellIds}
+              onSelectionChange={(ids) => updateDraft({ bardSpellIds: ids })}
+              locale={locale}
+              t={t}
+            />
+          </div>
+        </>
       )}
     </div>
   )
@@ -400,44 +529,80 @@ export function CharacterCreationWizard({
   const renderStep2 = () => (
     <div className="grid gap-4">
       <FieldLabel>{t('ui.creation.selectSpecies', locale)}</FieldLabel>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {Object.values(RULESET_2024.species).map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => {
-              updateDraft({
-                speciesId: s.id,
-                lineageChoiceId: '',
-                humanBonusFeatId: '',
-                halfElfSkillIds: [],
-                halfElfAbilityIncreases: ['str', 'dex'],
-              })
-            }}
-            className={cn(
-              'border rounded p-2 text-left text-xs transition-colors',
-              draft.speciesId === s.id ? 'border-[#7a4b36] bg-[#f3e2c8]' : 'border-[#c9b89c] bg-white/60 hover:bg-white/80'
-            )}
-          >
-            {t(s.nameKey, locale)}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {Object.values(RULESET_2024.species).map((s) => {
+          const traitDescriptions =
+            s.traits?.length > 0
+              ? s.traits
+                  .filter((tr) => tr.level === 1)
+                  .map((tr) => ({
+                    name: t(tr.nameKey, locale),
+                    desc: t(tr.descriptionKey, locale),
+                  }))
+              : []
+          const fullDescription = traitDescriptions
+            .map((t) => `${t.name}: ${t.desc}`)
+            .join('\n\n')
+          return (
+            <ExpandableRow
+              key={s.id}
+              id={s.id}
+              label={t(s.nameKey, locale)}
+              isSelected={draft.speciesId === s.id}
+              isExpanded={expandedId === `2-${s.id}`}
+              onToggle={() => {
+                updateDraft({
+                  speciesId: s.id,
+                  lineageChoiceId: '',
+                  humanBonusFeatId: '',
+                  halfElfSkillIds: [],
+                  halfElfAbilityIncreases: ['str', 'dex'],
+                })
+                const key = `2-${s.id}`
+                setExpandedId((prev) => (prev === key ? null : key))
+              }}
+              source={t('term.species', locale)}
+              description={fullDescription || undefined}
+            />
+          )
+        })}
       </div>
 
       {speciesDef?.choices?.[0]?.options && !speciesDef.choices[0].optionsFrom && (
-        <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
-          <FieldLabel>{t(speciesDef.choices[0].nameKey, locale)}</FieldLabel>
-          <Select
-            value={draft.lineageChoiceId}
-            onChange={(e) => updateDraft({ lineageChoiceId: e.target.value })}
-            options={[
-              { value: '', label: '—' },
-              ...speciesDef.choices[0].options!.map((o) => ({
-                value: o.id,
-                label: t(o.nameKey, locale),
-              })),
-            ]}
-          />
+        <div className="space-y-3">
+          <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
+            <FieldLabel>{t(speciesDef.choices[0].nameKey, locale)}</FieldLabel>
+            <Select
+              value={draft.lineageChoiceId}
+              onChange={(e) => {
+                const next = e.target.value
+                const nextStructured = { ...draft.structuredChoices }
+                if (next !== 'high') delete nextStructured['high-elf-cantrip']
+                updateDraft({ lineageChoiceId: next, structuredChoices: nextStructured })
+              }}
+              options={[
+                { value: '', label: '—' },
+                ...speciesDef.choices[0].options!.map((o) => ({
+                  value: o.id,
+                  label: t(o.nameKey, locale),
+                })),
+              ]}
+            />
+          </div>
+          {draft.lineageChoiceId === 'high' &&
+            speciesDef.choices[0].options?.find((o) => o.id === 'high')?.structuredChoice && (
+              <ChoiceResolver
+                definition={speciesDef.choices[0].options!.find((o) => o.id === 'high')!.structuredChoice!}
+                selectedIds={draft.structuredChoices['high-elf-cantrip'] ?? []}
+                onSelectionChange={(ids) =>
+                  updateDraft({
+                    structuredChoices: { ...draft.structuredChoices, 'high-elf-cantrip': ids },
+                  })
+                }
+                locale={locale}
+                t={t}
+              />
+            )}
         </div>
       )}
       {draft.speciesId === 'half-elf' && (speciesDef?.choices?.length ?? 0) >= 2 && (
@@ -524,31 +689,49 @@ export function CharacterCreationWizard({
   const renderStep3 = () => (
     <div className="grid gap-4">
       <FieldLabel>{t('ui.creation.selectBackground', locale)}</FieldLabel>
-      <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto">
-        {Object.values(RULESET_2024.backgrounds).map((bg) => (
-          <button
-            key={bg.id}
-            type="button"
-            onClick={() => {
-              updateDraft({
-                backgroundId: bg.id,
-                abilityMode: 'twoPlusOne',
-                abilityIncreases: [
-                  { ability: (bg.abilityChoices?.[0] ?? 'str') as AbilityKey, amount: 2 },
-                  { ability: (bg.abilityChoices?.[1] ?? 'dex') as AbilityKey, amount: 1 },
-                ],
-              })
-            }}
-            className={cn(
-              'border rounded p-2 text-left text-xs transition-colors',
-              draft.backgroundId === bg.id
-                ? 'border-[#7a4b36] bg-[#f3e2c8]'
-                : 'border-[#c9b89c] bg-white/60 hover:bg-white/80'
-            )}
-          >
-            {getDisplayName(bg as typeof backgroundDef, 'name') || t(bg.nameKey, locale)}
-          </button>
-        ))}
+      <div className="flex flex-col gap-2 min-h-[120px] max-h-[360px] overflow-y-auto">
+        {Object.values(RULESET_2024.backgrounds).map((bg) => {
+          const inlineName =
+            typeof bg.name === 'object' && bg.name && 'en' in bg.name && 'fr' in bg.name
+              ? (bg.name as { en?: string; fr?: string })[locale] ?? (bg.name as { en?: string }).en ?? ''
+              : ''
+          const displayName =
+            inlineName || t(bg.nameKey, locale) || bg.id
+          const description =
+            getDisplayName(bg as typeof backgroundDef, 'description') ||
+            t(bg.descriptionKey ?? bg.nameKey, locale) ||
+            ''
+          const originFeatName = bg.originFeatId
+            ? t(RULESET_2024.feats[bg.originFeatId]?.nameKey ?? '', locale)
+            : null
+          return (
+            <ExpandableRow
+              key={bg.id}
+              id={bg.id}
+              label={displayName}
+              className="shrink-0"
+              isSelected={draft.backgroundId === bg.id}
+              isExpanded={expandedId === `3-${bg.id}`}
+              onToggle={() => {
+                updateDraft({
+                  backgroundId: bg.id,
+                  abilityMode: 'twoPlusOne',
+                  abilityIncreases: [
+                    { ability: (bg.abilityChoices?.[0] ?? 'str') as AbilityKey, amount: 2 },
+                    { ability: (bg.abilityChoices?.[1] ?? 'dex') as AbilityKey, amount: 1 },
+                  ],
+                })
+                const key = `3-${bg.id}`
+                setExpandedId((prev) => (prev === key ? null : key))
+              }}
+              source={t('term.background', locale)}
+              description={description}
+              mechanicsTags={
+                originFeatName ? [{ label: t('term.originFeat', locale), value: originFeatName }] : undefined
+              }
+            />
+          )
+        })}
       </div>
 
       {backgroundDef && (
@@ -563,6 +746,19 @@ export function CharacterCreationWizard({
           </div>
         </Box>
       )}
+
+      {backgroundDef?.structuredChoices?.map((sc) => (
+        <ChoiceResolver
+          key={sc.id}
+          definition={sc}
+          selectedIds={draft.structuredChoices[sc.id] ?? []}
+          onSelectionChange={(ids) =>
+            updateDraft({ structuredChoices: { ...draft.structuredChoices, [sc.id]: ids } })
+          }
+          locale={locale}
+          t={t}
+        />
+      ))}
 
       {backgroundDef && !isHalfElf && (
         <div className="border border-[#c9b89c] rounded p-3 bg-white/60">
@@ -607,44 +803,29 @@ export function CharacterCreationWizard({
     </div>
   )
 
-  const getAvailableForAbility = (ability: AbilityKey) => {
-    const usedByOthers = (ABILITIES_ORDER.filter((a) => a !== ability) as AbilityKey[]).map(
-      (a) => draft.baseAbilities[a]
-    )
-    const current = draft.baseAbilities[ability]
-    return STANDARD_ARRAY.filter(
-      (v) => !usedByOthers.includes(v) || v === current
-    )
-  }
-
   const handleBaseAbilityChange = (ability: AbilityKey, value: number) => {
     updateDraft({
       baseAbilities: { ...draft.baseAbilities, [ability]: value },
     })
   }
 
+  const abilityLabelsForLocale = useMemo(() => {
+    return ABILITIES_ORDER.reduce(
+      (acc, key) => {
+        acc[key] = t(`ability.${key}`, locale) || ABILITY_LABELS[key]
+        return acc
+      },
+      {} as Record<AbilityKey, string>
+    )
+  }, [locale])
+
   const renderStep4 = () => (
-    <div className="grid gap-4">
-      <FieldLabel>{t('ui.creation.abilityScores', locale)} (Standard Array)</FieldLabel>
-      <p className="text-xs text-[#7a4b36]">
-        Assign base scores from 15, 14, 13, 12, 10, 8. Background bonuses (+2/+1 or +1/+1/+1) will be added at the end.
-      </p>
-      <div className="grid grid-cols-2 gap-2">
-        {ABILITIES_ORDER.map((ability) => (
-          <div key={ability} className="flex items-center gap-2">
-            <span className="text-xs w-12">{ABILITY_LABELS[ability]}</span>
-            <Select
-              value={String(draft.baseAbilities[ability])}
-              onChange={(e) => handleBaseAbilityChange(ability, Number(e.target.value))}
-              options={getAvailableForAbility(ability).map((v) => ({
-                value: String(v),
-                label: String(v),
-              }))}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+    <PointBuyStep
+      baseAbilities={draft.baseAbilities}
+      onAbilityChange={handleBaseAbilityChange}
+      abilityLabels={abilityLabelsForLocale}
+      locale={locale}
+    />
   )
 
   const renderStep5 = () => (
@@ -707,10 +888,9 @@ export function CharacterCreationWizard({
     { id: 6, label: t('ui.creation.step.equipment', locale), render: renderStep6 },
   ]
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('ui.creation.title', locale)}>
+  const content = (
       <div key={resetKeyRef.current} className="grid gap-4 text-xs text-[#5c3b22]">
-        <div className="flex gap-2 border-b border-[#c9b89c] pb-2">
+        <div className="flex flex-wrap gap-2 border-b border-[#c9b89c] pb-2">
           {steps.map((s) => (
             <button
               key={s.id}
@@ -754,6 +934,38 @@ export function CharacterCreationWizard({
           </div>
         </div>
       </div>
+  )
+
+  if (asPage) {
+    return (
+      <div className="min-h-screen min-w-full py-6 px-4 sm:px-6 lg:px-8 bg-gray-200">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-xs text-[#7a4b36] hover:text-[#5c3b22] mb-4 flex items-center gap-1"
+            >
+              ← {t('ui.creation.cancel', locale) || 'Cancel'}
+            </button>
+            <h1 className="font-display text-2xl uppercase text-[#5c3b22]">
+              {t('ui.creation.title', locale)}
+            </h1>
+            <p className="text-sm text-[#7a4b36] mt-1">
+              {t('ui.creation.subtitle', locale) || 'Create your D&D 2024 character step by step.'}
+            </p>
+          </div>
+          <div className="border border-[#c9b89c] bg-white/90 rounded-lg p-6 sm:p-8 shadow-sm">
+            {content}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('ui.creation.title', locale)}>
+      {content}
     </Modal>
   )
 }

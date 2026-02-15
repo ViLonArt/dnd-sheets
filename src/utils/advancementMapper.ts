@@ -1,8 +1,11 @@
-import type { Character, Feat as CharacterFeat, SpeciesTrait, ProficiencyItem } from '@/types/character'
+import type { Character, Feat as CharacterFeat, Spell, SpeciesTrait, ProficiencyItem, ItemCategory } from '@/types/character'
 import type { SkillKey } from '@/types/abilities'
 import { RULESET_2024 } from './advancementEngine'
 import { getDictionary, t } from './i18n'
 import type { AdvancementCharacter, AdvancementMode, Locale } from './advancementTypes'
+import { SRD_SPELLS } from '@/data/spellsSrd'
+import { SRD_SPELLS_FR } from '@/data/spellsSrdFr'
+import { BARD_SPELLS_EN, BARD_SPELLS_FR } from '@/data/bardSpells2024'
 
 const DICTIONARIES = {
   en: getDictionary('en'),
@@ -183,11 +186,40 @@ const applyClassSkillChoices = (
   const nextSkills = { ...skills }
   classes.forEach((entry) => {
     const classDef = RULESET_2024.classes[entry.classId]
-    if (!classDef?.skillChoiceLevels?.includes(entry.level)) return
-    const choiceId = `class-${entry.classId}-skill-${entry.level}`
-    const selected = choices[choiceId]?.[0] as SkillKey | undefined
-    if (selected && selected in nextSkills) {
-      nextSkills[selected] = Math.max(nextSkills[selected], 1) as 0 | 1 | 2
+    if (classDef?.skillChoiceLevels?.includes(entry.level)) {
+      const choiceId = `class-${entry.classId}-skill-${entry.level}`
+      const selectedIds = (choices[choiceId] as string[] | undefined) ?? []
+      selectedIds.forEach((skillKey) => {
+        if (skillKey in nextSkills) {
+          nextSkills[skillKey as SkillKey] = Math.max(
+            nextSkills[skillKey as SkillKey] ?? 0,
+            1
+          ) as 0 | 1 | 2
+        }
+      })
+    }
+    if (entry.classId === 'bard') {
+      if (entry.level >= 2) {
+        (choices['feature-bard-expertise'] as string[] | undefined)?.forEach((skillKey) => {
+          if (skillKey in nextSkills) nextSkills[skillKey as SkillKey] = 2
+        })
+      }
+      if (entry.level >= 9) {
+        (choices['feature-bard-expertise-2'] as string[] | undefined)?.forEach((skillKey) => {
+          if (skillKey in nextSkills) nextSkills[skillKey as SkillKey] = 2
+        })
+      }
+      const subclassId = entry.subclassId
+      if (subclassId === 'college-of-lore') {
+        (choices['feature-bard-lore-extra-skills'] as string[] | undefined)?.forEach((skillKey) => {
+          if (skillKey in nextSkills) {
+            nextSkills[skillKey as SkillKey] = Math.max(
+              nextSkills[skillKey as SkillKey] ?? 0,
+              1
+            ) as 0 | 1 | 2
+          }
+        })
+      }
     }
   })
   return nextSkills
@@ -218,6 +250,75 @@ const applySpeciesSkillChoices = (
       })
     })
   return nextSkills
+}
+
+const applySubclassProficiencies = (
+  proficiencies: ProficiencyItem[],
+  classes: AdvancementCharacter['classes']
+): ProficiencyItem[] => {
+  const next = [...proficiencies]
+  const add = (name: string, category: 'weapon' | 'armor') => {
+    const exists = next.some(
+      (p) => p.category === category && p.name.toLowerCase() === name.toLowerCase()
+    )
+    if (!exists) next.push({ name, description: '', category })
+  }
+
+  const labels: Record<string, string> = {
+    martial: 'Martial weapons',
+    medium: 'Medium armor',
+    shield: 'Shields',
+  }
+
+  classes.forEach((entry) => {
+    if (!entry.subclassId) return
+    const sub = RULESET_2024.subclasses[entry.subclassId] as
+      | { weaponProficiencies?: string[]; armorProficiencies?: string[] }
+      | undefined
+    sub?.weaponProficiencies?.forEach((id) => add(labels[id] ?? id, 'weapon'))
+    sub?.armorProficiencies?.forEach((id) => add(labels[id] ?? id, 'armor'))
+  })
+  return next
+}
+
+const applyClassToolChoices = (
+  proficiencies: ProficiencyItem[],
+  classes: AdvancementCharacter['classes'],
+  choices: AdvancementCharacter['choices']
+): ProficiencyItem[] => {
+  const next = [...proficiencies]
+  const addTool = (tool: string, displayName: string) => {
+    if (!tool) return
+    const exists = next.some(
+      (item) => item.category === 'tool' && item.name.toLowerCase() === displayName.toLowerCase()
+    )
+    if (!exists) {
+      next.push({ name: displayName, description: '', category: 'tool' })
+    }
+  }
+
+  classes.forEach((entry) => {
+    const classDef = RULESET_2024.classes[entry.classId]
+    if (!classDef?.toolChoiceLevels?.includes(entry.level) || !classDef.toolChoicePool?.length) return
+    const choiceId = `class-${entry.classId}-tool-${entry.level}`
+    const selectedIds = (choices[choiceId] as string[] | undefined) ?? []
+    const toolLabels: Record<string, string> = {
+      bagpipes: 'Bagpipes',
+      drum: 'Drum',
+      dulcimer: 'Dulcimer',
+      flute: 'Flute',
+      lute: 'Lute',
+      lyre: 'Lyre',
+      horn: 'Horn',
+      'pan-flute': 'Pan flute',
+      shawm: 'Shawm',
+      viol: 'Viol',
+    }
+    selectedIds.forEach((id) => {
+      addTool(id, toolLabels[id] ?? id)
+    })
+  })
+  return next
 }
 
 const applyBackgroundTools = (
@@ -258,11 +359,171 @@ const pickPrimaryClass = (
   )
 }
 
+/** Normalize spell name for matching (e.g. "Tasha's Hideous Laughter" -> "hideous laughter") */
+const normalizeSpellName = (name: string): string =>
+  name
+    .toLowerCase()
+    .replace(/[''`]/g, '')
+    .replace(/\s+(?:the|a|an|'s)\s+/g, ' ')
+    .replace(/^[^a-z]+|[^a-z]+$/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+/** Build SRD lookup by normalized name + level for resolving minimal spells to full data */
+const buildSrdLookup = (srd: Spell[]): Map<string, Spell> => {
+  const map = new Map<string, Spell>()
+  for (const spell of srd) {
+    const key = `${normalizeSpellName(spell.name)}|${spell.level}`
+    if (!map.has(key)) map.set(key, spell)
+  }
+  return map
+}
+
+const SRD_LOOKUP_EN = buildSrdLookup(SRD_SPELLS)
+const SRD_LOOKUP_FR = buildSrdLookup(SRD_SPELLS_FR)
+
+/** Resolve a minimal Bard spell to full SRD data when a match exists */
+const resolveToFullSpell = (
+  bardSpell: Spell,
+  _locale: Locale,
+  srdLookup: Map<string, Spell>
+): Spell => {
+  const level = Number(bardSpell.level) ?? 0
+  const norm = normalizeSpellName(bardSpell.name)
+  let srd = srdLookup.get(`${norm}|${level}`)
+  if (!srd && norm.includes(' ')) {
+    const withoutFirstWord = norm.replace(/^[a-z0-9]+\s+/, '')
+    if (withoutFirstWord) srd = srdLookup.get(`${withoutFirstWord}|${level}`)
+  }
+  if (srd) return { ...srd, id: bardSpell.id, name: bardSpell.name }
+  return bardSpell
+}
+
+const buildSpellIndex = (
+  srd: Spell[],
+  bard: Spell[],
+  locale: Locale,
+  srdLookup: Map<string, Spell>
+): Map<string, Spell> => {
+  const entries: [string, Spell][] = [
+    ...srd.map((s) => [s.id, s] as [string, Spell]),
+    ...bard.map((s) => {
+      const resolved = resolveToFullSpell(s, locale, srdLookup)
+      return [s.id, resolved] as [string, Spell]
+    }),
+  ]
+  return new Map(entries)
+}
+
+const SPELL_INDEX: Record<Locale, Map<string, Spell>> = {
+  en: buildSpellIndex(SRD_SPELLS, BARD_SPELLS_EN, 'en', SRD_LOOKUP_EN),
+  fr: buildSpellIndex(SRD_SPELLS_FR, BARD_SPELLS_FR, 'fr', SRD_LOOKUP_FR),
+}
+
+export const getSpellById = (id: string, locale: Locale): Spell | undefined =>
+  SPELL_INDEX[locale]?.get(id)
+
+const getSpellSourceFromChoiceKey = (key: string): string => {
+  if (key.includes('high-elf-cantrip')) return 'High Elf'
+  if (key.includes('acolyte')) return 'Magic Initiate'
+  if (key.includes('class-bard') || key.includes('feature-bard')) return 'Bard'
+  return 'Other'
+}
+
+const isSpellChoiceKey = (key: string): boolean =>
+  key.includes('high-elf-cantrip') ||
+  key.includes('acolyte-cantrips') ||
+  key.includes('acolyte-1st-level') ||
+  key.includes('class-bard-cantrips') ||
+  key.includes('class-bard-spells') ||
+  key.startsWith('class-bard-learn-') ||
+  key.startsWith('class-bard-replace-add-') ||
+  key === 'feature-bard-magical-secrets' ||
+  key === 'feature-bard-additional-magical-secrets'
+
+const applySpellChoices = (
+  spells: Spell[],
+  choices: AdvancementCharacter['choices'],
+  locale: Locale
+): Spell[] => {
+  const index = SPELL_INDEX[locale] ?? SPELL_INDEX.en
+  let next = [...spells]
+
+  for (const choiceKey of Object.keys(choices)) {
+    if (!choiceKey.startsWith('class-bard-replace-remove-')) continue
+    const addKey = choiceKey.replace('replace-remove-', 'replace-add-')
+    const removeIds = choices[choiceKey] as string[] | undefined
+    const addIds = choices[addKey] as string[] | undefined
+    if (!Array.isArray(removeIds) || removeIds.length === 0 || !Array.isArray(addIds) || addIds.length === 0)
+      continue
+    const removeId = removeIds[0]
+    const addId = addIds[0]
+    if (!addId) continue
+    next = next.filter((s) => s.id !== removeId)
+    const spell = index.get(addId)
+    if (spell) {
+      next.push({ ...spell, sourceId: 'Bard' })
+    }
+  }
+
+  const existingIds = new Set(next.map((s) => s.id))
+  for (const [choiceKey, ids] of Object.entries(choices)) {
+    if (!isSpellChoiceKey(choiceKey) || !Array.isArray(ids)) continue
+    if (choiceKey.startsWith('class-bard-replace-')) continue
+    const source = getSpellSourceFromChoiceKey(choiceKey)
+    for (const id of ids) {
+      const spell = index.get(id)
+      if (spell && !existingIds.has(id)) {
+        next.push({ ...spell, sourceId: source })
+        existingIds.add(id)
+      }
+    }
+  }
+  return next
+}
+
+const BARD_STARTER_ITEMS: Array<{ name: string; quantity: string; category: ItemCategory }> = [
+  { name: 'Leather armor', quantity: '1', category: 'other' },
+  { name: 'Dagger', quantity: '2', category: 'weapons' },
+  { name: "Entertainer's pack", quantity: '1', category: 'other' },
+]
+
+const applyStartingEquipment = (
+  inventory: Character['inventory'],
+  advancement: AdvancementCharacter,
+  equipmentMode: 'gold' | 'package',
+  toolNames?: string[]
+): Character['inventory'] => {
+  if (equipmentMode !== 'package' || inventory.length > 0) return inventory
+  const classes = advancement.classes
+  const primary = classes.length
+    ? classes.reduce((a, b) => (b.level > (a?.level ?? 0) ? b : a), classes[0])
+    : undefined
+  if (!primary || primary.classId !== 'bard') return inventory
+
+  const next: Character['inventory'] = BARD_STARTER_ITEMS.map((item, i) => ({
+    id: `inv-starter-${i}`,
+    name: item.name,
+    quantity: item.quantity,
+    notes: '',
+    category: item.category,
+  }))
+  next.push({
+    id: 'inv-starter-instrument',
+    name: toolNames?.[0] ?? 'Musical instrument',
+    quantity: '1',
+    notes: '',
+    category: 'other',
+  })
+  return next
+}
+
 export const applyAdvancementToCharacter = (
   character: Character,
   advancement: AdvancementCharacter,
   locale: Locale,
-  advancementMode?: AdvancementMode
+  advancementMode?: AdvancementMode,
+  options?: { equipmentMode?: 'gold' | 'package'; bardToolNames?: string[] }
 ): Character => {
   const primaryClass = pickPrimaryClass(advancement.classes)
   const classDef = primaryClass ? RULESET_2024.classes[primaryClass.classId] : undefined
@@ -284,10 +545,46 @@ export const applyAdvancementToCharacter = (
     advancement.level,
     advancement.choices
   )
-  const nextProficiencies = applyBackgroundTools(
+  let nextProficiencies = applySubclassProficiencies(
     character.proficiencies,
+    advancement.classes
+  )
+  nextProficiencies = applyClassToolChoices(
+    nextProficiencies,
+    advancement.classes,
+    advancement.choices
+  )
+  nextProficiencies = applyBackgroundTools(
+    nextProficiencies,
     advancement.backgroundId,
     advancement.choices
+  )
+
+  const hasSpellChoices = Object.keys(advancement.choices).some(isSpellChoiceKey)
+  const nextSpells = hasSpellChoices
+    ? applySpellChoices(character.spells, advancement.choices, locale)
+    : character.spells
+
+  const toolLabels: Record<string, string> = {
+    bagpipes: 'Bagpipes',
+    drum: 'Drum',
+    dulcimer: 'Dulcimer',
+    flute: 'Flute',
+    lute: 'Lute',
+    lyre: 'Lyre',
+    horn: 'Horn',
+    'pan-flute': 'Pan flute',
+    shawm: 'Shawm',
+    viol: 'Viol',
+  }
+  const bardToolIds = (advancement.choices['class-bard-tool-1'] as string[] | undefined) ?? []
+  const bardToolNames = bardToolIds.map((id) => toolLabels[id] ?? id)
+
+  const nextInventory = applyStartingEquipment(
+    character.inventory,
+    advancement,
+    options?.equipmentMode ?? 'package',
+    bardToolNames
   )
 
   return {
@@ -297,6 +594,8 @@ export const applyAdvancementToCharacter = (
     abilities: advancement.abilities,
     skills: nextSkills,
     proficiencies: nextProficiencies,
+    spells: nextSpells,
+    inventory: nextInventory,
     class: classDef ? t(classDef.nameKey, locale, character.class) : character.class,
     subclass: subclassDef ? t(subclassDef.nameKey, locale, character.subclass) : character.subclass,
     race: advancement.speciesId

@@ -19,6 +19,95 @@ export type WeaponMasteryGrant = {
   filters: Array<'any' | 'melee' | 'ranged' | 'finesse' | 'light'>
 }
 
+/** Feature types for D&D 2024 class features */
+export type FeatureType = 'PASSIVE' | 'ACTION' | 'RESOURCE' | 'CHOICE' | 'MODIFIER'
+
+/** Level-based scaling for resource counts or damage values */
+export type FeatureScaling = {
+  /** Map of level threshold (inclusive) to value, e.g. { 1: 2, 3: 3, 6: 4 } */
+  byLevel: Record<number, number>
+  /** Optional reset period for resources */
+  reset?: 'short' | 'long'
+}
+
+/** Choice definition when feature type is CHOICE */
+export type FeatureChoice = {
+  /** Pool of options: weapon IDs, skill keys, feat categories, etc. */
+  pool: 'WeaponMastery' | 'Skills' | 'Spells' | 'Feats' | string
+  /** Number of selections (e.g. "Choose 2") */
+  count: number
+  /** Optional: filter for pool (e.g. "epicBoon" for Epic Boon feat choice) */
+  category?: string
+}
+
+/** Choice type for structured selections */
+export type StructuredChoiceType =
+  | 'spell'
+  | 'skillProficiency'
+  | 'weaponProficiency'
+  | 'toolProficiency'
+  | 'weaponMastery'
+  | 'feat'
+  | 'subclass'
+
+/** Source database for structured choices */
+export type StructuredChoiceSourcePool =
+  | 'spellsSrd'
+  | 'spellsSrdFr'
+  | 'spellsBard'
+  | 'weaponMastery'
+  | 'weapons'
+  | 'skills'
+  | 'feats'
+  | 'subclasses'
+
+/** Filter criteria for structured choices */
+export type StructuredChoiceFilters = {
+  spellLevel?: number
+  /** Max spell level (1–9). When set, include spells of level 1 through this value. */
+  maxSpellLevel?: number
+  spellSchool?: string
+  spellClass?: 'wizard' | 'cleric' | 'druid' | 'sorcerer' | 'warlock' | 'bard' | 'paladin' | 'ranger'
+  weaponType?: 'melee' | 'ranged'
+  weaponProficiency?: 'simple' | 'martial'
+  featCategory?: string
+  skillPool?: string[]
+}
+
+/**
+ * Structured choice definition for data-driven selection UI.
+ * Replaces text notes with queryable, filterable selection requests.
+ */
+export type StructuredChoiceDefinition = {
+  id: string
+  nameKey: string
+  choiceType: StructuredChoiceType
+  quantity: number
+  sourcePool: StructuredChoiceSourcePool
+  filters?: StructuredChoiceFilters
+}
+
+/**
+ * Unified Feature schema for D&D 2024 class/species features.
+ * Drives UI display and choice resolution without hardcoded logic.
+ */
+export type Feature = {
+  id: string
+  nameKey: string
+  descriptionKey?: string
+  type: FeatureType
+  /** Level at which this feature is gained */
+  level: number
+  /** For RESOURCE: scaling (e.g. Rage count); for MODIFIER: damage or stat scaling */
+  scaling?: FeatureScaling
+  /** For CHOICE: defines the selection pool and count */
+  choices?: FeatureChoice
+  /** Optional: links to resource ID for tracking (e.g. rage, spell slots) */
+  resourceId?: string
+  /** Optional: modifier key (e.g. "rageDamage" for +2/+3/+4) */
+  modifierKey?: string
+}
+
 export type ClassDefinition = {
   id: string
   nameKey: string
@@ -29,10 +118,22 @@ export type ClassDefinition = {
   fightingStyleLevels: number[]
   weaponMastery: WeaponMasteryGrant[]
   asiLevels: number[]
-  /** Optional: levels when the class grants a skill proficiency choice (e.g. Barbarian Primal Knowledge) */
+  /** Optional: levels when the class grants a skill proficiency choice (e.g. Barbarian Primal Knowledge, Bard skills) */
   skillChoiceLevels?: number[]
-  /** Optional: skill keys available for skillChoiceLevels (e.g. Barbarian class skills) */
+  /** Optional: skill keys available for skillChoiceLevels (e.g. Barbarian class skills, or all for Bard) */
   skillChoicePool?: string[]
+  /** Optional: number of skills to choose when skillChoiceLevels applies (default 1, Bard uses 3) */
+  skillChoiceCount?: number
+  /** Optional: levels when the class grants a tool proficiency choice (e.g. Bard musical instruments) */
+  toolChoiceLevels?: number[]
+  /** Optional: tool ids for toolChoiceLevels (e.g. musical instrument ids) */
+  toolChoicePool?: string[]
+  /** Optional: number of tools to choose (default 1, Bard uses 3) */
+  toolChoiceCount?: number
+  /** Optional: class levels when you learn a new spell (e.g. Bard: 2–20) */
+  spellLearnLevels?: number[]
+  /** Optional: class levels when you can replace one known spell (e.g. Bard: 2–20) */
+  spellReplaceLevels?: number[]
   multiclassPrerequisites: ClassPrerequisites
 }
 
@@ -41,6 +142,9 @@ export type SubclassDefinition = {
   classId: string
   nameKey: string
   spellcasting?: SpellcastingProgression
+  /** Bonus proficiencies from this subclass (e.g. College of Valor) */
+  weaponProficiencies?: string[]
+  armorProficiencies?: string[]
 }
 
 export type FeatCategory = 'origin' | 'general' | 'fightingStyle' | 'epicBoon'
@@ -81,6 +185,8 @@ export type SpeciesChoiceOption = {
   nameKey: string
   descriptionKey?: string
   description?: LocalizedText
+  /** When this option is selected, show this structured choice (e.g. High Elf -> pick Wizard Cantrip) */
+  structuredChoice?: StructuredChoiceDefinition
 }
 
 export type SpeciesChoice = {
@@ -112,6 +218,8 @@ export type BackgroundDefinition = {
   toolProficiency: string | string[]
   originFeatId: string
   originFeatList?: string
+  /** Structured choices (e.g. Magic Initiate spell picks) driven from data */
+  structuredChoices?: StructuredChoiceDefinition[]
 }
 
 export type Ruleset2024 = {
@@ -159,6 +267,16 @@ export type ChoiceType =
   | 'backgroundAbility'
   | 'backgroundSkill'
   | 'backgroundTool'
+  | 'featureSkill'
+  | 'featureSpell'
+  | 'bardSpellLearn'
+  | 'bardSpellReplace'
+
+/** When set, this choice is only required when the dependency choice has the given value */
+export type ChoiceDependsOn = {
+  choiceId: string
+  value: string
+}
 
 export type ChoiceOption = {
   id: string
@@ -179,6 +297,10 @@ export type ChoiceRequirement = {
   minSelections: number
   maxSelections: number
   meta?: Record<string, string | string[]>
+  /** When set, this choice is only required when the dependency is satisfied */
+  dependsOn?: ChoiceDependsOn
+  /** When set, this choice is only shown when the referenced choice has at least one selection */
+  showWhenChoiceFilled?: string
 }
 
 export type AbilityIncrease = {
@@ -212,6 +334,8 @@ export type LevelUpRequest = {
   targetLevel: number
   levelingClassId: string
   advancementMode: AdvancementMode
+  /** Current character spells (for Bard spell-replace options) */
+  currentSpells?: Array<{ id: string; name: string; level: string | number; sourceId?: string }>
 }
 
 export type LevelUpResult = {

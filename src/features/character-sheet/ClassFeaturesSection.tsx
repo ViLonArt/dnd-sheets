@@ -5,11 +5,18 @@ import { useDragPreview, useOutsideClick } from '@/hooks'
 import { calculateAbilityModifier} from '@/types/abilities'
 import type { Abilities } from '@/types/abilities'
 import type { ClassFeature } from '@/types/character'
+import {
+  getClassFeaturesForLevel,
+  getScaledValueAtLevel,
+} from '@/data/classFeatureRegistry'
+import { t } from '@/utils/i18n'
 
 type FeatureColumnKey = 'action' | 'actionBonus' | 'reactionPassive'
 
 type ClassFeaturesSectionProps = {
   characterClass: string
+  classId?: string
+  subclassId?: string
   subclass: string
   level: number
   abilities: Abilities
@@ -18,8 +25,12 @@ type ClassFeaturesSectionProps = {
   onClassFeaturesChange: (next: ClassFeature[]) => void
 }
 
+const UI_LOCALE = 'fr'
+
 export function ClassFeaturesSection({
   characterClass,
+  classId,
+  subclassId,
   subclass,
   level,
   abilities,
@@ -88,7 +99,26 @@ export function ClassFeaturesSection({
       displayMax?: string
     }> = []
 
-    if (characterClass === 'Barde') {
+    if (classId) {
+      const features = getClassFeaturesForLevel(classId, level, subclassId)
+      const resourceFeatures = features.filter(
+        (f) => f.type === 'RESOURCE' && f.resourceId && f.scaling
+      )
+      for (const f of resourceFeatures) {
+        const max = getScaledValueAtLevel(f.scaling!.byLevel, level)
+        const reset = (f.scaling!.reset ?? 'long') as 'short' | 'long'
+        resources.push({
+          id: f.resourceId!,
+          name: t(f.nameKey, UI_LOCALE),
+          description: f.descriptionKey ? t(f.descriptionKey, UI_LOCALE) : '',
+          max,
+          reset,
+          isUnlocked: level >= f.level,
+        })
+      }
+    }
+
+    if (resources.length === 0 && characterClass === 'Barde') {
       const chaMod = calculateAbilityModifier(abilities.cha)
       const max = Math.max(1, chaMod)
       const reset = level >= 5 ? 'short' : 'long'
@@ -105,7 +135,7 @@ export function ClassFeaturesSection({
       })
     }
 
-    if (characterClass === 'Barbare') {
+    if (resources.length === 0 && (characterClass === 'Barbare' || characterClass === 'Barbarian')) {
       const max =
         level >= 20
           ? 0
@@ -221,7 +251,7 @@ export function ClassFeaturesSection({
     }
 
     return resources.filter((resource) => resource.isUnlocked)
-  }, [abilities.cha, characterClass, level, proficiencyBonus, subclass])
+  }, [abilities.cha, characterClass, classId, level, proficiencyBonus, subclass])
 
   const coreResourceIds = useMemo(
     () => new Set(classResourceDefinitions.map((resource) => resource.id)),
@@ -1184,7 +1214,7 @@ export function ClassFeaturesSection({
             <div className="mt-1 space-y-2">
               {classResourceDefinitions.map((resource) => {
                 const stored = classFeatures.find((feature) => feature.id === resource.id)
-                const max = Math.max(0, resource.max)
+                const max = Math.max(0, stored?.resource?.max ?? resource.max)
                 const current = Math.min(stored?.resource?.current ?? 0, max)
                 const displayMax = resource.displayMax ?? String(max)
                 const resetLabel =

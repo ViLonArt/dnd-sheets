@@ -8,7 +8,7 @@
     { "id": "college-of-dance", "classId": "bard", "nameKey": "subclass.bard.dance.name" },
     { "id": "college-of-glamour", "classId": "bard", "nameKey": "subclass.bard.glamour.name" },
     { "id": "college-of-lore", "classId": "bard", "nameKey": "subclass.bard.lore.name" },
-    { "id": "college-of-valor", "classId": "bard", "nameKey": "subclass.bard.valor.name" },
+    { "id": "college-of-valor", "classId": "bard", "nameKey": "subclass.bard.valor.name", "weaponProficiencies": ["martial"], "armorProficiencies": ["medium", "shield"] },
 
     { "id": "life", "classId": "cleric", "nameKey": "subclass.cleric.life.name" },
     { "id": "light", "classId": "cleric", "nameKey": "subclass.cleric.light.name" },

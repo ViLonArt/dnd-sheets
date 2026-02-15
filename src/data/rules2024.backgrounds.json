@@ -16,7 +16,25 @@
       "skills": ["insight", "religion"],
       "skillChoices": [["insight"], ["religion"]],
       "tool": { "en": "Calligrapher's Supplies", "fr": "Materiel de calligraphe" },
-      "toolProficiency": "Calligrapher's Supplies"
+      "toolProficiency": "Calligrapher's Supplies",
+      "structuredChoices": [
+        {
+          "id": "acolyte-cantrips",
+          "nameKey": "background.acolyte.choice.cantrips.name",
+          "choiceType": "spell",
+          "quantity": 2,
+          "sourcePool": "spellsSrd",
+          "filters": { "spellLevel": 0 }
+        },
+        {
+          "id": "acolyte-1st-level",
+          "nameKey": "background.acolyte.choice.firstLevel.name",
+          "choiceType": "spell",
+          "quantity": 1,
+          "sourcePool": "spellsSrd",
+          "filters": { "spellLevel": 1 }
+        }
+      ]
     },
     {
       "id": "artisan",
